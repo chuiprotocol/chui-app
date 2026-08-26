@@ -57,6 +57,15 @@ RERANK_CONFIDENCE_THRESHOLD = float(os.environ.get("RERANK_CONFIDENCE_THRESHOLD"
 # 前兩名分數差距小於此值視為模糊，也要澄清
 RERANK_AMBIGUITY_MARGIN = float(os.environ.get("RERANK_AMBIGUITY_MARGIN", "0.08"))
 
+# ---- zkLogin salt 服務 ----
+# 消費者的 zkLogin salt 由 HMAC(master secret, iss|aud|sub) 決定性導出。
+# 這代表 Chui 營運方是 salt 保管者（信任假設，見 README）。
+ZKLOGIN_SALT_MASTER_SECRET = os.environ.get("ZKLOGIN_SALT_MASTER_SECRET", "")
+# 允許的 OAuth audience（Google client ID），逗號分隔
+ZKLOGIN_ALLOWED_AUDIENCES = [
+    a.strip() for a in os.environ.get("ZKLOGIN_ALLOWED_AUDIENCES", "").split(",") if a.strip()
+]
+
 # ---- 安全 ----
 # consumer session cookie 的簽章金鑰（32 bytes hex；未設定時啟動報錯，不偷偷產生）
 SESSION_SECRET = os.environ.get("CHUI_SESSION_SECRET", "")

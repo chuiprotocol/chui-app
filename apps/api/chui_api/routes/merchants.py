@@ -159,7 +159,8 @@ class RegisterWebhookRequest(BaseModel):
 
 
 @router.post("/webhooks")
-def register_webhook(req: RegisterWebhookRequest, merchant: Merchant = Depends(require_merchant),
+def register_webhook(req: RegisterWebhookRequest,
+                     merchant: Merchant = Depends(merchant_from_bearer_or_cookie),
                      db: Session = Depends(get_db)):
     """註冊 webhook。secret 用來驗證 X-Chui-Signature，只在這裡回傳一次。"""
     secret = "whsec_" + secrets.token_urlsafe(32)

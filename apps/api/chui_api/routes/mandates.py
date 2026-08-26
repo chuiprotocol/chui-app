@@ -60,6 +60,53 @@ async def login(req: LoginRequest, response: Response, db: Session = Depends(get
     return {"consumer_id": consumer.id, "address": consumer.sui_address}
 
 
+class ZkLoginSaltRequest(BaseModel):
+    jwt: str
+
+
+@router.post("/auth/zklogin-salt")
+def zklogin_salt(req: ZkLoginSaltRequest):
+    """zkLogin salt 服務：驗證 OAuth JWT 後回傳決定性 salt。
+
+    salt = HMAC-SHA256(master secret, iss|aud|sub) 取前 16 bytes。
+    同一個 Google 帳號永遠拿到同一個 salt（地址才會固定）。
+    Chui 營運方因此是 salt 保管者——這是明確寫在 README 的信任假設。
+    """
+    import hashlib as _hashlib
+    import hmac as _hmac
+
+    import jwt as pyjwt
+    from jwt import PyJWKClient
+
+    if not config.ZKLOGIN_SALT_MASTER_SECRET:
+        raise AuthError("伺服器未設定 ZKLOGIN_SALT_MASTER_SECRET，zkLogin 停用")
+    if not config.ZKLOGIN_ALLOWED_AUDIENCES:
+        raise AuthError("伺服器未設定 ZKLOGIN_ALLOWED_AUDIENCES，zkLogin 停用")
+    try:
+        header = pyjwt.get_unverified_header(req.jwt)
+        unverified = pyjwt.decode(req.jwt, options={"verify_signature": False})
+        iss = unverified.get("iss", "")
+        jwks_urls = {
+            "https://accounts.google.com": "https://www.googleapis.com/oauth2/v3/certs",
+        }
+        if iss not in jwks_urls:
+            raise AuthError(f"不支援的 OAuth issuer：{iss}")
+        signing_key = PyJWKClient(jwks_urls[iss]).get_signing_key_from_jwt(req.jwt)
+        claims = pyjwt.decode(
+            req.jwt, signing_key.key, algorithms=[header.get("alg", "RS256")],
+            audience=config.ZKLOGIN_ALLOWED_AUDIENCES,
+        )
+    except AuthError:
+        raise
+    except Exception as exc:
+        raise AuthError(f"JWT 驗證失敗：{exc}") from exc
+    material = f"{claims['iss']}|{claims['aud']}|{claims['sub']}".encode()
+    digest = _hmac.new(config.ZKLOGIN_SALT_MASTER_SECRET.encode(), material, _hashlib.sha256).digest()
+    # zkLogin salt 是 16-byte 整數（十進位字串）
+    salt_int = int.from_bytes(digest[:16], "big")
+    return {"salt": str(salt_int)}
+
+
 @router.post("/auth/logout")
 def logout(response: Response):
     response.delete_cookie("chui_session")
@@ -76,13 +123,18 @@ def me(consumer: Consumer = Depends(require_consumer)):
 class CreateMandateRequest(BaseModel):
     per_tx_limit: int = Field(gt=0, description="單筆上限（元，整數）")
     total_limit: int = Field(default=0, ge=0, description="總額上限（元，整數；0 表示不設）")
+    deposit: int = Field(gt=0, description="存入 Mandate 的測試幣額度（元，整數），結算從這裡扣")
 
 
 @router.post("/mandates")
 async def create_mandate(req: CreateMandateRequest, consumer: Consumer = Depends(require_consumer),
                          db: Session = Depends(get_db)):
     """第一步：建立 sponsored tx bytes，交給瀏覽器用消費者錢包簽名。"""
-    built = await chain.build_mandate_tx(consumer.sui_address, req.per_tx_limit, req.total_limit)
+    if req.deposit < req.per_tx_limit:
+        raise ValidationFailedError("deposit 必須大於等於 per_tx_limit，否則授權一筆都扣不了")
+    built = await chain.build_mandate_tx(
+        consumer.sui_address, req.per_tx_limit, req.total_limit, req.deposit,
+    )
     mandate = Mandate(
         consumer_id=consumer.id,
         per_tx_limit=req.per_tx_limit,
@@ -190,6 +242,12 @@ async def submit_revoke(req: SubmitRevokeRequest, consumer: Consumer = Depends(r
         "tx_digest": result["txDigest"],
         "explorer_url": config.explorer_tx_url(result["txDigest"]),
     }
+
+
+@router.get("/chain/epoch")
+async def chain_epoch():
+    """目前的 Sui epoch（前端 zkLogin 計算 maxEpoch 用）。"""
+    return {"epoch": await chain.current_epoch(), "network": config.SUI_NETWORK}
 
 
 # ---- 收據 ----

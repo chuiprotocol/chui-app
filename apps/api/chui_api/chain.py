@@ -46,12 +46,17 @@ async def verify_personal_message(address: str, message_b64: str, signature: str
     return bool(body.get("valid"))
 
 
-async def build_mandate_tx(consumer_address: str, per_tx_limit: int, total_limit: int) -> dict:
-    """建立 Mandate 的 sponsored tx bytes（消費者簽名用）。"""
+async def build_mandate_tx(consumer_address: str, per_tx_limit: int, total_limit: int,
+                           deposit: int) -> dict:
+    """建立 Mandate 的 sponsored tx bytes（消費者簽名用）。
+
+    deposit：消費者存入 Mandate 的測試幣額度（元，整數），結算從這裡扣。
+    """
     return await _post("/internal/mandate/build", {
         "consumer": consumer_address,
         "perTxLimit": per_tx_limit,
         "totalLimit": total_limit,
+        "deposit": deposit,
     })
 
 
@@ -78,6 +83,17 @@ async def settle(mandate_onchain_id: str, merchant_address: str, amount: int,
         "amount": amount,
         "digestHex": digest_hex,
     })
+
+
+async def current_epoch() -> int:
+    """目前 epoch（zkLogin maxEpoch 計算用）。"""
+    try:
+        async with httpx.AsyncClient(timeout=10.0) as client:
+            resp = await client.get(f"{config.CHAIN_SERVICE_URL}/internal/epoch", headers=_headers())
+            resp.raise_for_status()
+            return int(resp.json()["epoch"])
+    except Exception as exc:
+        raise ChainError(f"無法取得目前 epoch：{exc}") from exc
 
 
 async def health() -> dict:
