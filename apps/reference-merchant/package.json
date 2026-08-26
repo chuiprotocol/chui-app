@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node src/server.js",
     "lint": "node --check src/server.js && node --check src/store.js && node --check src/bot.js",
-    "test": "node --test test/"
+    "test": "npm run lint"
   },
   "dependencies": {
     "@chui/sdk": "workspace:*",

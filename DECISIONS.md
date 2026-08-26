@@ -1,0 +1,128 @@
+# DECISIONS.md —— 自主決策紀錄
+
+依任務規則：需要決策時自己選一個合理方案並記錄於此。
+每筆包含「情境 → 決定 → 理由 → 代價」。
+
+---
+
+## D1. 合約 repo 是空的 → 以「可設定的假定介面」實作鏈上層
+
+- **情境**：任務要求先讀 chui-contracts 的 README/SPEC 並從
+  `deployments/testnet.json` 取得 package ID。實際 clone 後發現該 repo
+  **沒有任何 commit**（`git ls-remote` 為空）。
+- **決定**：chain-service 以一組合理的 Move 介面假定實作
+  （`mandate::create(coin, per_tx_limit, total_limit)`、
+  `settle(mandate, amount, digest, recipient)`、`revoke(mandate)`），
+  module／function 名稱、registry 物件、abort code 對映**全部走環境變數**；
+  `CHUI_PACKAGE_ID` 未設定時所有鏈上操作回 `CHAIN_NOT_CONFIGURED`。
+- **理由**：硬性規定「絕不 mock 交易、做不到就明確報錯」。這樣合約
+  repo 補上後只改 `.env`，不改程式碼。
+- **代價**：假定介面可能與實際合約不合（引數順序、型別、事件形狀），
+  屆時需要小幅修改 `chain-service/src/sui.js` 的引數組裝。
+
+## D2. FastAPI 之外加一個 Node chain-service sidecar
+
+- **情境**：架構指定 FastAPI，但 Sui 官方成熟 SDK 是 TypeScript
+  （@mysten/sui v2；sponsored tx、zkLogin 驗簽都以它為第一公民）。
+- **決定**：鏈上操作放進只綁 localhost 的 Node sidecar，FastAPI 以內部
+  token 呼叫。
+- **理由**：用 Python 重造 sponsored tx／zkLogin 簽章驗證的輪子風險遠
+  高於多跑一個行程；sidecar 同時是結算去重的天然落點。
+- **代價**：部署多一個行程；內部呼叫多一層網路跳躍（localhost，微秒級）。
+
+## D3. 金額單位＝整數新台幣「元」；上鏈以整數比例換算
+
+- **決定**：全系統金額為整數元（台灣菜單無角分）。鏈上以
+  `AMOUNT_SCALE_MIST`（預設 1 元 = 0.01 SUI）整數換算成 MIST。
+- **理由**：硬性規定禁止浮點；示意匯率讓 faucet 領一次（1 SUI）就能
+  演示約百元的訂單流。
+- **代價**：匯率是展示用假設，不代表真實定價；正式版應改用穩定幣。
+
+## D4. 隱私模型：伺服器「解析時可見、落地不可見、鏈上只有 digest」
+
+- **決定**：parse 時伺服器產生一次性 AES-256-GCM 金鑰加密明細、
+  金鑰回傳消費者後即丟棄；DB 只有密文＋salt＋digest＋總額；
+  鏈上只有 salted digest。
+- **理由**：STT 與重排序必須在伺服器跑（本來就看得到語音內容），
+  「對營運方零知識」在此架構下是謊言，直接在 README 信任假設寫明，
+  把加密的保護範圍誠實界定為落地儲存與鏈上觀察者。
+- **代價**：消費者弄丟 order_key 就無法解密舊明細（digest 仍可驗證）。
+  總額以明文存 DB——店家記帳需要。
+
+## D5. mandate 需要 `deposit`（資金先存入 Mandate 物件）
+
+- **情境**：合約規格不可得，但「結算把錢從消費者轉到店家」需要資金
+  來源；代扣消費者錢包餘額需要消費者每筆簽名，違背「授權後 agent
+  代結算」的核心主張。
+- **決定**：Mandate 創建時消費者存入一筆測試幣（`deposit`），結算從
+  Mandate 內扣；撤銷時剩餘退還（合約行為）。API 強制 `deposit >= per_tx_limit`。
+- **理由**：這是預授權支付（escrow-style mandate）的標準做法，也與
+  「資金不在營運方帳戶」的非託管主張一致。
+- **代價**：消費者要先領測試幣、先儲值；體驗多一步。
+
+## D6. zkLogin：低階 primitives ＋ 自架 HMAC salt 服務（不用 Enoki）
+
+- **決定**：前端用 `@mysten/sui/zklogin` 的 generateNonce／jwtToAddress／
+  getZkLoginSignature 直接實作 Google OAuth implicit flow；salt 由 API 以
+  `HMAC(master_secret, iss|aud|sub)` 決定性導出；prover 用 Mysten 的
+  testnet 開發 prover。另提供瀏覽器 ed25519 測試錢包作為免 OAuth 設定
+  的可實測路徑。
+- **理由**：Enoki 是託管 SaaS，需要額外註冊與金鑰，且把信任外移給
+  第三方；低階路徑全部函式已在安裝的 SDK 驗證存在。ed25519 測試錢包
+  讓 E2E 測試不被 OAuth 設定卡死（它是真錢包真簽章，不是 mock）。
+- **代價**：自架 salt 服務＝營運方保管 salt（已列信任假設）；
+  zkLogin 全流程需要 Google Client ID 才能實測。
+
+## D7. 消費者錢包只住在 console（LIFF 只綁定地址）
+
+- **情境**：LIFF 與 console 是不同 origin，IndexedDB 不互通；錢包若在
+  兩邊各生一把，地址就不一致。
+- **決定**：私鑰與簽章操作只在 console；LIFF 綁定流程是「把 console
+  顯示的地址貼進 LIFF」。點餐與確認不需要消費者簽章（Mandate 已授權），
+  所以 LIFF 完全不需要碰金鑰。
+- **代價**：綁定流程多一次複製貼上；換來金鑰單一來源、不跨 origin 複製。
+
+## D8. STT 供應商抽象：雲端 Whisper API 主路徑＋本地 faster-whisper 備援
+
+- **決定**：`STT_PROVIDER=auto`：先走 OpenAI 相容 API（華語），失敗退回
+  本地 faster-whisper（選裝）；兩者皆無 → `STT_UNAVAILABLE` 明確報錯並
+  引導文字輸入。faster-whisper 不暴露 n-best，因此以兩種 temperature 各取
+  一候選；重排序本身不依賴 n-best（單候選也能靠語音距離救回）。
+- **理由**：Whisper API 對華語準確率高、零維運；本地模型滿足「會場
+  斷網」情境；文字輸入是永遠可用的保底。
+- **代價**：本地模型首跑要下載數百 MB；n-best 資訊有限。
+
+## D9. 覆誦片段改細粒度，離線拼接線性覆蓋
+
+- **情境**：覆誦句若以「整句」為快取單位，選項組合會爆炸，離線快取
+  永遠有洞。
+- **決定**：線上 TTS 用整句；離線降級用細粒度片段（單一選項詞、品項名、
+  「N 份」、「總共 N 元，確認嗎？」）拼接 MP3。prebuild 只需線性枚舉
+  菜單詞彙＋金額 1..300。
+- **代價**：拼接音檔的銜接略有頓挫感（可接受，且只在雙 TTS 都失敗時出現）。
+
+## D10. 冪等性層次（application-level 為主、鏈上去重為輔）
+
+- **決定**：五層防線（收據捷徑、409、原子狀態轉移、UNIQUE 約束、
+  sidecar digest 去重）＋nonce/timestamp 防重放。合約端若原生支援以
+  digest 冪等（理想），sidecar 去重自動變成冗餘保險。
+- **代價**：sidecar 去重紀錄是本地檔案，多實例部署需共享儲存。
+
+## D11. Explorer 用 Suiscan；連結由 `SUI_NETWORK` 樣板生成
+
+- **理由**：官方 explorer 已退役；Suiscan 對開發者友善。樣板寫在
+  `config.py`／SDK 回傳值，切網路只改 `SUI_NETWORK`。
+
+## D12. 評估資料集使用「模擬 STT 誤辨文字」
+
+- **決定**：55 筆樣本的 STT 文字依常見華語誤辨模式人工標註（茶→查、
+  蛋→但、雞→機、粿→貴…），非真實錄音輸出。README 明確聲明。
+- **理由**：沙箱無法錄音也無法呼叫雲端 STT；誤辨「型態」（同音異字、
+  聲母混淆）是有據可依的，能量化重排序的救回能力。
+- **代價**：數字不能宣稱為端到端準確率；真機驗證列入 TESTING.md C。
+
+## D13. 單機版 rate limit 與 in-memory 菜單引擎快取
+
+- **決定**：滑動視窗 rate limit 與 RerankEngine 快取都放行程記憶體。
+- **理由**：原型階段單實例部署；外部化（Redis）是機械性替換。
+- **代價**：多實例時限流不精確；已在 README 限制節註明。
