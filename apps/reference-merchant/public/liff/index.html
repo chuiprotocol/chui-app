@@ -1,0 +1,71 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>快樂豬早餐店</title>
+  <!-- LINE LIFF SDK（在 LINE 內開啟時取得使用者身分；瀏覽器直接開啟也能用） -->
+  <script src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: "Noto Sans TC", system-ui, sans-serif; background: #fff7ef; color: #333; }
+    .wrap { max-width: 480px; margin: 0 auto; padding: 16px; }
+    h1 { font-size: 1.2rem; }
+    .card { background: #fff; border-radius: 14px; padding: 16px; margin: 12px 0; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
+    button { width: 100%; padding: 14px; border: none; border-radius: 10px; font-size: 1.05rem; cursor: pointer; margin: 6px 0; }
+    .primary { background: #e8590c; color: #fff; font-weight: 700; }
+    .confirm { background: #1a7f5a; color: #fff; font-weight: 700; }
+    .cancel { background: #eee; color: #333; }
+    .recording { background: #d0342c !important; }
+    input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 10px; margin: 6px 0; }
+    .hint { color: #888; font-size: 0.85rem; }
+    .error { background: #fdecea; color: #b3261e; padding: 10px; border-radius: 10px; }
+    .ok { background: #e6f4ea; color: #1a7f37; padding: 10px; border-radius: 10px; }
+    code { word-break: break-all; background: #f4f1ec; padding: 2px 4px; border-radius: 4px; }
+    .hidden { display: none; }
+    .readback { font-size: 1.15rem; font-weight: 700; margin: 8px 0; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>🐷 快樂豬早餐店</h1>
+
+    <div id="msg"></div>
+
+    <!-- 步驟一：綁定錢包 -->
+    <div class="card" id="bind-card">
+      <h3>綁定你的錢包</h3>
+      <p class="hint">
+        到 <a id="console-link" href="#" target="_blank" rel="noreferrer">Chui 後台</a>
+        建立錢包與付款授權後，把你的 Sui 地址貼進來（只需要做一次）。
+      </p>
+      <input id="address-input" placeholder="0x..." />
+      <button class="primary" id="bind-btn">綁定</button>
+    </div>
+
+    <!-- 步驟二：語音點餐 -->
+    <div class="card hidden" id="order-card">
+      <h3>語音點餐</h3>
+      <p class="hint">按住開始說話，放開送出。也可以在 LINE 聊天室直接打字或傳語音。</p>
+      <button class="primary" id="record-btn">🎙️ 按住說話</button>
+    </div>
+
+    <!-- 步驟三：覆誦確認 -->
+    <div class="card hidden" id="confirm-card">
+      <div class="readback" id="readback-text"></div>
+      <audio id="readback-audio" controls autoplay></audio>
+      <button class="confirm" id="confirm-btn">✅ 確認付款</button>
+      <button class="cancel" id="cancel-btn">取消</button>
+    </div>
+
+    <!-- 收據 -->
+    <div class="card hidden" id="receipt-card">
+      <h3>付款完成 🎉</h3>
+      <div id="receipt-body"></div>
+    </div>
+
+    <p class="hint">結算跑在 Sui Testnet（測試幣）。鏈上只記錄訂單雜湊，看不到你點了什麼。</p>
+  </div>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

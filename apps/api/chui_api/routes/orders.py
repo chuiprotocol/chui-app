@@ -1,6 +1,5 @@
 """訂單：解析（語音／文字 → OrderIntent + Quote）、冪等結算、查詢。"""
 
-import base64
 import json
 import time
 
@@ -21,7 +20,7 @@ from ..errors import (
     SettlementInProgressError,
     ValidationFailedError,
 )
-from ..menu import quote_items, readback_fragments
+from ..menu import quote_items, readback_fragments, readback_text
 from ..models import Consumer, Mandate, Merchant, Order, Settlement
 from ..webhooks import enqueue_event
 from .merchants import get_engine
@@ -73,7 +72,7 @@ async def parse_order(
     menu = json.loads(merchant.menu_json)
     lines, total = quote_items(menu, result.items)
     fragments = readback_fragments(lines, total)
-    readback_text = "，".join(fragments)
+    readback = readback_text(lines, total)
 
     # 加密明細落地；金鑰回傳給消費者後即丟棄
     details = {
@@ -101,7 +100,8 @@ async def parse_order(
         salt_hex=salt.hex(),
         digest_hex=digest_hex,
         total_amount=total,
-        readback_text=readback_text,
+        readback_text=readback,
+        readback_fragments_json=json.dumps(fragments, ensure_ascii=False),
     )
     db.add(order)
     db.commit()
@@ -117,7 +117,7 @@ async def parse_order(
             "stt_text": result.source_text,
         },
         "quote": {"lines": lines, "total": total, "currency": "TWD"},
-        "readback": {"text": readback_text, "fragments": fragments},
+        "readback": {"text": readback, "fragments": fragments},
         "order_key": key_b64,
         "digest": digest_hex,
         "key_notice": "order_key 請交給消費者保存；伺服器不留存，遺失即無法解密明細。",
@@ -131,8 +131,8 @@ async def readback_audio(order_id: str, merchant: Merchant = Depends(require_mer
     order = db.get(Order, order_id)
     if order is None or order.merchant_id != merchant.id:
         raise NotFoundError("訂單不存在")
-    fragments = order.readback_text.split("，")
-    audio, source = await tts.synthesize_readback(fragments)
+    fragments = json.loads(order.readback_fragments_json or "[]") or [order.readback_text]
+    audio, source = await tts.synthesize_readback(order.readback_text, fragments)
     return Response(content=audio, media_type="audio/mpeg", headers={"X-Chui-Tts-Source": source})
 
 

@@ -81,6 +81,8 @@ class Order(Base):
     total_amount: Mapped[int] = mapped_column(Integer)
     # 覆誦文字（不含精確品項之外的資訊，方便 TTS 重播）
     readback_text: Mapped[str] = mapped_column(Text, default="")
+    # 細粒度覆誦片段（JSON 陣列；離線快取拼接用）
+    readback_fragments_json: Mapped[str] = mapped_column(Text, default="")
     # quoted -> settling -> settled | failed
     status: Mapped[str] = mapped_column(String(16), default="quoted", index=True)
     fail_code: Mapped[str] = mapped_column(String(64), default="")

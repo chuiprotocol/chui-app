@@ -71,15 +71,28 @@ def quote_items(menu: dict, items: list[ParsedItem]) -> tuple[list[dict], int]:
     return lines, total
 
 
-def readback_fragments(lines: list[dict], total: int) -> list[str]:
-    """組出覆誦片段（與 prebuild 快取片段對應）。
+def readback_text(lines: list[dict], total: int) -> str:
+    """覆誦整句（線上 TTS 用）：「中杯冰奶茶，總共 25 元，確認嗎？」"""
+    parts: list[str] = []
+    for line in lines:
+        desc = "".join(line["option_names"]) + line["name"]
+        if line["qty"] > 1:
+            desc += f" {line['qty']} 份"
+        parts.append(desc)
+    return "，".join(parts) + f"，總共 {total} 元，確認嗎？"
 
-    範例：「中杯 冰 奶茶」「2 份」「總共 50 元，確認嗎？」
+
+def readback_fragments(lines: list[dict], total: int) -> list[str]:
+    """細粒度覆誦片段（離線快取拼接用）。
+
+    片段刻意切到「單一選項詞／品項名／數量句／金額句」的粒度，
+    prebuild 腳本只要線性枚舉菜單詞彙與常見金額就能完整覆蓋，
+    不會發生選項組合爆炸。
     """
     fragments: list[str] = []
     for line in lines:
-        desc = "".join(line["option_names"]) + line["name"]
-        fragments.append(desc)
+        fragments.extend(line["option_names"])
+        fragments.append(line["name"])
         if line["qty"] > 1:
             fragments.append(f"{line['qty']} 份")
     fragments.append(f"總共 {total} 元，確認嗎？")

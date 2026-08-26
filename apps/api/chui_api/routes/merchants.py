@@ -10,7 +10,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from .. import config
-from ..auth import check_rate_limit, require_merchant
+from ..auth import check_rate_limit
 from ..crypto import generate_api_key, hash_api_key, sign_session, verify_session
 from ..db import get_db
 from ..errors import AuthError, ValidationFailedError

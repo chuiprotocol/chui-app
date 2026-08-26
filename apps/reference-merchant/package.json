@@ -1,0 +1,17 @@
+{
+  "name": "@chui/reference-merchant",
+  "private": true,
+  "version": "0.1.0",
+  "description": "快樂豬早餐店 LINE bot——Chui 參考店家實作，只透過 @chui/sdk 介接",
+  "type": "module",
+  "scripts": {
+    "start": "node src/server.js",
+    "lint": "node --check src/server.js && node --check src/store.js && node --check src/bot.js",
+    "test": "node --test test/"
+  },
+  "dependencies": {
+    "@chui/sdk": "workspace:*",
+    "@line/bot-sdk": "^9.0.0",
+    "express": "^4.19.0"
+  }
+}

@@ -102,13 +102,12 @@ async def synthesize(text: str) -> tuple[bytes, str]:
         raise TtsUnavailableError(f"ElevenLabs 與 edge-tts 都失敗：{exc}") from exc
 
 
-async def synthesize_readback(fragments: list[str]) -> tuple[bytes, str]:
+async def synthesize_readback(full_text: str, fragments: list[str]) -> tuple[bytes, str]:
     """覆誦合成：先試整句，全部線上路徑失敗時退回「快取片段拼接」。
 
-    fragments 是覆誦句的組成片段（品項描述、金額句），與 prebuild 腳本
-    產生的快取片段一一對應，斷網時仍能拼出完整覆誦。
+    fragments 是細粒度片段（選項詞、品項名、金額句），與 prebuild 腳本
+    產生的快取一一對應，斷網時仍能拼出完整覆誦。
     """
-    full_text = "，".join(fragments)
     try:
         return await synthesize(full_text)
     except TtsUnavailableError:
