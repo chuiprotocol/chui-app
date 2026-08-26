@@ -1,0 +1,763 @@
+{
+  "$comment": "快樂豬早餐店完整菜單。金額一律為整數新台幣（元），絕不使用浮點數。synonyms 收錄口語簡稱、台語講法與常見 STT 誤辨字。",
+  "menu_version": "2026-08-26",
+  "currency": "TWD",
+  "items": [
+    {
+      "id": "milk-tea",
+      "name": "奶茶",
+      "category": "飲料",
+      "synonyms": [
+        "奶查",
+        "拿茶",
+        "內茶",
+        "gu-ling-te",
+        "牛奶茶"
+      ],
+      "options": [
+        {
+          "id": "size",
+          "name": "大小",
+          "required": true,
+          "default": "M",
+          "choices": [
+            {
+              "id": "M",
+              "name": "中杯",
+              "synonyms": [
+                "中",
+                "中的",
+                "中杯的"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "L",
+              "name": "大杯",
+              "synonyms": [
+                "大",
+                "大的",
+                "大杯的"
+              ],
+              "price_delta": 10
+            }
+          ]
+        },
+        {
+          "id": "temp",
+          "name": "溫度",
+          "required": true,
+          "default": "ICE",
+          "choices": [
+            {
+              "id": "ICE",
+              "name": "冰",
+              "synonyms": [
+                "冰的",
+                "冰塊",
+                "去冰改冰"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "ICE_FREE",
+              "name": "去冰",
+              "synonyms": [
+                "去冰的",
+                "不要冰",
+                "免冰"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "WARM",
+              "name": "溫",
+              "synonyms": [
+                "溫的",
+                "微溫"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "HOT",
+              "name": "熱",
+              "synonyms": [
+                "熱的",
+                "燒的",
+                "sio--ê"
+              ],
+              "price_delta": 0
+            }
+          ]
+        },
+        {
+          "id": "sugar",
+          "name": "甜度",
+          "required": false,
+          "default": "FULL",
+          "choices": [
+            {
+              "id": "FULL",
+              "name": "正常糖",
+              "synonyms": [
+                "全糖",
+                "正常"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "HALF",
+              "name": "半糖",
+              "synonyms": [
+                "一半糖",
+                "半甜"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "LOW",
+              "name": "微糖",
+              "synonyms": [
+                "微甜",
+                "一點點糖"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "NONE",
+              "name": "無糖",
+              "synonyms": [
+                "不要糖",
+                "去糖"
+              ],
+              "price_delta": 0
+            }
+          ]
+        }
+      ],
+      "base_price": 25
+    },
+    {
+      "id": "black-tea",
+      "name": "紅茶",
+      "category": "飲料",
+      "synonyms": [
+        "紅查",
+        "洪茶",
+        "âng-tê",
+        "紅的"
+      ],
+      "options": [
+        {
+          "id": "size",
+          "name": "大小",
+          "required": true,
+          "default": "M",
+          "choices": [
+            {
+              "id": "M",
+              "name": "中杯",
+              "synonyms": [
+                "中",
+                "中的"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "L",
+              "name": "大杯",
+              "synonyms": [
+                "大",
+                "大的"
+              ],
+              "price_delta": 5
+            }
+          ]
+        },
+        {
+          "id": "temp",
+          "name": "溫度",
+          "required": true,
+          "default": "ICE",
+          "choices": [
+            {
+              "id": "ICE",
+              "name": "冰",
+              "synonyms": [
+                "冰的"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "ICE_FREE",
+              "name": "去冰",
+              "synonyms": [
+                "去冰的",
+                "不要冰",
+                "免冰"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "HOT",
+              "name": "熱",
+              "synonyms": [
+                "熱的",
+                "燒的"
+              ],
+              "price_delta": 0
+            }
+          ]
+        }
+      ],
+      "base_price": 15
+    },
+    {
+      "id": "soy-milk",
+      "name": "豆漿",
+      "category": "飲料",
+      "synonyms": [
+        "豆將",
+        "豆醬",
+        "tāu-ling",
+        "豆奶"
+      ],
+      "options": [
+        {
+          "id": "size",
+          "name": "大小",
+          "required": true,
+          "default": "M",
+          "choices": [
+            {
+              "id": "M",
+              "name": "中杯",
+              "synonyms": [
+                "中",
+                "中的"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "L",
+              "name": "大杯",
+              "synonyms": [
+                "大",
+                "大的"
+              ],
+              "price_delta": 5
+            }
+          ]
+        },
+        {
+          "id": "temp",
+          "name": "溫度",
+          "required": true,
+          "default": "ICE",
+          "choices": [
+            {
+              "id": "ICE",
+              "name": "冰",
+              "synonyms": [
+                "冰的"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "ICE_FREE",
+              "name": "去冰",
+              "synonyms": [
+                "去冰的",
+                "不要冰",
+                "免冰"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "HOT",
+              "name": "熱",
+              "synonyms": [
+                "熱的",
+                "燒的"
+              ],
+              "price_delta": 0
+            }
+          ]
+        },
+        {
+          "id": "sugar",
+          "name": "甜度",
+          "required": false,
+          "default": "FULL",
+          "choices": [
+            {
+              "id": "FULL",
+              "name": "正常糖",
+              "synonyms": [
+                "全糖"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "NONE",
+              "name": "無糖",
+              "synonyms": [
+                "不要糖",
+                "去糖"
+              ],
+              "price_delta": 0
+            }
+          ]
+        }
+      ],
+      "base_price": 20
+    },
+    {
+      "id": "egg-pancake",
+      "name": "蛋餅",
+      "category": "主食",
+      "synonyms": [
+        "但餅",
+        "蛋病",
+        "淡餅",
+        "nn̄g-piánn",
+        "原味蛋餅"
+      ],
+      "options": [
+        {
+          "id": "filling",
+          "name": "口味",
+          "required": true,
+          "default": "PLAIN",
+          "choices": [
+            {
+              "id": "PLAIN",
+              "name": "原味",
+              "synonyms": [
+                "普通的",
+                "一般的"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "CORN",
+              "name": "玉米",
+              "synonyms": [
+                "玉米的",
+                "番麥"
+              ],
+              "price_delta": 10
+            },
+            {
+              "id": "CHEESE",
+              "name": "起司",
+              "synonyms": [
+                "起士",
+                "吉士",
+                "chi-su"
+              ],
+              "price_delta": 10
+            },
+            {
+              "id": "BACON",
+              "name": "培根",
+              "synonyms": [
+                "培跟",
+                "貝根"
+              ],
+              "price_delta": 15
+            },
+            {
+              "id": "TUNA",
+              "name": "鮪魚",
+              "synonyms": [
+                "偉魚",
+                "為魚"
+              ],
+              "price_delta": 15
+            }
+          ]
+        },
+        {
+          "id": "sauce",
+          "name": "醬料",
+          "required": false,
+          "default": "SOY",
+          "choices": [
+            {
+              "id": "SOY",
+              "name": "醬油膏",
+              "synonyms": [
+                "醬油",
+                "正常醬"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "SPICY",
+              "name": "辣醬",
+              "synonyms": [
+                "加辣",
+                "要辣",
+                "辣的"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "NONE",
+              "name": "不加醬",
+              "synonyms": [
+                "不要醬",
+                "去醬"
+              ],
+              "price_delta": 0
+            }
+          ]
+        }
+      ],
+      "base_price": 30
+    },
+    {
+      "id": "toast-ham-egg",
+      "name": "火腿蛋吐司",
+      "category": "主食",
+      "synonyms": [
+        "火腿蛋土司",
+        "火腿但吐司",
+        "火腿蛋"
+      ],
+      "options": [
+        {
+          "id": "toasted",
+          "name": "烤法",
+          "required": false,
+          "default": "TOASTED",
+          "choices": [
+            {
+              "id": "TOASTED",
+              "name": "烤",
+              "synonyms": [
+                "要烤",
+                "烤的"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "PLAIN",
+              "name": "不烤",
+              "synonyms": [
+                "不要烤"
+              ],
+              "price_delta": 0
+            }
+          ]
+        },
+        {
+          "id": "cucumber",
+          "name": "小黃瓜",
+          "required": false,
+          "default": "YES",
+          "choices": [
+            {
+              "id": "YES",
+              "name": "加小黃瓜",
+              "synonyms": [
+                "正常"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "NO",
+              "name": "不加小黃瓜",
+              "synonyms": [
+                "不要小黃瓜",
+                "去小黃瓜"
+              ],
+              "price_delta": 0
+            }
+          ]
+        }
+      ],
+      "base_price": 35
+    },
+    {
+      "id": "toast-peanut",
+      "name": "花生吐司",
+      "category": "主食",
+      "synonyms": [
+        "花生土司",
+        "花身吐司",
+        "thô͘-tāu 吐司"
+      ],
+      "options": [],
+      "base_price": 25
+    },
+    {
+      "id": "hamburger-pork",
+      "name": "豬排堡",
+      "category": "主食",
+      "synonyms": [
+        "豬排飽",
+        "朱排堡",
+        "豬排漢堡",
+        "ti-pâi 堡"
+      ],
+      "options": [
+        {
+          "id": "egg",
+          "name": "加蛋",
+          "required": false,
+          "default": "NO",
+          "choices": [
+            {
+              "id": "NO",
+              "name": "不加蛋",
+              "synonyms": [],
+              "price_delta": 0
+            },
+            {
+              "id": "YES",
+              "name": "加蛋",
+              "synonyms": [
+                "要蛋",
+                "加顆蛋",
+                "加荷包蛋"
+              ],
+              "price_delta": 10
+            }
+          ]
+        },
+        {
+          "id": "cheese",
+          "name": "加起司",
+          "required": false,
+          "default": "NO",
+          "choices": [
+            {
+              "id": "NO",
+              "name": "不加起司",
+              "synonyms": [],
+              "price_delta": 0
+            },
+            {
+              "id": "YES",
+              "name": "加起司",
+              "synonyms": [
+                "要起司",
+                "加起士",
+                "加吉士"
+              ],
+              "price_delta": 10
+            }
+          ]
+        }
+      ],
+      "base_price": 50
+    },
+    {
+      "id": "hamburger-chicken",
+      "name": "卡拉雞腿堡",
+      "category": "主食",
+      "synonyms": [
+        "卡拉雞",
+        "咔啦雞腿堡",
+        "卡拉機腿堡",
+        "雞腿堡"
+      ],
+      "options": [
+        {
+          "id": "spicy",
+          "name": "辣度",
+          "required": false,
+          "default": "MILD",
+          "choices": [
+            {
+              "id": "MILD",
+              "name": "不辣",
+              "synonyms": [
+                "原味"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "SPICY",
+              "name": "辣",
+              "synonyms": [
+                "要辣",
+                "辣的"
+              ],
+              "price_delta": 0
+            }
+          ]
+        }
+      ],
+      "base_price": 55
+    },
+    {
+      "id": "radish-cake",
+      "name": "蘿蔔糕",
+      "category": "主食",
+      "synonyms": [
+        "羅波糕",
+        "蘿蔔高",
+        "菜頭粿",
+        "tshài-thâu-kué",
+        "菜頭貴"
+      ],
+      "options": [
+        {
+          "id": "egg",
+          "name": "加蛋",
+          "required": false,
+          "default": "NO",
+          "choices": [
+            {
+              "id": "NO",
+              "name": "不加蛋",
+              "synonyms": [],
+              "price_delta": 0
+            },
+            {
+              "id": "YES",
+              "name": "加蛋",
+              "synonyms": [
+                "要蛋",
+                "加顆蛋"
+              ],
+              "price_delta": 10
+            }
+          ]
+        },
+        {
+          "id": "sauce",
+          "name": "醬料",
+          "required": false,
+          "default": "SOY",
+          "choices": [
+            {
+              "id": "SOY",
+              "name": "醬油膏",
+              "synonyms": [
+                "正常醬"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "SPICY",
+              "name": "辣醬",
+              "synonyms": [
+                "加辣",
+                "要辣"
+              ],
+              "price_delta": 0
+            }
+          ]
+        }
+      ],
+      "base_price": 30
+    },
+    {
+      "id": "dumpling-fried",
+      "name": "鍋貼",
+      "category": "主食",
+      "synonyms": [
+        "郭貼",
+        "鍋鐵",
+        "煎餃"
+      ],
+      "options": [
+        {
+          "id": "count",
+          "name": "數量規格",
+          "required": true,
+          "default": "EIGHT",
+          "choices": [
+            {
+              "id": "EIGHT",
+              "name": "八顆",
+              "synonyms": [
+                "8顆",
+                "一份"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "TEN",
+              "name": "十顆",
+              "synonyms": [
+                "10顆",
+                "大份"
+              ],
+              "price_delta": 12
+            }
+          ]
+        }
+      ],
+      "base_price": 48
+    },
+    {
+      "id": "hash-brown",
+      "name": "薯餅",
+      "category": "點心",
+      "synonyms": [
+        "數餅",
+        "薯并",
+        "馬鈴薯餅"
+      ],
+      "options": [],
+      "base_price": 20
+    },
+    {
+      "id": "chicken-nuggets",
+      "name": "雞塊",
+      "category": "點心",
+      "synonyms": [
+        "機塊",
+        "雞愧",
+        "ke-tè"
+      ],
+      "options": [
+        {
+          "id": "count",
+          "name": "數量規格",
+          "required": true,
+          "default": "SIX",
+          "choices": [
+            {
+              "id": "SIX",
+              "name": "六塊",
+              "synonyms": [
+                "6塊",
+                "一份"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "TEN",
+              "name": "十塊",
+              "synonyms": [
+                "10塊",
+                "大份"
+              ],
+              "price_delta": 20
+            }
+          ]
+        }
+      ],
+      "base_price": 35
+    },
+    {
+      "id": "combo-a",
+      "name": "A餐",
+      "category": "套餐",
+      "synonyms": [
+        "A套餐",
+        "ㄟ餐",
+        "誒餐"
+      ],
+      "description": "火腿蛋吐司＋中杯紅茶",
+      "options": [],
+      "base_price": 45
+    }
+  ]
+}

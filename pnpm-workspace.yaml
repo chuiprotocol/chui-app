@@ -1,0 +1,5 @@
+packages:
+  - packages/*
+  - apps/console
+  - apps/reference-merchant
+  - apps/api/chain-service

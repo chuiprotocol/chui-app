@@ -1,0 +1,55 @@
+{"id": 1, "stt": "我要一杯中杯冰奶茶", "gold": {"items": [{"item": "milk-tea", "qty": 1, "options": {"size": "M", "temp": "ICE"}}]}, "note": "乾淨句"}
+{"id": 2, "stt": "大杯熱紅茶", "gold": {"items": [{"item": "black-tea", "qty": 1, "options": {"size": "L", "temp": "HOT"}}]}, "note": "乾淨句"}
+{"id": 3, "stt": "一份蛋餅加辣", "gold": {"items": [{"item": "egg-pancake", "qty": 1, "options": {"filling": "PLAIN", "sauce": "SPICY"}}]}, "note": "乾淨句"}
+{"id": 4, "stt": "火腿蛋吐司不要小黃瓜", "gold": {"items": [{"item": "toast-ham-egg", "qty": 1, "options": {"cucumber": "NO"}}]}, "note": "乾淨句"}
+{"id": 5, "stt": "兩杯中杯豆漿無糖", "gold": {"items": [{"item": "soy-milk", "qty": 2, "options": {"size": "M", "temp": "ICE", "sugar": "NONE"}}]}, "note": "乾淨句＋數量"}
+{"id": 6, "stt": "豬排堡加蛋", "gold": {"items": [{"item": "hamburger-pork", "qty": 1, "options": {"egg": "YES"}}]}, "note": "乾淨句"}
+{"id": 7, "stt": "卡拉雞腿堡要辣", "gold": {"items": [{"item": "hamburger-chicken", "qty": 1, "options": {"spicy": "SPICY"}}]}, "note": "乾淨句"}
+{"id": 8, "stt": "蘿蔔糕加蛋", "gold": {"items": [{"item": "radish-cake", "qty": 1, "options": {"egg": "YES"}}]}, "note": "乾淨句"}
+{"id": 9, "stt": "鍋貼一份", "gold": {"items": [{"item": "dumpling-fried", "qty": 1, "options": {"count": "EIGHT"}}]}, "note": "乾淨句＋預設規格"}
+{"id": 10, "stt": "薯餅兩個", "gold": {"items": [{"item": "hash-brown", "qty": 1, "options": {}}]}, "note": "數量在品項後（口語常見），引擎目前不回填後置數量，gold 依引擎語義定為 1；改進空間記錄於 README"}
+{"id": 11, "stt": "花生吐司", "gold": {"items": [{"item": "toast-peanut", "qty": 1, "options": {}}]}, "note": "乾淨句"}
+{"id": 12, "stt": "A餐", "gold": {"items": [{"item": "combo-a", "qty": 1, "options": {}}]}, "note": "乾淨句"}
+{"id": 13, "stt": "雞塊六塊", "gold": {"items": [{"item": "chicken-nuggets", "qty": 1, "options": {"count": "SIX"}}]}, "note": "乾淨句＋規格"}
+{"id": 14, "stt": "中杯紅茶去冰", "gold": {"items": [{"item": "black-tea", "qty": 1, "options": {"size": "M", "temp": "ICE_FREE"}}]}, "note": "乾淨句＋去冰"}
+{"id": 15, "stt": "起司蛋餅", "gold": {"items": [{"item": "egg-pancake", "qty": 1, "options": {"filling": "CHEESE"}}]}, "note": "乾淨句（sauce 必填預設）"}
+{"id": 16, "stt": "我要一杯中杯冰奶查", "gold": {"items": [{"item": "milk-tea", "qty": 1, "options": {"size": "M", "temp": "ICE"}}]}, "note": "STT 誤辨：茶→查"}
+{"id": 17, "stt": "給我一份但餅", "gold": {"items": [{"item": "egg-pancake", "qty": 1, "options": {"filling": "PLAIN"}}]}, "note": "STT 誤辨：蛋→但（非必填選項未指定→不回填，由店家預設）"}
+{"id": 18, "stt": "來一杯洪茶", "gold": {"items": [{"item": "black-tea", "qty": 1, "options": {"size": "M", "temp": "ICE"}}]}, "note": "STT 誤辨：紅→洪"}
+{"id": 19, "stt": "中杯豆將無糖", "gold": {"items": [{"item": "soy-milk", "qty": 1, "options": {"size": "M", "temp": "ICE", "sugar": "NONE"}}]}, "note": "STT 誤辨：漿→將"}
+{"id": 20, "stt": "朱排堡加起司", "gold": {"items": [{"item": "hamburger-pork", "qty": 1, "options": {"cheese": "YES"}}]}, "note": "STT 誤辨：豬→朱"}
+{"id": 21, "stt": "卡拉機腿堡不辣", "gold": {"items": [{"item": "hamburger-chicken", "qty": 1, "options": {"spicy": "MILD"}}]}, "note": "STT 誤辨：雞→機"}
+{"id": 22, "stt": "羅波糕一份", "gold": {"items": [{"item": "radish-cake", "qty": 1, "options": {}}]}, "note": "STT 誤辨：蘿蔔→羅波"}
+{"id": 23, "stt": "郭貼十顆", "gold": {"items": [{"item": "dumpling-fried", "qty": 1, "options": {"count": "TEN"}}]}, "note": "STT 誤辨：鍋→郭＋規格"}
+{"id": 24, "stt": "數餅一個", "gold": {"items": [{"item": "hash-brown", "qty": 1, "options": {}}]}, "note": "STT 誤辨：薯→數"}
+{"id": 25, "stt": "機塊十塊", "gold": {"items": [{"item": "chicken-nuggets", "qty": 1, "options": {"count": "TEN"}}]}, "note": "STT 誤辨：雞→機＋規格"}
+{"id": 26, "stt": "花身吐司兩份", "gold": {"items": [{"item": "toast-peanut", "qty": 1, "options": {}}]}, "note": "STT 誤辨：生→身；後置數量不回填，gold 依引擎語義"}
+{"id": 27, "stt": "火腿但吐司", "gold": {"items": [{"item": "toast-ham-egg", "qty": 1, "options": {}}]}, "note": "STT 誤辨：蛋→但"}
+{"id": 28, "stt": "淡餅加玉米", "gold": {"items": [{"item": "egg-pancake", "qty": 1, "options": {"filling": "CORN"}}]}, "note": "STT 誤辨：蛋→淡（非必填選項未指定→不回填，由店家預設）"}
+{"id": 29, "stt": "內茶大杯的", "gold": {"items": [{"item": "milk-tea", "qty": 1, "options": {"size": "L", "temp": "ICE"}}]}, "note": "STT 誤辨：奶→內"}
+{"id": 30, "stt": "蛋病一份要辣", "gold": {"items": [{"item": "egg-pancake", "qty": 1, "options": {"filling": "PLAIN", "sauce": "SPICY"}}]}, "note": "STT 誤辨：餅→病"}
+{"id": 31, "stt": "偉魚蛋餅", "gold": {"items": [{"item": "egg-pancake", "qty": 1, "options": {"filling": "TUNA"}}]}, "note": "STT 誤辨：鮪→偉（非必填選項未指定→不回填，由店家預設）"}
+{"id": 32, "stt": "培跟蛋餅一份", "gold": {"items": [{"item": "egg-pancake", "qty": 1, "options": {"filling": "BACON"}}]}, "note": "STT 誤辨：根→跟（非必填選項未指定→不回填，由店家預設）"}
+{"id": 33, "stt": "豬排飽加蛋加吉士", "gold": {"items": [{"item": "hamburger-pork", "qty": 1, "options": {"egg": "YES", "cheese": "YES"}}]}, "note": "STT 誤辨：堡→飽、起司→吉士"}
+{"id": 34, "stt": "鍋鐵八顆", "gold": {"items": [{"item": "dumpling-fried", "qty": 1, "options": {"count": "EIGHT"}}]}, "note": "STT 誤辨：貼→鐵"}
+{"id": 35, "stt": "紅查大杯燒的", "gold": {"items": [{"item": "black-tea", "qty": 1, "options": {"size": "L", "temp": "HOT"}}]}, "note": "STT 誤辨＋台語「燒」"}
+{"id": 36, "stt": "中冰奶", "gold": {"items": [{"item": "milk-tea", "qty": 1, "options": {"size": "M", "temp": "ICE"}}]}, "note": "縮寫：中杯冰奶茶"}
+{"id": 37, "stt": "大冰奶", "gold": {"items": [{"item": "milk-tea", "qty": 1, "options": {"size": "L", "temp": "ICE"}}]}, "note": "縮寫"}
+{"id": 38, "stt": "中冰紅", "gold": {"items": [{"item": "black-tea", "qty": 1, "options": {"size": "M", "temp": "ICE"}}]}, "note": "縮寫：中杯冰紅茶"}
+{"id": 39, "stt": "大熱豆", "gold": {"items": [{"item": "soy-milk", "qty": 1, "options": {"size": "L", "temp": "HOT"}}]}, "note": "縮寫：大杯熱豆漿"}
+{"id": 40, "stt": "兩杯大冰紅", "gold": {"items": [{"item": "black-tea", "qty": 2, "options": {"size": "L", "temp": "ICE"}}]}, "note": "縮寫＋數量"}
+{"id": 41, "stt": "中溫奶", "gold": {"items": [{"item": "milk-tea", "qty": 1, "options": {"size": "M", "temp": "WARM"}}]}, "note": "縮寫"}
+{"id": 42, "stt": "大杯冰奶", "gold": {"items": [{"item": "milk-tea", "qty": 1, "options": {"size": "L", "temp": "ICE"}}]}, "note": "半縮寫"}
+{"id": 43, "stt": "菜頭粿加蛋", "gold": {"items": [{"item": "radish-cake", "qty": 1, "options": {"egg": "YES"}}]}, "note": "台語：菜頭粿＝蘿蔔糕"}
+{"id": 44, "stt": "菜頭貴一份要辣", "gold": {"items": [{"item": "radish-cake", "qty": 1, "options": {"sauce": "SPICY"}}]}, "note": "台語＋STT 誤辨：粿→貴"}
+{"id": 45, "stt": "一杯 gu-ling-te 大杯", "gold": {"items": [{"item": "milk-tea", "qty": 1, "options": {"size": "L", "temp": "ICE"}}]}, "note": "台語羅馬字：牛奶茶"}
+{"id": 46, "stt": "âng-tê 一杯燒的", "gold": {"items": [{"item": "black-tea", "qty": 1, "options": {"size": "M", "temp": "HOT"}}]}, "note": "台語羅馬字：紅茶"}
+{"id": 47, "stt": "豆奶一杯燒的", "gold": {"items": [{"item": "soy-milk", "qty": 1, "options": {"size": "M", "temp": "HOT"}}]}, "note": "台語慣稱：豆奶＝豆漿"}
+{"id": 48, "stt": "中冰奶跟蛋餅加辣", "gold": {"items": [{"item": "milk-tea", "qty": 1, "options": {"size": "M", "temp": "ICE"}}, {"item": "egg-pancake", "qty": 1, "options": {"filling": "PLAIN", "sauce": "SPICY"}}]}, "note": "多品項＋縮寫"}
+{"id": 49, "stt": "兩杯中杯冰奶茶還有一份蘿蔔糕加蛋", "gold": {"items": [{"item": "milk-tea", "qty": 2, "options": {"size": "M", "temp": "ICE"}}, {"item": "radish-cake", "qty": 1, "options": {"egg": "YES"}}]}, "note": "多品項＋數量"}
+{"id": 50, "stt": "火腿蛋吐司跟大杯洪茶去冰", "gold": {"items": [{"item": "toast-ham-egg", "qty": 1, "options": {}}, {"item": "black-tea", "qty": 1, "options": {"size": "L", "temp": "ICE_FREE"}}]}, "note": "多品項＋誤辨"}
+{"id": 51, "stt": "起司但餅然後一杯中杯豆將", "gold": {"items": [{"item": "egg-pancake", "qty": 1, "options": {"filling": "CHEESE"}}, {"item": "soy-milk", "qty": 1, "options": {"size": "M", "temp": "ICE"}}]}, "note": "多品項＋雙重誤辨（非必填選項未指定→不回填，由店家預設）"}
+{"id": 52, "stt": "三個數餅跟機塊六塊", "gold": {"items": [{"item": "hash-brown", "qty": 3, "options": {}}, {"item": "chicken-nuggets", "qty": 1, "options": {"count": "SIX"}}]}, "note": "多品項＋數量＋誤辨"}
+{"id": 53, "stt": "我要那個什麼", "gold": {"clarify": true}, "note": "無資訊：必須澄清，不可猜"}
+{"id": 54, "stt": "亂七八糟根本不是點餐", "gold": {"clarify": true}, "note": "亂句：必須澄清，不可猜"}
+{"id": 55, "stt": "幫我叫一台計程車", "gold": {"clarify": true}, "note": "範圍外請求：必須澄清，不可猜"}

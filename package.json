@@ -1,0 +1,12 @@
+{
+  "name": "chui-app",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Chui Protocol（嘴付協議）應用層：API、SDK、後台與參考店家",
+  "scripts": {
+    "build": "pnpm -r build",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test"
+  },
+  "packageManager": "pnpm@10.33.0"
+}
