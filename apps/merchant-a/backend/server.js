@@ -36,7 +36,23 @@ app.use(express.json());
 
 // demo 範圍：單據存記憶體
 const tickets = new Map();
-let ticketSeq = 0;
+
+// 取餐單號：日期前綴＋落地持久化流水號（例 FC-0903-0001）。
+// 流水號寫進檔案，重啟不歸零；跨日由日期前綴保證唯一——永不重複。
+const SEQ_PATH = process.env.TICKET_SEQ_PATH || path.join(__dirname, '.ticket-seq.json');
+
+function nextTicketNo(prefix) {
+  const now = new Date();
+  const today = `${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+  let state = { date: today, seq: 0 };
+  try {
+    const stored = JSON.parse(fs.readFileSync(SEQ_PATH, 'utf8'));
+    if (stored.date === today && Number.isInteger(stored.seq)) state = stored;
+  } catch { /* 首次使用或檔案損毀：從 0 起算（日期前綴仍保證跨日唯一） */ }
+  state.seq += 1;
+  fs.writeFileSync(SEQ_PATH, JSON.stringify(state));
+  return `${prefix}-${today}-${String(state.seq).padStart(4, '0')}`;
+}
 
 // ---- legacy API（這家店自己的格式，不是協議）----
 
@@ -61,8 +77,12 @@ app.post('/api/legacy/tickets', (req, res) => {
     }
     totalCents += unit * (it.qty ?? 1);
   }
-  ticketSeq += 1;
-  const ticketNo = `FC${String(ticketSeq).padStart(4, '0')}`;
+  let ticketNo;
+  try {
+    ticketNo = nextTicketNo('FC');
+  } catch (err) {
+    return res.status(500).json({ err: `TICKET_SEQ_FAILED:${err.message}` });
+  }
   tickets.set(ticketNo, { ticket_no: ticketNo, items, memo: memo ?? '', total_cents: totalCents, paid: false });
   console.log(`🍗 [自家系統] 開單 ${ticketNo}，合計 ${totalCents} cents`);
   res.json({ ok: true, ticket_no: ticketNo, total_cents: totalCents });

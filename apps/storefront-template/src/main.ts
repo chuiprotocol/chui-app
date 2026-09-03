@@ -5,7 +5,7 @@
  * 全程沒有任何確認鍵；訂單流程全走嘴付協議（Chui Hub）。
  */
 
-import { HubClient, wireZeroTap } from "@chui/web";
+import { HubClient, wireVoiceLoop } from "@chui/web";
 
 interface AppConfig {
   merchant_id: string;
@@ -31,7 +31,7 @@ async function boot() {
     `<div class="menu-item"><b>${item.name}</b><span class="price">${item.base_price} 元起</span></div>`,
   ).join("");
 
-  await wireZeroTap({
+  await wireVoiceLoop({
     hub: new HubClient(config.hub_url),
     merchantId: config.merchant_id,
   });

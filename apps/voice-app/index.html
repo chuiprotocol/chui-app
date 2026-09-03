@@ -10,43 +10,50 @@
   <div class="wrap">
     <header>
       <h1>👄 嘴付</h1>
-      <p class="tagline">一段語音，哪家都能點——說了就算，付了就走</p>
+      <p class="tagline">說了就算，付了就走</p>
+      <span id="quota-chip" class="chip"></span>
     </header>
+
+    <div id="msg"></div>
+
+    <!-- 🅐 首次：唯一一次動手——授權 -->
+    <section id="authorize-screen" class="hidden">
+      <div class="card center">
+        <div class="bigicon">🏦</div>
+        <h2>授權 <span class="accent">3 USDC</span> 給你的點餐 Agent</h2>
+        <p class="bullet">💰 錢進<b>你自己的鏈上 Vault</b>，不是給我們</p>
+        <p class="bullet">🎫 Agent 只拿到「額度內代付」的權限</p>
+        <p class="bullet">🛑 隨時可撤銷、剩餘金額隨時領回</p>
+        <div id="agent-status"></div>
+        <form id="topup-form">
+          <input id="topup-usdc" type="number" value="3" min="1" step="1" />
+          <button type="submit" class="primary wide">用 Slush 錢包授權（只需這一次）</button>
+        </form>
+        <p class="fineprint">Sui Testnet 測試幣・授權後點餐全程零按鍵</p>
+      </div>
+    </section>
+
+    <!-- 🅑 回訪：純語音，零按鍵 -->
+    <section id="voice-screen" class="hidden">
+      <div class="micwrap">
+        <div id="mic-circle" class="mic">🎙️</div>
+        <div id="listen-status" class="listening">準備中⋯</div>
+        <p class="hint">不用選店家——說出品項，協議會自動找到對的店</p>
+      </div>
+      <div id="transcript" class="transcript"></div>
+      <details class="fallback">
+        <summary>打字備援（麥克風不可用時）</summary>
+        <form id="text-form">
+          <input id="text-input" placeholder="例：我要一份鹽酥雞加辣" autocomplete="off" />
+          <button type="submit" class="primary">送出（即下單付款）</button>
+        </form>
+      </details>
+      <p class="fineprint"><a href="#" id="revoke-link">撤銷授權</a>（Slush 簽一筆，立即生效）</p>
+    </section>
 
     <section class="card">
       <h2>接上協議的商家</h2>
       <div id="merchants" class="merchant-list">載入中…</div>
-    </section>
-
-    <div id="msg"></div>
-
-    <section class="card" id="agent-card">
-      <h2>🤖 Chui Agent（一次授權，之後零按鍵）</h2>
-      <div id="agent-status">查詢中…</div>
-      <form id="topup-form">
-        <input id="topup-usdc" type="number" value="5" min="1" step="1" />
-        <button type="submit" class="primary">用 Slush 授權撥款</button>
-      </form>
-    </section>
-
-    <section class="card center">
-      <button id="talk-btn" class="talk">🎙️<br />點一下說話</button>
-      <p class="hint">不用選店家、說完不用按任何鍵——協議自動路由、Chui Agent 自動付款</p>
-      <form id="text-form">
-        <input id="text-input" placeholder="例：我要一份鹽酥雞加辣" autocomplete="off" />
-        <button type="submit" class="primary">用打字的</button>
-      </form>
-    </section>
-
-    <section class="card hidden" id="quote-card">
-      <div class="routed">📍 <span id="routed-merchant"></span></div>
-      <p id="readback" class="readback"></p>
-      <div id="quote-lines"></div>
-    </section>
-
-    <section class="card hidden" id="receipt-card">
-      <h2>付款完成 🎉</h2>
-      <div id="receipt"></div>
     </section>
 
     <footer>嘴付協議 demo · Sui Testnet（測試幣，非真實資金）</footer>

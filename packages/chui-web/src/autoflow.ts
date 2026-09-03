@@ -22,6 +22,8 @@ export interface AutoOrderCallbacks {
     parsed: ParseResponse;
     merchantRef: string;
     txDigest: string;
+    /** 實付金額（USDC 最小單位） */
+    amountUnits: number;
     settlement: SettlementResponse;
   }) => void;
   onError?: (error: Error) => void;
@@ -55,7 +57,13 @@ export async function runAutoOrder(
     callbacks.onProgress?.("交易已上鏈，等待驗證…");
     const settlement = await hub.reportSettlement(parsed.order_id, txDigest);
 
-    callbacks.onSettled?.({ parsed, merchantRef: confirmed.merchant_ref, txDigest, settlement });
+    callbacks.onSettled?.({
+      parsed,
+      merchantRef: confirmed.merchant_ref,
+      txDigest,
+      amountUnits: confirmed.checkout.amount_units,
+      settlement,
+    });
     return true;
   } catch (err) {
     if (err instanceof ClarificationNeeded) {

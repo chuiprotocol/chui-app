@@ -1,14 +1,12 @@
-/** Chui Agent session 錢包——x402 同款「代理自動付款」模式。
+/** Chui Agent——x402「預授權代付」模式的 Sui 自製實作（vault + cap 版）。
  *
- * 使用者只做一次授權：用 Slush 簽一筆交易，把小額 USDC＋一點 SUI（gas）
- * 撥給頁面裡的 session key。之後每筆訂單由這把 key 自動簽名執行
- * `chui::pay::settle`，使用者不再看到任何確認畫面——花完為止，
- * 損失上限就是撥入的金額。
- *
- * 誠實聲明：Coinbase x402 協議本身不支援 Sui；這裡實作的是同款
- * UX 模式（預授權 spending key，代理自動付款），非 x402 協議本體。
- * session key 存在使用者自己瀏覽器的 IndexedDB，是一把熱錢包——
- * 只放測試幣、只放小額。
+ * 與熱錢包模式的關鍵差異：**agent 不持有本金**。
+ * 用戶唯一一次用 Slush 簽 `chui::vault::create_and_authorize`：
+ *   - USDC 存進「用戶自己的」Vault（shared object，只有 owner 能 withdraw/revoke）
+ *   - AgentCap（純權限物件）交給本頁面的 agent key
+ *   - 順帶撥 0.05 SUI 給 agent 當 gas
+ * 之後每筆訂單 agent 自動簽 `agent_settle`——合約強制單筆上限與餘額檢查，
+ * 錢從 Vault 直接到商家。agent key 被偷最多只能在額度內「幫你買東西」。
  */
 
 import { SuiGrpcClient } from "@mysten/sui/grpc";
@@ -18,14 +16,41 @@ import { Transaction, coinWithBalance } from "@mysten/sui/transactions";
 import type { CheckoutParams } from "./hub.js";
 import { idbGet, idbSet, idbDelete } from "./idb.js";
 
-const KEY_STORAGE = "chui-agent.session-key";
-const SUI_DECIMALS = 1_000_000_000n;
+const KEY_STORAGE = "chui-agent.key";
+const BINDING_STORAGE = "chui-agent.binding"; // { vaultId, capId, packageId }
+const TOPUP_GAS_MIST = 50_000_000n; // 授權時附 0.05 SUI 給 agent 當 gas
+const MIN_GAS_MIST = 10_000_000n;   // 低於 0.01 SUI 視為 gas 不足
 
-export interface SessionBalances {
-  /** USDC 最小單位（6 位小數） */
-  usdcUnits: bigint;
-  /** SUI MIST */
-  suiMist: bigint;
+export interface AgentBinding {
+  vaultId: string;
+  capId: string;
+  packageId: string;
+}
+
+export interface AgentStatus {
+  authorized: boolean;
+  /** Vault 剩餘可用額度（USDC 最小單位） */
+  remainingUnits: bigint;
+  /** 單筆上限（USDC 最小單位） */
+  perTxUnits: bigint;
+  /** 累計已消費 */
+  spentUnits: bigint;
+  /** cap 是否仍有效（未被撤銷） */
+  capActive: boolean;
+  /** agent 的 gas 餘額（MIST） */
+  gasMist: bigint;
+}
+
+function wrapChainError(e: unknown, network: string): Error {
+  return new Error(
+    `無法連線 Sui ${network} fullnode（${(e as Error).message}）——請確認這台裝置的網路可以連到 Sui Testnet`,
+  );
+}
+
+function hexToBytes(hex: string): Uint8Array {
+  const out = new Uint8Array(hex.length / 2);
+  for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  return out;
 }
 
 export class ChuiAgentSession {
@@ -33,13 +58,18 @@ export class ChuiAgentSession {
     public readonly keypair: Ed25519Keypair,
     private readonly client: SuiGrpcClient,
     private readonly network: string,
+    private binding: AgentBinding | null,
   ) {}
 
   get address(): string {
     return this.keypair.getPublicKey().toSuiAddress();
   }
 
-  /** 載入（或建立）本瀏覽器的 session key。 */
+  get currentBinding(): AgentBinding | null {
+    return this.binding;
+  }
+
+  /** 載入（或建立）本瀏覽器的 agent key 與 vault 綁定。 */
   static async load(network = "testnet", fullnodeUrl?: string): Promise<ChuiAgentSession> {
     const client = new SuiGrpcClient({
       network: network as "testnet",
@@ -53,93 +83,189 @@ export class ChuiAgentSession {
       keypair = new Ed25519Keypair();
       await idbSet(KEY_STORAGE, keypair.getSecretKey());
     }
-    return new ChuiAgentSession(keypair, client, network);
+    const binding = (await idbGet<AgentBinding>(BINDING_STORAGE)) ?? null;
+    return new ChuiAgentSession(keypair, client, network, binding);
   }
 
-  /** 清除 session key（登出／重置）。餘額還在鏈上該地址，清除前請先領回。 */
   static async reset(): Promise<void> {
     await idbDelete(KEY_STORAGE);
-  }
-
-  /** 查 session 錢包餘額（USDC＋gas）。 */
-  async balances(usdcCoinType: string): Promise<SessionBalances> {
-    try {
-      const [usdc, sui] = await Promise.all([
-        this.client.getBalance({ owner: this.address, coinType: usdcCoinType }),
-        this.client.getBalance({ owner: this.address, coinType: "0x2::sui::SUI" }),
-      ]);
-      return {
-        usdcUnits: BigInt(usdc.balance?.balance ?? 0),
-        suiMist: BigInt(sui.balance?.balance ?? 0),
-      };
-    } catch (e) {
-      throw new Error(
-        `無法連線 Sui ${this.network} fullnode（${(e as Error).message}）——請確認這台裝置的網路可以連到 Sui Testnet`,
-      );
-    }
+    await idbDelete(BINDING_STORAGE);
   }
 
   /**
-   * 建立「一次性授權」交易（由使用者的 Slush 簽名）：
-   * 把 usdcUnits 的 USDC 與 suiMist 的 SUI 撥給 session 地址。
-   * 這是整個體驗中唯一一次錢包確認。
+   * 建立「唯一一次」授權交易（交給用戶的 Slush 簽）：
+   * 存 usdcUnits 進新 Vault、設單筆上限、發 cap 給 agent、撥 gas 給 agent。
    */
-  buildTopUpTransaction(usdcCoinType: string, usdcUnits: bigint, suiMist: bigint): Transaction {
+  buildAuthorizeTransaction(
+    packageId: string,
+    moduleName: string,
+    usdcCoinType: string,
+    usdcUnits: bigint,
+    perTxUnits: bigint,
+  ): Transaction {
+    if (!packageId) throw new Error("缺少 package_id（合約尚未部署？）");
     const tx = new Transaction();
-    const usdcCoin = coinWithBalance({ type: usdcCoinType, balance: usdcUnits });
-    const [gasCoin] = tx.splitCoins(tx.gas, [suiMist]);
-    tx.transferObjects([usdcCoin, gasCoin], this.address);
+    const [gasCoin] = tx.splitCoins(tx.gas, [TOPUP_GAS_MIST]);
+    tx.transferObjects([gasCoin], this.address);
+    tx.moveCall({
+      target: `${packageId}::${moduleName}::create_and_authorize`,
+      typeArguments: [usdcCoinType],
+      arguments: [
+        coinWithBalance({ type: usdcCoinType, balance: usdcUnits }),
+        tx.pure.u64(perTxUnits),
+        tx.pure.address(this.address),
+      ],
+    });
     return tx;
   }
 
   /**
-   * 自動結帳：session key 直接簽名執行 settle，不經任何使用者確認。
-   * 回傳鏈上交易 digest。餘額不足時擲出明確錯誤（不會偷偷失敗）。
+   * 授權交易上鏈後，從 VaultCreated 事件取出 vault_id / cap_id 並落地綁定。
+   * 事件讀不到時退回「掃 agent 名下的 AgentCap 物件」。
    */
-  async payAuto(checkout: CheckoutParams): Promise<string> {
-    if (!checkout.package_id) {
-      throw new Error("結帳參數缺少 package_id（合約尚未部署？）");
+  async completeAuthorize(txDigest: string, packageId: string, moduleName: string): Promise<AgentBinding> {
+    try {
+      await this.client.waitForTransaction({ digest: txDigest });
+    } catch (e) {
+      throw wrapChainError(e, this.network);
     }
-    const { usdcUnits, suiMist } = await this.balances(checkout.coin_type);
-    if (usdcUnits < BigInt(checkout.amount_units)) {
+    let vaultId = "";
+    let capId = "";
+    // 主路徑：交易事件
+    try {
+      const result = await this.client.getTransaction({
+        digest: txDigest,
+        include: { events: true },
+      });
+      const txData = result.Transaction ?? result.FailedTransaction;
+      for (const event of txData?.events ?? []) {
+        if (event.eventType === `${packageId}::${moduleName}::VaultCreated` && event.json) {
+          vaultId = String(event.json.vault_id ?? "");
+          capId = String(event.json.cap_id ?? "");
+        }
+      }
+    } catch { /* 走備援 */ }
+    // 備援：掃 agent 名下的 AgentCap
+    if (!vaultId || !capId) {
+      const owned = await this.client.listOwnedObjects({
+        owner: this.address,
+        type: `${packageId}::${moduleName}::AgentCap`,
+        include: { json: true },
+      }).catch((e) => { throw wrapChainError(e, this.network); });
+      const cap = owned.objects[owned.objects.length - 1];
+      if (!cap) throw new Error("授權交易完成，但找不到 AgentCap——請把交易 digest 回報給我們檢查");
+      capId = cap.objectId;
+      vaultId = String((cap.json as Record<string, unknown> | null)?.vault_id ?? "");
+      if (!vaultId) throw new Error("AgentCap 缺少 vault_id 欄位——合約版本不符？");
+    }
+    const binding: AgentBinding = { vaultId, capId, packageId };
+    this.binding = binding;
+    await idbSet(BINDING_STORAGE, binding);
+    return binding;
+  }
+
+  /** 查授權狀態：Vault 額度、cap 是否有效、agent gas。 */
+  async status(): Promise<AgentStatus> {
+    const none: AgentStatus = {
+      authorized: false, remainingUnits: 0n, perTxUnits: 0n,
+      spentUnits: 0n, capActive: false, gasMist: 0n,
+    };
+    if (!this.binding) return none;
+    try {
+      const [vaultResp, capResp, gas] = await Promise.all([
+        this.client.getObject({ objectId: this.binding.vaultId, include: { json: true } }),
+        this.client.getObject({ objectId: this.binding.capId, include: { json: true } }),
+        this.client.getBalance({ owner: this.address, coinType: "0x2::sui::SUI" }),
+      ]);
+      const vault = (vaultResp.object.json ?? {}) as Record<string, unknown>;
+      const cap = (capResp.object.json ?? {}) as Record<string, unknown>;
+      // Balance 欄位在 json 表示裡通常是字串數值；funds 可能是 {value} 或純數值
+      const funds = vault.funds as Record<string, unknown> | string | number | undefined;
+      const remaining = BigInt(String(
+        (typeof funds === "object" && funds !== null ? (funds.value ?? 0) : funds) ?? 0,
+      ));
+      return {
+        authorized: true,
+        remainingUnits: remaining,
+        perTxUnits: BigInt(String(vault.per_tx_limit ?? 0)),
+        spentUnits: BigInt(String(vault.spent ?? 0)),
+        capActive: String(vault.cap_version ?? "") === String(cap.version ?? "-"),
+        gasMist: BigInt(gas.balance?.balance ?? 0),
+      };
+    } catch (e) {
+      throw wrapChainError(e, this.network);
+    }
+  }
+
+  /** 自動結算：agent 簽 agent_settle，合約守限額，錢從 Vault 直達商家。 */
+  async payAuto(checkout: CheckoutParams): Promise<string> {
+    if (!checkout.package_id) throw new Error("結帳參數缺少 package_id（合約尚未部署？）");
+    if (!this.binding) throw new Error("尚未授權：請先完成一次性授權（放錢進你的 Vault）");
+
+    const status = await this.status();
+    if (!status.capActive) {
+      throw new Error("授權已被撤銷——如要繼續使用請重新授權");
+    }
+    if (status.remainingUnits < BigInt(checkout.amount_units)) {
       throw new Error(
-        `Chui Agent 餘額不足：需 ${checkout.amount_units} USDC 單位、只有 ${usdcUnits}。請再授權一次撥款。`,
+        `額度不足：這筆需要 ${(checkout.amount_units / 1_000_000).toFixed(2)} USDC、` +
+        `Vault 只剩 ${(Number(status.remainingUnits) / 1_000_000).toFixed(2)} USDC——請再授權加值`,
       );
     }
-    if (suiMist < SUI_DECIMALS / 100n) { // 0.01 SUI 以下視為 gas 不足
-      throw new Error("Chui Agent 的 gas（SUI）不足，請再授權一次撥款。");
+    if (status.gasMist < MIN_GAS_MIST) {
+      throw new Error("Agent 的 gas（SUI）不足——請重新授權以補充 gas");
     }
 
-    const digestBytes = hexToBytes(checkout.order_digest_hex);
     const tx = new Transaction();
     tx.setSender(this.address);
     tx.moveCall({
       target: `${checkout.package_id}::${checkout.module}::${checkout.function}`,
       typeArguments: [checkout.coin_type],
       arguments: [
-        coinWithBalance({ type: checkout.coin_type, balance: BigInt(checkout.amount_units) }),
+        tx.object(this.binding.vaultId),
+        tx.object(this.binding.capId),
+        tx.pure.u64(BigInt(checkout.amount_units)),
         tx.pure.address(checkout.merchant_address),
-        tx.pure.vector("u8", Array.from(digestBytes)),
+        tx.pure.vector("u8", Array.from(hexToBytes(checkout.order_digest_hex))),
       ],
     });
-    // v2 gRPC 回傳 tagged union：成功在 Transaction、上鏈失敗在 FailedTransaction
-    const result = await this.client.signAndExecuteTransaction({
-      transaction: tx,
-      signer: this.keypair,
-    });
+    let result;
+    try {
+      result = await this.client.signAndExecuteTransaction({ transaction: tx, signer: this.keypair });
+    } catch (e) {
+      throw wrapChainError(e, this.network);
+    }
     if (result.$kind === "FailedTransaction") {
-      throw new Error(
-        `結算交易上鏈失敗（digest ${result.FailedTransaction.digest}），請檢查 explorer`,
-      );
+      throw new Error(`結算交易上鏈失敗（digest ${result.FailedTransaction.digest}）——請查 explorer 的 abort 原因`);
     }
     const digest = result.Transaction.digest;
-    await this.client.waitForTransaction({ digest });
+    try {
+      await this.client.waitForTransaction({ digest });
+    } catch { /* 已有 digest，驗證交給 Hub */ }
     return digest;
   }
-}
 
-function hexToBytes(hex: string): Uint8Array {
-  const out = new Uint8Array(hex.length / 2);
-  for (let i = 0; i < out.length; i++) out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
-  return out;
+  /** 撤銷授權交易（由用戶的 Slush 簽）：所有 cap 立即失效。 */
+  buildRevokeTransaction(moduleName: string, usdcCoinType: string): Transaction {
+    if (!this.binding) throw new Error("尚未授權，無可撤銷");
+    const tx = new Transaction();
+    tx.moveCall({
+      target: `${this.binding.packageId}::${moduleName}::revoke_caps`,
+      typeArguments: [usdcCoinType],
+      arguments: [tx.object(this.binding.vaultId)],
+    });
+    return tx;
+  }
+
+  /** 領回剩餘資金交易（由用戶的 Slush 簽）。 */
+  buildWithdrawTransaction(moduleName: string, usdcCoinType: string): Transaction {
+    if (!this.binding) throw new Error("尚未授權，無可領回");
+    const tx = new Transaction();
+    tx.moveCall({
+      target: `${this.binding.packageId}::${moduleName}::withdraw`,
+      typeArguments: [usdcCoinType],
+      arguments: [tx.object(this.binding.vaultId)],
+    });
+    return tx;
+  }
 }

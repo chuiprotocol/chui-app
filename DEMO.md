@@ -85,10 +85,12 @@ cloudflared tunnel --url http://localhost:9300   # 語音入口
 ### 場景零：一次性授權（每支手機一次，~20 秒）
 
 1. 手機開 Slush 內建瀏覽器 → 進任一商家官網或語音入口。
-2. 「🤖 Chui Agent」卡片 → 輸入額度（預設 5 USDC）→
-   「用 Slush 授權撥款」→ 在 Slush 確認**這唯一的一筆**
-   （USDC＋0.05 SUI gas 撥給頁面裡的 agent key）。
-3. 卡片轉綠：「已授權：可自動支付 5.00 USDC」。從此不再碰錢包。
+2. 「授權 3 USDC 給你的點餐 Agent」畫面 → 在 Slush 確認**這唯一的一筆**：
+   USDC 存進**你自己的鏈上 Vault**（`chui::vault`，自寫合約），
+   Agent 只拿到額度內代付的 AgentCap＋0.05 SUI gas——**本金永遠不在 agent 手上**。
+3. 畫面切到純語音模式，額度顯示「🤖 額度 3.00 USDC」。從此不再碰錢包、不再按任何鍵
+   （回訪時麥克風權限已授予 → 開頁自動聆聽）。撤銷：頁面下方「撤銷授權」連結，
+   Slush 簽一筆 `revoke_caps` 立即生效，`withdraw` 領回剩餘。
 
 ### 場景一：商家A（已有自己系統的店）
 

@@ -12,44 +12,48 @@
       <div class="logo">🍗</div>
       <h1>快樂鹽酥雞</h1>
       <p class="tagline">夜市老攤 · 現在用說的也能點</p>
+      <span id="quota-chip" class="chip"></span>
     </header>
 
     <div id="msg"></div>
 
+    <!-- 🅐 首次：唯一一次動手——授權 -->
+    <section id="authorize-screen" class="hidden">
+      <div class="card center">
+        <div class="bigicon">🏦</div>
+        <h2>授權 <span class="accent">3 USDC</span> 給你的點餐 Agent</h2>
+        <p class="bullet">💰 錢進<b>你自己的鏈上 Vault</b>，不是給店家或平台</p>
+        <p class="bullet">🎫 Agent 只拿到「額度內代付」的權限</p>
+        <p class="bullet">🛑 隨時可撤銷、剩餘金額隨時領回</p>
+        <div id="agent-status"></div>
+        <form id="topup-form">
+          <input id="topup-usdc" type="number" value="3" min="1" step="1" />
+          <button type="submit" class="primary">用 Slush 錢包授權（只需這一次）</button>
+        </form>
+        <p class="fineprint">Sui Testnet 測試幣・授權後點餐全程零按鍵</p>
+      </div>
+    </section>
+
+    <!-- 🅑 回訪：純語音，零按鍵 -->
+    <section id="voice-screen" class="hidden">
+      <div class="micwrap">
+        <div id="mic-circle" class="mic">🎙️</div>
+        <div id="listen-status" class="listening">準備中⋯</div>
+      </div>
+      <div id="transcript" class="transcript"></div>
+      <details class="fallback">
+        <summary>打字備援（麥克風不可用時）</summary>
+        <form id="text-form">
+          <input id="text-input" placeholder="例：我要一份鹽酥雞加辣" autocomplete="off" />
+          <button type="submit" class="primary">送出（即下單付款）</button>
+        </form>
+      </details>
+      <p class="fineprint"><a href="#" id="revoke-link">撤銷授權</a>（Slush 簽一筆，立即生效）</p>
+    </section>
+
     <section class="card">
       <h2>菜單</h2>
       <div id="menu" class="menu-list"></div>
-    </section>
-
-    <section class="card" id="agent-card">
-      <h2>🤖 Chui Agent（一次授權，之後零按鍵）</h2>
-      <div id="agent-status">查詢中…</div>
-      <form id="topup-form">
-        <input id="topup-usdc" type="number" value="5" min="1" step="1" />
-        <button type="submit" class="primary">用 Slush 授權撥款（USDC＋gas，只需一次）</button>
-      </form>
-    </section>
-
-    <section class="card">
-      <h2>用說的點餐——說完直接下單付款</h2>
-      <button id="talk-btn" class="talk">🎙️ 點一下說話</button>
-      <p class="or">說完不用按任何鍵：靜音自動送出 → 自動下單 → Chui Agent 自動付款</p>
-      <div class="or">或用打字的（送出即付款）</div>
-      <form id="text-form">
-        <input id="text-input" placeholder="例：我要一份鹽酥雞加辣" autocomplete="off" />
-        <button type="submit" class="primary">送出</button>
-      </form>
-    </section>
-
-    <section class="card hidden" id="quote-card">
-      <h2>你點的是</h2>
-      <p id="readback" class="readback"></p>
-      <div id="quote-lines"></div>
-    </section>
-
-    <section class="card hidden" id="receipt-card">
-      <h2>付款完成，下鍋了 🎉</h2>
-      <div id="receipt"></div>
     </section>
 
     <footer>自家系統 × 嘴付協議（經 adapter 接入）· Sui Testnet 測試幣</footer>

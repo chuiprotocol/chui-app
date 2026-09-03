@@ -14,6 +14,9 @@ if SUI_NETWORK == "mainnet":  # 與整個專案一致的防呆
     raise RuntimeError("SUI_NETWORK=mainnet 目前被明確封鎖：只允許 testnet/devnet。")
 SUI_FULLNODE_URL = os.environ.get("SUI_FULLNODE_URL", f"https://fullnode.{SUI_NETWORK}.sui.io:443")
 CHUI_PACKAGE_ID = os.environ.get("CHUI_PACKAGE_ID", "")
+# 合約 module／結算函式（自寫 vault 版預設值）
+CHUI_MODULE = os.environ.get("CHUI_MODULE", "vault")
+CHUI_FN_SETTLE = os.environ.get("CHUI_FN_SETTLE", "agent_settle")
 
 
 def explorer_tx_url(digest: str) -> str:
@@ -37,7 +40,7 @@ async def verify_settlement(tx_digest: str, expected_digest_hex: str,
     """回傳 {verified: bool, reason: str}。連不上 fullnode 時 verified=False。"""
     if not CHUI_PACKAGE_ID:
         return {"verified": False, "reason": "CHUI_PACKAGE_ID 未設定，無法核對事件型別"}
-    event_type = f"{CHUI_PACKAGE_ID}::pay::SettlementEvent"
+    event_type = f"{CHUI_PACKAGE_ID}::{CHUI_MODULE}::SettlementEvent"
     try:
         async with httpx.AsyncClient(timeout=15.0) as client:
             resp = await client.post(SUI_FULLNODE_URL, json={

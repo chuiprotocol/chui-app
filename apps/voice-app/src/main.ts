@@ -4,7 +4,7 @@
  * → 自動下單 → Agent 自動付款。全程沒有確認鍵。
  */
 
-import { HubClient, wireZeroTap } from "@chui/web";
+import { HubClient, wireVoiceLoop } from "@chui/web";
 
 const $ = (id: string) => document.getElementById(id)!;
 
@@ -20,7 +20,7 @@ async function boot() {
     </div>`).join("");
 
   // 不帶 merchantId：由 Hub 依信心度跨商家路由
-  await wireZeroTap({ hub });
+  await wireVoiceLoop({ hub });
 }
 
 boot().catch((err) => {

@@ -5,7 +5,7 @@
  * 自動付款全走 Hub（經 adapter 翻譯接入）。
  */
 
-import { HubClient, wireZeroTap } from "@chui/web";
+import { HubClient, wireVoiceLoop } from "@chui/web";
 
 interface LegacyProduct {
   sku: string;
@@ -29,7 +29,7 @@ async function boot() {
       <span class="price">${p.cents / 100} 元</span>
     </div>`).join("");
 
-  await wireZeroTap({
+  await wireVoiceLoop({
     hub: new HubClient(config.hub_url),
     merchantId: config.merchant_id,
   });

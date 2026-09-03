@@ -21,9 +21,26 @@ console.log(`公版店面啟動：${config.shop.name}（merchant_id=${config.mer
 const app = express();
 app.use(express.json());
 
-// demo 範圍：訂單存記憶體（無登入、無持久化需求）
+// demo 範圍：訂單內容存記憶體（無登入需求）
 const orders = new Map();
-let orderSeq = 0;
+
+// 取餐單號：日期前綴＋落地持久化流水號（例 TEA-0903-0001）。
+// 流水號寫進檔案，重啟不歸零；跨日由日期前綴保證唯一——永不重複。
+const SEQ_PATH = process.env.TICKET_SEQ_PATH
+  || path.join(path.dirname(CONFIG_PATH), `.ticket-seq-${config.merchant_id}.json`);
+
+function nextOrderRef(prefix) {
+  const now = new Date();
+  const today = `${String(now.getMonth() + 1).padStart(2, '0')}${String(now.getDate()).padStart(2, '0')}`;
+  let state = { date: today, seq: 0 };
+  try {
+    const stored = JSON.parse(fs.readFileSync(SEQ_PATH, 'utf8'));
+    if (stored.date === today && Number.isInteger(stored.seq)) state = stored;
+  } catch { /* 首次使用或檔案損毀：從 0 起算（日期前綴仍保證跨日唯一） */ }
+  state.seq += 1;
+  fs.writeFileSync(SEQ_PATH, JSON.stringify(state));
+  return `${prefix}-${today}-${String(state.seq).padStart(4, '0')}`;
+}
 
 // ---- 商家端協議介面（原生）----
 
@@ -36,8 +53,12 @@ app.post('/chui/orders', (req, res) => {
   if (!order.order_id || !Array.isArray(order.lines) || !Number.isInteger(order.total)) {
     return res.status(422).json({ error: { code: 'BAD_ORDER', message: '訂單格式不符協議' } });
   }
-  orderSeq += 1;
-  const merchantRef = `${config.order_ref_prefix || 'ORD'}-${String(orderSeq).padStart(3, '0')}`;
+  let merchantRef;
+  try {
+    merchantRef = nextOrderRef(config.order_ref_prefix || 'ORD');
+  } catch (err) {
+    return res.status(500).json({ error: { code: 'TICKET_SEQ_FAILED', message: String(err.message) } });
+  }
   orders.set(order.order_id, { ...order, merchant_ref: merchantRef, paid: false });
   console.log(`🧾 接單 ${merchantRef}：${order.lines.map((l) => `${l.name}x${l.qty}`).join('、')}（${order.total} 元）`);
   res.json({ accepted: true, merchant_ref: merchantRef });

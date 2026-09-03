@@ -25,7 +25,14 @@ from chui_api.menu import quote_items, readback_text
 
 from .bus import bus
 from .registry import registry
-from .verify import CHUI_PACKAGE_ID, SUI_NETWORK, explorer_tx_url, verify_settlement
+from .verify import (
+    CHUI_FN_SETTLE,
+    CHUI_MODULE,
+    CHUI_PACKAGE_ID,
+    SUI_NETWORK,
+    explorer_tx_url,
+    verify_settlement,
+)
 
 # 1 元（TWD）換多少 USDC 最小單位（6 位小數）。預設 1 TWD = 0.032 USDC。
 USDC_UNITS_PER_TWD = int(os.environ.get("USDC_UNITS_PER_TWD", "32000"))
@@ -53,7 +60,11 @@ async def healthz():
         "ok": True,
         "network": SUI_NETWORK,
         "package_configured": bool(CHUI_PACKAGE_ID),
+        "package_id": CHUI_PACKAGE_ID,
+        "module": CHUI_MODULE,
+        "settle_function": CHUI_FN_SETTLE,
         "usdc_coin_type": USDC_COIN_TYPE,
+        "usdc_units_per_twd": USDC_UNITS_PER_TWD,
         "merchants": [m.merchant_id for m in registry.all()],
     }
 
@@ -206,8 +217,8 @@ async def confirm_order(req: ConfirmRequest):
     checkout = {
         "network": SUI_NETWORK,
         "package_id": CHUI_PACKAGE_ID,
-        "module": "pay",
-        "function": "settle",
+        "module": CHUI_MODULE,
+        "function": CHUI_FN_SETTLE,
         "coin_type": USDC_COIN_TYPE,
         "amount_units": order["amount_units"],
         "merchant_address": merchant.payout_address,

@@ -9,3 +9,4 @@ tts_cache/
 .pytest_cache/
 .demo-logs/
 merchant-data.json
+.ticket-seq*.json

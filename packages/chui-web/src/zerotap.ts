@@ -1,16 +1,16 @@
-/** 零按鍵點餐 UI 佈線（三個前端共用）。
+/** 純語音循環 UI（三個前端共用）——照定稿設計圖實作。
  *
- * 使用者體驗：
- * 1.（一次性）「授權 Chui Agent」——Slush 簽一筆撥款，之後再也不碰錢包。
- * 2. 點一下麥克風 → 說話 → 靜音自動送出 → 解析 → 下單 → Agent 自動付款
- *    → 收據。全程零確認鍵。
- * 3. 信心不足時唸出澄清問題並自動重新聆聽（最多連續 2 次，避免麥克風
- *    無限開著）。
+ * 兩個狀態：
+ * 🅐 首次：只有一件事——「授權 N USDC 給你的點餐 Agent」（Slush 簽唯一一筆，
+ *    錢進用戶自己的 Vault，agent 只拿 cap）。
+ * 🅑 回訪：麥克風權限已授予 → 開頁自動開始聆聽；之後
+ *    說話 → 靜音自動送出 → Agent 口頭覆誦並直接下單付款 → 口頭回報
+ *    → 自動回到聆聽。全程零按鍵。
+ *    （瀏覽器安全規定：權限「第一次」授予必須有一次點擊——之後永遠免按。）
  *
- * 期望頁面存在的元素 id：msg、talk-btn、text-form、text-input、
- * quote-card、readback、quote-lines、receipt-card、receipt、
- * agent-card、agent-status、topup-form、topup-usdc；
- * 選配：routed-merchant（語音入口顯示路由結果）。
+ * 期望元素 id：msg、authorize-screen、agent-status、topup-form、topup-usdc、
+ * voice-screen、mic-circle、listen-status、quota-chip、transcript、
+ * text-form、text-input（打字備援）、revoke-link（選配）。
  */
 
 import { HubClient, type ParseResponse } from "./hub.js";
@@ -19,10 +19,9 @@ import { TapToTalkRecorder } from "./autovoice.js";
 import { runAutoOrder } from "./autoflow.js";
 import { signAndExecuteWithUserWallet } from "./pay.js";
 
-const TOPUP_GAS_MIST = 50_000_000n; // 每次授權附 0.05 SUI 當 gas
-const USDC_UNITS = 1_000_000n;
+const USDC = 1_000_000n;
 
-export interface ZeroTapConfig {
+export interface VoiceLoopConfig {
   hub: HubClient;
   merchantId?: string;
 }
@@ -33,8 +32,6 @@ const need = (id: string): HTMLElement => {
   if (!el) throw new Error(`頁面缺少 #${id}`);
   return el;
 };
-const show = (id: string) => $(id)?.classList.remove("hidden");
-const hide = (id: string) => $(id)?.classList.add("hidden");
 
 function speak(text: string): Promise<void> {
   return new Promise((resolve) => {
@@ -45,158 +42,234 @@ function speak(text: string): Promise<void> {
       utterance.onerror = () => resolve();
       speechSynthesis.cancel();
       speechSynthesis.speak(utterance);
-      // 保險：合成器沒回呼時 6 秒後放行
-      setTimeout(resolve, 6000);
+      setTimeout(resolve, Math.max(3000, text.length * 350)); // 合成器沒回呼時的保險
     } catch {
       resolve();
     }
   });
 }
 
-export async function wireZeroTap(config: ZeroTapConfig): Promise<void> {
+export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
   const { hub, merchantId } = config;
   const msg = (kind: "error" | "info" | "ok", text: string) => {
     need("msg").innerHTML = `<div class="${kind}">${text}</div>`;
   };
   const clearMsg = () => { need("msg").innerHTML = ""; };
 
-  // Hub 告訴我們網路與 USDC coin type（前端零硬編碼）
-  const health = await (await fetch(`${hub.baseUrl}/healthz`)).json();
-  const network: string = health.network;
-  const usdcCoinType: string = health.usdc_coin_type;
+  const transcript = need("transcript");
+  function bubble(kind: "user" | "agent", html: string) {
+    const div = document.createElement("div");
+    div.className = `bubble ${kind}`;
+    div.innerHTML = html;
+    transcript.appendChild(div);
+    transcript.scrollTop = transcript.scrollHeight;
+  }
+  function progressCard(html: string) {
+    const div = document.createElement("div");
+    div.className = "progress-card";
+    div.innerHTML = html;
+    transcript.appendChild(div);
+    transcript.scrollTop = transcript.scrollHeight;
+  }
+
+  // ---- Hub 設定（package/module/幣別都由 Hub 提供，前端零硬編碼）----
+  let health: Record<string, unknown>;
+  try {
+    health = await (await fetch(`${hub.baseUrl}/healthz`)).json();
+  } catch (e) {
+    msg("error", `連不上 Chui Hub：${(e as Error).message}`);
+    return;
+  }
+  const network = String(health.network);
+  const usdcCoinType = String(health.usdc_coin_type);
+  const packageId = String(health.package_id ?? "");
+  const moduleName = String(health.module ?? "vault");
 
   const session = await ChuiAgentSession.load(network);
 
-  // ---- Chui Agent 卡片：餘額與一次性授權 ----
-  async function refreshAgent(): Promise<boolean> {
-    const statusEl = need("agent-status");
+  // ---- 畫面切換 ----
+  const showAuthorize = () => { need("authorize-screen").classList.remove("hidden"); need("voice-screen").classList.add("hidden"); };
+  const showVoice = () => { need("voice-screen").classList.remove("hidden"); need("authorize-screen").classList.add("hidden"); };
+
+  async function refreshStatus(): Promise<"ready" | "unauthorized" | "unreachable"> {
     try {
-      const { usdcUnits, suiMist } = await session.balances(usdcCoinType);
-      const usdc = Number(usdcUnits) / Number(USDC_UNITS);
-      const funded = usdcUnits > 0n && suiMist > TOPUP_GAS_MIST / 10n;
-      statusEl.innerHTML = funded
-        ? `<div class="ok">🤖 Chui Agent 已授權：可自動支付 <b>${usdc.toFixed(2)} USDC</b>` +
-          `（gas ${(Number(suiMist) / 1e9).toFixed(3)} SUI）<br />` +
-          `<code>${session.address.slice(0, 10)}…${session.address.slice(-6)}</code></div>`
-        : `<div class="info">尚未授權：撥一筆小額給 Chui Agent，之後點餐就不再需要任何確認。<br />` +
-          `Agent 地址 <code>${session.address.slice(0, 10)}…${session.address.slice(-6)}</code>` +
-          `（目前 ${usdc.toFixed(2)} USDC）</div>`;
-      return funded;
+      const status = await session.status();
+      if (status.authorized && status.capActive && status.remainingUnits > 0n) {
+        need("quota-chip").textContent =
+          `🤖 額度 ${(Number(status.remainingUnits) / Number(USDC)).toFixed(2)} USDC`;
+        return "ready";
+      }
+      const reason = !status.authorized ? ""
+        : !status.capActive ? "（先前的授權已撤銷）"
+        : "（額度已用完）";
+      need("agent-status").innerHTML =
+        `<div class="info">尚未有可用授權${reason}。授權後點餐全程零按鍵。<br/>` +
+        `Agent 地址 <code>${session.address.slice(0, 10)}…${session.address.slice(-6)}</code></div>`;
+      return "unauthorized";
     } catch (e) {
-      statusEl.innerHTML = `<div class="error">無法查詢 Agent 餘額：${(e as Error).message}</div>`;
-      return false;
+      need("agent-status").innerHTML = `<div class="error">${(e as Error).message}</div>`;
+      return "unreachable";
     }
   }
 
+  // ---- 🅐 一次性授權 ----
   need("topup-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     const input = need("topup-usdc") as HTMLInputElement;
-    const usdcAmount = Math.max(1, Math.floor(Number(input.value || "5")));
+    const usdcAmount = BigInt(Math.max(1, Math.floor(Number(input.value || "3"))));
     try {
-      msg("info", `請在 Slush 確認這「唯一一次」的授權（${usdcAmount} USDC＋0.05 SUI gas）…`);
-      const tx = session.buildTopUpTransaction(
-        usdcCoinType, BigInt(usdcAmount) * USDC_UNITS, TOPUP_GAS_MIST,
+      if (!packageId) throw new Error("合約尚未部署（Hub 未設定 CHUI_PACKAGE_ID）");
+      msg("info", `請在 Slush 確認這「唯一一次」的授權（${usdcAmount} USDC 進你自己的 Vault＋0.05 SUI gas 給 Agent）…`);
+      const tx = session.buildAuthorizeTransaction(
+        packageId, moduleName, usdcCoinType,
+        usdcAmount * USDC, usdcAmount * USDC, // 單筆上限預設＝全額
       );
       const { txDigest } = await signAndExecuteWithUserWallet(tx, network);
-      msg("ok", `授權完成（tx ${txDigest.slice(0, 10)}…）。之後點餐全自動，不再需要按任何鍵。`);
-      await refreshAgent();
+      msg("info", "授權交易已上鏈，讀取 Vault 資訊…");
+      await session.completeAuthorize(txDigest, packageId, moduleName);
+      clearMsg();
+      const state = await refreshStatus();
+      if (state === "ready") {
+        showVoice();
+        await speak("授權完成！之後開口說要點什麼，我會直接幫你下單付款。");
+        void loop();
+      }
     } catch (err) {
       msg("error", `授權沒有完成：${(err as Error).message}`);
     }
   });
 
-  // ---- 零按鍵下單流程 ----
-  let autoListenBudget = 0; // 澄清後自動重新聆聽的剩餘次數
+  // ---- 🅑 語音循環 ----
+  const recorder = new TapToTalkRecorder();
+  let consecutiveErrors = 0;
+  let looping = false;
 
-  async function autoOrder(input: { text: string } | { audio: Blob }): Promise<void> {
+  function setListening(on: boolean, label?: string) {
+    need("mic-circle").classList.toggle("live", on);
+    need("listen-status").textContent = label ?? (on ? "聆聽中⋯ 直接說就好" : "已暫停");
+  }
+
+  async function loop(): Promise<void> {
+    if (looping || !recorder.isSupported) return;
+    looping = true;
+    while (looping) {
+      let audio: Blob;
+      try {
+        setListening(true);
+        audio = await recorder.record();
+      } catch (err) {
+        setListening(false, "麥克風無法使用——可改用下方打字備援");
+        msg("error", (err as Error).message);
+        looping = false;
+        return;
+      }
+      setListening(false, "處理中⋯");
+      if (audio.size < 1200) continue; // 太短視為噪音，直接回到聆聽
+      const ok = await autoOrder({ audio });
+      consecutiveErrors = ok ? 0 : consecutiveErrors;
+      if (consecutiveErrors >= 2) {
+        // 連續失敗就停下來，避免麥克風無限開著；點麥克風即可續播
+        setListening(false, "連續失敗，已暫停——點一下麥克風繼續");
+        looping = false;
+        return;
+      }
+    }
+  }
+
+  async function autoOrder(input: { text: string } | { audio: Blob }): Promise<boolean> {
+    let settledOk = false;
     await runAutoOrder(hub, session, input, {
       onProgress: (text) => msg("info", text),
       onQuote: (parsed: ParseResponse) => {
-        const routed = $("routed-merchant");
-        if (routed) routed.textContent =
-          `${parsed.merchant_name}（協議自動路由，信心 ${parsed.intent.confidence.toFixed(2)}）`;
-        need("readback").textContent = parsed.readback.text.replace("，確認嗎？", "");
-        need("quote-lines").innerHTML = parsed.quote.lines.map((line) =>
-          `<div class="quote-line"><span>${line.option_names.join("")}${line.name} × ${line.qty}</span>` +
-          `<span>${line.line_total} 元</span></div>`,
-        ).join("") + `<div class="quote-line"><b>總計</b><b>${parsed.quote.total} 元</b></div>`;
-        hide("receipt-card");
-        show("quote-card");
-        void speak(parsed.readback.text.replace("，確認嗎？", "，自動付款中"));
+        clearMsg();
+        bubble("user", parsed.intent.stt_text || "（語音輸入）");
+        const routed = merchantId ? "" : `📍 ${parsed.merchant_name}｜`;
+        bubble("agent", `${routed}${parsed.readback.text.replace("，確認嗎？", "")}，幫你下單付款 💳`);
+        void speak(parsed.readback.text.replace("，確認嗎？", "，幫你下單付款"));
       },
       onClarify: async (question) => {
-        msg("info", `🤔 ${question}`);
+        bubble("agent", `🤔 ${question}`);
         await speak(question);
-        if (autoListenBudget > 0) {
-          autoListenBudget -= 1;
-          void listen(); // 說完澄清問題自動重新聆聽——仍然零按鍵
-        }
       },
-      onSettled: async ({ parsed, merchantRef, settlement }) => {
-        hide("quote-card");
+      onSettled: async ({ parsed, merchantRef, amountUnits, settlement }) => {
         const verified = settlement.status === "settled_verified";
-        need("receipt").innerHTML = `
-          <div class="${verified ? "ok" : "info"}">
-            ${verified ? "✅ 鏈上驗證通過（digest／金額／店家皆相符）"
-                       : `⏳ 交易已送出，Hub 暫時無法驗證：${settlement.verify_reason ?? ""}`}
-          </div>
-          <p>店家：${parsed.merchant_name}｜單號：<code>${merchantRef}</code></p>
-          <p><a href="${settlement.explorer_url}" target="_blank" rel="noreferrer">在 Sui Testnet explorer 查看交易 ↗</a></p>
-          <p class="hint">由 Chui Agent 自動付款——你沒有按任何確認鍵。鏈上只有訂單雜湊。</p>`;
-        show("receipt-card");
+        progressCard(`
+          <div class="step">✓ ${parsed.merchant_name} 已接單（取餐單號 <b>${merchantRef}</b>）</div>
+          <div class="step">✓ Agent 自動付款 ${(amountUnits / 1_000_000).toFixed(2)} USDC（你沒按任何鍵）</div>
+          <div class="step">${verified ? "✓ 鏈上驗證通過（digest／金額／店家相符）" : `⏳ 鏈上驗證中：${settlement.verify_reason ?? ""}`}</div>
+          <a class="txlink" href="${settlement.explorer_url}" target="_blank" rel="noreferrer">🔗 在 Sui explorer 查看交易 ↗</a>`);
+        bubble("agent", `付款完成！取餐單號 <b>${merchantRef}</b>，總共 ${parsed.quote.total} 元。還要什麼跟我說～`);
         clearMsg();
-        await refreshAgent();
-        void speak(`付款完成，總共 ${parsed.quote.total} 元`);
+        settledOk = true;
+        await refreshStatus().catch(() => undefined);
+        await speak(`付款完成，取餐單號 ${merchantRef.split("-").pop()}，總共 ${parsed.quote.total} 元`);
       },
-      onError: (err) => {
+      onError: async (err) => {
+        consecutiveErrors += 1;
+        bubble("agent", `⚠️ ${err.message}`);
         msg("error", err.message);
-        if (err.message.includes("餘額不足") || err.message.includes("gas")) show("agent-card");
+        if (err.message.includes("額度不足") || err.message.includes("撤銷") || err.message.includes("尚未授權")) {
+          showAuthorize();
+          await refreshStatus().catch(() => undefined);
+          looping = false;
+        }
+        await speak("這筆沒有成功，詳細原因顯示在畫面上");
       },
     }, merchantId);
+    return settledOk;
   }
 
-  // ---- 點一下說話（VAD 自動送出）----
-  const recorder = new TapToTalkRecorder();
-  const talkBtn = need("talk-btn");
-  const talkIdleHtml = talkBtn.innerHTML;
-
-  async function listen(): Promise<void> {
-    if (recorder.isRecording) { // 再點一下＝提前送出
-      recorder.stop();
-      return;
-    }
-    try {
-      talkBtn.classList.add("recording");
-      talkBtn.innerHTML = talkIdleHtml.includes("<br") ? "🔴<br />聽你說…" : "🔴 聽你說…（說完自動送出）";
-      const audio = await recorder.record();
-      talkBtn.classList.remove("recording");
-      talkBtn.innerHTML = talkIdleHtml;
-      await autoOrder({ audio });
-    } catch (err) {
-      talkBtn.classList.remove("recording");
-      talkBtn.innerHTML = talkIdleHtml;
-      msg("error", (err as Error).message);
-    }
-  }
-
-  if (!recorder.isSupported) {
-    talkBtn.setAttribute("disabled", "true");
-    talkBtn.innerHTML = talkIdleHtml.includes("<br") ? "🎙️<br />請用打字" : "🎙️ 此環境無法錄音（請用文字點餐）";
-  }
-  talkBtn.addEventListener("click", () => {
-    autoListenBudget = 2; // 每次使用者主動點擊，重置澄清自動重聽額度
-    void listen();
+  // 麥克風圓圈：僅在「權限尚未授予」或「已暫停」時需要點一下
+  need("mic-circle").addEventListener("click", () => {
+    if (recorder.isRecording) { recorder.stop(); return; } // 提前送出
+    consecutiveErrors = 0;
+    void loop();
   });
 
-  // 文字備援（同樣零確認：送出即下單付款）
+  // 打字備援（麥克風不可用／沙箱測試用）
   need("text-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     const input = need("text-input") as HTMLInputElement;
     if (!input.value.trim()) return;
-    autoListenBudget = 0;
+    consecutiveErrors = 0;
     await autoOrder({ text: input.value.trim() });
     input.value = "";
   });
 
-  await refreshAgent();
+  // 撤銷（選配連結；由用戶 Slush 簽，單一交易生效）
+  $("revoke-link")?.addEventListener("click", async (e) => {
+    e.preventDefault();
+    try {
+      msg("info", "請在 Slush 確認撤銷交易（所有授權立即失效）…");
+      const tx = session.buildRevokeTransaction(moduleName, usdcCoinType);
+      await signAndExecuteWithUserWallet(tx, network);
+      msg("ok", "已撤銷。剩餘金額可用「領回」交易取回。");
+      looping = false;
+      showAuthorize();
+      await refreshStatus();
+    } catch (err) {
+      msg("error", `撤銷沒有完成：${(err as Error).message}`);
+    }
+  });
+
+  // ---- 啟動：依授權狀態決定畫面；權限已授予就自動開始聆聽 ----
+  const state = await refreshStatus();
+  if (state === "ready") {
+    showVoice();
+    let granted = false;
+    try {
+      const perm = await navigator.permissions.query({ name: "microphone" as PermissionName });
+      granted = perm.state === "granted";
+    } catch { /* 不支援查詢的瀏覽器：等使用者點一下 */ }
+    if (granted && recorder.isSupported) {
+      void speak("歡迎回來！請說你要點什麼。");
+      void loop();
+    } else if (recorder.isSupported) {
+      setListening(false, "點一下麥克風開始（只有第一次需要）");
+    } else {
+      setListening(false, "此環境無法錄音——請用下方打字備援");
+    }
+  } else {
+    showAuthorize();
+  }
 }
