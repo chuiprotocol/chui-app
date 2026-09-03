@@ -53,6 +53,23 @@ export interface PayResult {
   account: WalletAccount;
 }
 
+/** 用「使用者的」錢包（Slush）簽名並執行任意交易——一次性授權撥款用。 */
+export async function signAndExecuteWithUserWallet(
+  tx: Transaction,
+  network: string,
+): Promise<{ txDigest: string; account: WalletAccount }> {
+  const wallet = await findSuiWallet();
+  const { accounts } = await wallet.features["standard:connect"].connect();
+  const account = accounts[0];
+  if (!account) throw new Error("錢包沒有可用帳戶");
+  const result = await signAndExecuteTransaction(wallet, {
+    transaction: tx,
+    account,
+    chain: `sui:${network}` as `${string}:${string}`,
+  });
+  return { txDigest: result.digest, account };
+}
+
 /** 連線錢包並簽名執行結算交易。回傳鏈上交易 digest。 */
 export async function payWithSuiWallet(checkout: CheckoutParams): Promise<PayResult> {
   if (!checkout.package_id) {

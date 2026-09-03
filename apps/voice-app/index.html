@@ -20,9 +20,18 @@
 
     <div id="msg"></div>
 
+    <section class="card" id="agent-card">
+      <h2>🤖 Chui Agent（一次授權，之後零按鍵）</h2>
+      <div id="agent-status">查詢中…</div>
+      <form id="topup-form">
+        <input id="topup-usdc" type="number" value="5" min="1" step="1" />
+        <button type="submit" class="primary">用 Slush 授權撥款</button>
+      </form>
+    </section>
+
     <section class="card center">
-      <button id="talk-btn" class="talk">🎙️<br />按住說話</button>
-      <p class="hint">不用先選店家——協議會依你說的內容自動找到對的店</p>
+      <button id="talk-btn" class="talk">🎙️<br />點一下說話</button>
+      <p class="hint">不用選店家、說完不用按任何鍵——協議自動路由、Chui Agent 自動付款</p>
       <form id="text-form">
         <input id="text-input" placeholder="例：我要一份鹽酥雞加辣" autocomplete="off" />
         <button type="submit" class="primary">用打字的</button>
@@ -33,8 +42,6 @@
       <div class="routed">📍 <span id="routed-merchant"></span></div>
       <p id="readback" class="readback"></p>
       <div id="quote-lines"></div>
-      <button id="pay-btn" class="pay">以 USDC 付款（Slush 錢包）</button>
-      <button id="cancel-btn" class="ghost">取消</button>
     </section>
 
     <section class="card hidden" id="receipt-card">

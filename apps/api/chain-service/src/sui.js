@@ -163,11 +163,16 @@ export async function executeSponsored({ txBytesB64, userSignature }) {
   requireConfigured();
   const bytes = fromBase64(txBytesB64);
   const { signature: sponsorSig } = await sponsor.signTransaction(bytes);
-  const result = await client.executeTransaction({
+  const outcome = await client.executeTransaction({
     transaction: bytes,
     signatures: [userSignature, sponsorSig],
     include: { effects: true, events: true },
   });
+  // v2 gRPC 回傳 tagged union：成功在 Transaction、失敗在 FailedTransaction
+  const result = outcome.Transaction ?? outcome.FailedTransaction ?? outcome;
+  if (outcome.$kind === 'FailedTransaction') {
+    throw new Error(`交易上鏈失敗（digest ${result.digest}）`);
+  }
   await client.waitForTransaction({ digest: result.digest });
   return {
     txDigest: result.digest,
@@ -217,11 +222,15 @@ export async function settle({ mandateId, merchant, amount, digestHex }) {
 
   let result;
   try {
-    result = await client.signAndExecuteTransaction({
+    const outcome = await client.signAndExecuteTransaction({
       transaction: tx,
       signer: sponsor,
       include: { effects: true },
     });
+    if (outcome.$kind === 'FailedTransaction') {
+      throw new Error(`交易上鏈失敗（digest ${outcome.FailedTransaction.digest}）`);
+    }
+    result = outcome.Transaction ?? outcome;
   } catch (error) {
     const abort = extractMoveAbort(error);
     const err = new Error(abort ? `鏈上結算被合約拒絕：${abort}` : `鏈上結算失敗：${error.message}`);

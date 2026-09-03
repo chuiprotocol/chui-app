@@ -21,10 +21,20 @@
       <div id="menu" class="menu-list"></div>
     </section>
 
+    <section class="card" id="agent-card">
+      <h2>🤖 Chui Agent（一次授權，之後零按鍵）</h2>
+      <div id="agent-status">查詢中…</div>
+      <form id="topup-form">
+        <input id="topup-usdc" type="number" value="5" min="1" step="1" />
+        <button type="submit" class="primary">用 Slush 授權撥款（USDC＋gas，只需一次）</button>
+      </form>
+    </section>
+
     <section class="card">
-      <h2>用說的點餐</h2>
-      <button id="talk-btn" class="talk">🎙️ 按住說話</button>
-      <div class="or">或用打字的</div>
+      <h2>用說的點餐——說完直接下單付款</h2>
+      <button id="talk-btn" class="talk">🎙️ 點一下說話</button>
+      <p class="or">說完不用按任何鍵：靜音自動送出 → 自動下單 → Chui Agent 自動付款</p>
+      <div class="or">或用打字的（送出即付款）</div>
       <form id="text-form">
         <input id="text-input" placeholder="例：我要一份鹽酥雞加辣" autocomplete="off" />
         <button type="submit" class="primary">送出</button>
@@ -32,11 +42,9 @@
     </section>
 
     <section class="card hidden" id="quote-card">
-      <h2>確認訂單</h2>
+      <h2>你點的是</h2>
       <p id="readback" class="readback"></p>
       <div id="quote-lines"></div>
-      <button id="pay-btn" class="pay">以 USDC 付款（Slush 錢包）</button>
-      <button id="cancel-btn" class="ghost">取消</button>
     </section>
 
     <section class="card hidden" id="receipt-card">
