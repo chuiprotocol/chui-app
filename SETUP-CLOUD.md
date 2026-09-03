@@ -9,6 +9,19 @@
 > 跑在任一台機器上（先用你的電腦），以一條 cloudflared 隧道公開 Hub。
 > 前端只連 Hub 一個網址，所以隧道只需要一條。
 
+## ⚡ 最快路徑：一條指令
+
+Pages 兩個網站已部署好之後，你電腦上只要：
+
+```bash
+cd ~/chui-app && git pull && ./scripts/go-live.sh
+```
+
+腳本會自動：裝 sui CLI（缺才裝）→ 建錢包＋領 gas → 跑合約測試＋部署
+→ 把 CHUI_PACKAGE_ID 寫進 .env → 問你要不要貼 STT key → 啟動後端整包
+→ 裝 cloudflared＋開隧道 → **直接印出兩支手機要開的完整網址**。
+重跑安全（做過的步驟自動跳過）。以下章節是同一件事的手動版。
+
 ## 0. 前提（一次性）
 
 - 合約已部署、`.env` 已填 `CHUI_PACKAGE_ID` 與 `STT_API_KEY`（見 DEMO.md §0.1–0.2）
