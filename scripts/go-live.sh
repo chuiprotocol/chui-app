@@ -75,11 +75,10 @@ else
     git clone --branch main https://github.com/chuiprotocol/chui-contracts ../chui-contracts
     CONTRACTS_DIR=../chui-contracts
   fi
-  if [ ! -d "$CONTRACTS_DIR/contracts/sui" ]; then
-    echo "chui-contracts 目前在別的分支，切換到 main…"
-    git -C "$CONTRACTS_DIR" fetch origin main
-    git -C "$CONTRACTS_DIR" checkout -B main origin/main
-  fi
+  # 一律同步到最新的 main（預設分支可能指向另一套舊架構的合約）
+  echo "同步 chui-contracts 到最新 main…"
+  git -C "$CONTRACTS_DIR" fetch origin main
+  git -C "$CONTRACTS_DIR" checkout -B main origin/main
   [ -d "$CONTRACTS_DIR/contracts/sui" ] || die "chui-contracts 的 main 分支沒有 contracts/sui——請回報"
   (cd "$CONTRACTS_DIR/contracts/sui" && ./deploy.sh)   # 內含 sui move test
   PKG=$(python3 -c "import json; print(json.load(open('$CONTRACTS_DIR/deployments/testnet.json'))['package_id'])")
