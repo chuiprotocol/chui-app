@@ -34,30 +34,23 @@ cloudflared tunnel --url http://localhost:8700
 
 ### 3a. 推薦：Git 整合（一次性點擊設定，之後每次 push 自動部署）
 
-⚠️ 新版儀表板預設會把你帶進 **Workers** 的匯入流程（沒有 Build output
-欄位）——請確認走的是 **Pages** 流程：
+新版儀表板是「Workers 統一流程」（沒有 Pages 分頁也沒關係，
+repo 內已放好 wrangler.jsonc，走 Worker 靜態資產部署）：
 
-1. https://dash.cloudflare.com → 左側 **Workers & Pages**（或 Compute）→
-   **Create application**
-2. 上方有 **Workers / Pages 兩個分頁 → 點「Pages」**
-3. **Connect to Git** → 授權 GitHub → 選 `chuiprotocol/chui-app`
-4. 進到「Set up builds and deployments」頁：**Build output directory 就在
-   Build command 下面**；環境變數在更下方「Environment variables (advanced)」
-   摺疊區（本專案**不需要設**，已由 `.node-version` 取代）
+https://dash.cloudflare.com → Workers & Pages → **Create application →
+Import a repository** → 選 `chuiprotocol/chui-app`，建**兩個** app，
+三個欄位照抄：
 
-建**兩個**專案，設定值照抄：
-
-| 設定欄位 | 專案一：快樂鹽酥雞官網 | 專案二：嘴付公版入口 |
+| 欄位 | App 一：快樂鹽酥雞官網 | App 二：嘴付公版入口 |
 |---|---|---|
 | Project name | `chui-happy-chicken` | `chui-portal` |
-| Production branch | `claude/chui-app-layer-2ozkbk`（repo 預設分支） | 同左 |
 | Build command | `pnpm --filter @chui/merchant-a build` | `pnpm --filter @chui/portal build` |
-| Build output directory | `apps/merchant-a/dist` | `apps/portal/dist` |
-| Root directory | （留空＝repo 根目錄） | （留空） |
-| 環境變數 | **不用設**（Node 版本由 repo 的 `.node-version` 決定；Hub 網址用 `?hub=` 帶） | 同左 |
+| Deploy command | `npx wrangler deploy --config apps/merchant-a/wrangler.jsonc` | `npx wrangler deploy --config apps/portal/wrangler.jsonc` |
 
-設定完按 Deploy——**之後每次我 push 程式碼，Cloudflare 就會自動重新部署**，
-不再需要你動手。
+按 **Deploy**。完成後網址形如
+`https://chui-happy-chicken.<你的子網域>.workers.dev` 與
+`https://chui-portal.<你的子網域>.workers.dev`（部署頁會直接顯示）。
+**之後每次我 push 程式碼就會自動重新部署**，不再需要你動手。
 
 ### 3b. 替代：本機 CLI 一鍵部署
 

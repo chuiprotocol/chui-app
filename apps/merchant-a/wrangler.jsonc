@@ -1,0 +1,10 @@
+// 快樂鹽酥雞官網——Cloudflare Worker（純靜態資產）部署設定
+// Workers Builds 的 Deploy command 用：npx wrangler deploy --config apps/merchant-a/wrangler.jsonc
+{
+  "name": "chui-happy-chicken",
+  "compatibility_date": "2025-01-01",
+  "assets": {
+    "directory": "./dist",
+    "not_found_handling": "single-page-application"
+  }
+}
