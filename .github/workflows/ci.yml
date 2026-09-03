@@ -54,3 +54,4 @@ jobs:
           pnpm --filter @chui/storefront-template build
           pnpm --filter @chui/merchant-a build
           pnpm --filter @chui/voice-app build
+          pnpm --filter @chui/portal build

@@ -1,5 +1,7 @@
 # DEMO.md —— Chui Protocol demo 操作腳本
 
+> ☁️ 要用手機遠端實測（前端上 Cloudflare Pages）？直接看 **SETUP-CLOUD.md**。
+
 目標：證明「**異質商家都能接上協議，使用者端體驗一致**」。
 兩家店、兩種接法（原生 vs adapter）、一支語音 App、一個封包面板、
 USDC on Sui Testnet 真實交易編號。

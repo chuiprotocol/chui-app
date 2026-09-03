@@ -6,3 +6,4 @@ packages:
   - apps/storefront-template
   - apps/merchant-a
   - apps/voice-app
+  - apps/portal

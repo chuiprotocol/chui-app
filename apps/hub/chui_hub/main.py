@@ -80,6 +80,20 @@ async def list_merchants():
     }
 
 
+@app.get("/v1/merchants/{merchant_id}/menu")
+async def merchant_menu(merchant_id: str):
+    """協議菜單傳遞：官網（部署在 Pages 上）只需連 Hub 就能拿菜單展示。
+
+    這正是「自家官網只串嘴付協議 API」的具體化——菜單、語音、結帳
+    全部走同一個 Hub 端點。取不到時回具名 MENU_UNAVAILABLE。
+    """
+    merchant = registry.get(merchant_id)
+    if merchant is None:
+        raise NotFoundError(f"registry 沒有商家 {merchant_id}")
+    menu = await merchant.menu()
+    return {"merchant_id": merchant_id, "name": merchant.name, "menu": menu}
+
+
 # ---- ① 解析 ----
 
 @app.post("/v1/orders/parse")

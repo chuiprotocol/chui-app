@@ -58,6 +58,19 @@ importers:
         specifier: ^5.4.0
         version: 5.4.21(@types/node@22.20.1)
 
+  apps/portal:
+    dependencies:
+      '@chui/web':
+        specifier: workspace:*
+        version: link:../../packages/chui-web
+    devDependencies:
+      typescript:
+        specifier: ^5.5.0
+        version: 5.9.3
+      vite:
+        specifier: ^5.4.0
+        version: 5.4.21(@types/node@22.20.1)
+
   apps/reference-merchant:
     dependencies:
       '@chui/sdk':

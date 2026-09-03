@@ -1,0 +1,70 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>嘴付</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1 id="page-title">👄 嘴付</h1>
+      <p id="page-tagline" class="tagline">說了就算，付了就走</p>
+      <span id="quota-chip" class="chip"></span>
+    </header>
+
+    <div id="msg"></div>
+
+    <!-- 入口：選店 -->
+    <section id="list-view" class="hidden">
+      <div class="card">
+        <h2>選一家店開始點餐</h2>
+        <div id="merchant-cards" class="merchant-cards">載入中…</div>
+        <p class="fineprint">標「公版店面」的店由嘴付代管網站；標「自家官網」的店請前往其網址（同樣支援嘴付語音結帳）。</p>
+      </div>
+    </section>
+
+    <!-- 店內：🅐 首次授權 -->
+    <section id="authorize-screen" class="hidden">
+      <div class="card center">
+        <div class="bigicon">🏦</div>
+        <h2>授權 <span class="accent">3 USDC</span> 給你的點餐 Agent</h2>
+        <p class="bullet">💰 錢進<b>你自己的鏈上 Vault</b>，不是給我們</p>
+        <p class="bullet">🎫 Agent 只拿到「額度內代付」的權限</p>
+        <p class="bullet">🛑 隨時可撤銷、剩餘金額隨時領回</p>
+        <div id="agent-status"></div>
+        <form id="topup-form">
+          <input id="topup-usdc" type="number" value="3" min="1" step="1" />
+          <button type="submit" class="primary wide">用 Slush 錢包授權（只需這一次）</button>
+        </form>
+        <p class="fineprint">Sui Testnet 測試幣・授權後點餐全程零按鍵</p>
+      </div>
+    </section>
+
+    <!-- 店內：🅑 純語音 -->
+    <section id="voice-screen" class="hidden">
+      <div class="micwrap">
+        <div id="mic-circle" class="mic">🎙️</div>
+        <div id="listen-status" class="listening">準備中⋯</div>
+      </div>
+      <div id="transcript" class="transcript"></div>
+      <details class="fallback">
+        <summary>打字備援（麥克風不可用時）</summary>
+        <form id="text-form">
+          <input id="text-input" placeholder="例：一杯珍珠奶茶半糖去冰" autocomplete="off" />
+          <button type="submit" class="primary">送出（即下單付款）</button>
+        </form>
+      </details>
+      <p class="fineprint">
+        <a href="#" id="back-link">← 換一家店</a>　·
+        <a href="#" id="revoke-link">撤銷授權</a>
+      </p>
+      <div class="card"><h2>菜單</h2><div id="store-menu" class="menu-list"></div></div>
+    </section>
+
+    <footer>嘴付協議 · Sui Testnet（測試幣，非真實資金）</footer>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
