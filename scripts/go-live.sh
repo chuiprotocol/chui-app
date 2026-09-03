@@ -64,15 +64,23 @@ current_pkg=$(grep '^CHUI_PACKAGE_ID=' .env | cut -d= -f2-)
 if [ -n "$current_pkg" ]; then
   echo "✅ .env 已有 CHUI_PACKAGE_ID=$current_pkg，跳過部署（要重佈署請先清空該行）"
 else
+  # ⚠️ vault 合約在 chui-contracts 的 main 分支（repo 預設分支可能指向
+  #    另一套舊架構的合約），一律鎖定 main。
   CONTRACTS_DIR=""
   for c in ../chui-contracts ./chui-contracts "$HOME/chui-contracts"; do
-    [ -d "$c/contracts/sui" ] && CONTRACTS_DIR="$c" && break
+    [ -d "$c/.git" ] && CONTRACTS_DIR="$c" && break
   done
   if [ -z "$CONTRACTS_DIR" ]; then
-    echo "找不到 chui-contracts，clone 中…"
-    git clone https://github.com/chuiprotocol/chui-contracts ../chui-contracts
+    echo "找不到 chui-contracts，clone（main 分支）中…"
+    git clone --branch main https://github.com/chuiprotocol/chui-contracts ../chui-contracts
     CONTRACTS_DIR=../chui-contracts
   fi
+  if [ ! -d "$CONTRACTS_DIR/contracts/sui" ]; then
+    echo "chui-contracts 目前在別的分支，切換到 main…"
+    git -C "$CONTRACTS_DIR" fetch origin main
+    git -C "$CONTRACTS_DIR" checkout -B main origin/main
+  fi
+  [ -d "$CONTRACTS_DIR/contracts/sui" ] || die "chui-contracts 的 main 分支沒有 contracts/sui——請回報"
   (cd "$CONTRACTS_DIR/contracts/sui" && ./deploy.sh)   # 內含 sui move test
   PKG=$(python3 -c "import json; print(json.load(open('$CONTRACTS_DIR/deployments/testnet.json'))['package_id'])")
   python3 - "$PKG" <<'EOF'
