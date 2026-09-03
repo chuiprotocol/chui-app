@@ -7,7 +7,7 @@
       "integration": "adapter",
       "chui_endpoint": "http://127.0.0.1:9101",
       "payout_address": "0x0000000000000000000000000000000000000000000000000000000000000a01",
-      "web_url": "http://localhost:9102"
+      "web_url": "http://localhost:9100"
     },
     {
       "merchant_id": "goodtea",
@@ -15,7 +15,7 @@
       "integration": "native",
       "chui_endpoint": "http://127.0.0.1:9201",
       "payout_address": "0x0000000000000000000000000000000000000000000000000000000000000b02",
-      "web_url": "http://localhost:9202"
+      "web_url": "http://localhost:9201"
     }
   ]
 }
