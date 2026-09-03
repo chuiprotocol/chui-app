@@ -30,12 +30,35 @@ cloudflared tunnel --url http://localhost:8700
 
 （正式一點可在 Cloudflare Zero Trust 建具名 tunnel 綁自己網域，步驟相同。）
 
-## 3. 部署兩個前端到 Pages（第一次約 3 分鐘，之後 30 秒）
+## 3. 部署兩個前端到 Pages
+
+### 3a. 推薦：Git 整合（一次性點擊設定，之後每次 push 自動部署）
+
+到 https://dash.cloudflare.com → **Workers & Pages → Create → Pages →
+Connect to Git** → 選 `chuiprotocol/chui-app` repo，建**兩個**專案，設定值照抄：
+
+| 設定欄位 | 專案一：快樂鹽酥雞官網 | 專案二：嘴付公版入口 |
+|---|---|---|
+| Project name | `chui-happy-chicken` | `chui-portal` |
+| Production branch | `claude/chui-app-layer-2ozkbk`（repo 預設分支） | 同左 |
+| Build command | `pnpm --filter @chui/merchant-a build` | `pnpm --filter @chui/portal build` |
+| Build output directory | `apps/merchant-a/dist` | `apps/portal/dist` |
+| Root directory | （留空＝repo 根目錄） | （留空） |
+| 環境變數 | `NODE_VERSION=22`；`VITE_HUB_URL=<你的 Hub 隧道網址>`（可不填，改用 ?hub=） | 同左 |
+
+設定完按 Deploy——**之後每次我 push 程式碼，Cloudflare 就會自動重新部署**，
+不再需要你動手。
+
+### 3b. 替代：本機 CLI 一鍵部署
 
 ```bash
 npx wrangler login          # 第一次會開瀏覽器授權
 HUB_URL=https://xxxx.trycloudflare.com ./scripts/deploy-pages.sh
 ```
+
+> 💡 **隧道網址換了不用重部署**：手機開
+> `https://chui-portal.pages.dev/?hub=https://新網址` 帶一次，
+> 網站會記住（IndexedDB），之後直接開原網址即可。
 
 完成後得到兩個網址：
 
