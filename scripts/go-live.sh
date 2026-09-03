@@ -62,7 +62,7 @@ say "2/6 部署 chui::vault 合約"
 [ -f .env ] || cp .env.example .env
 current_pkg=$(grep '^CHUI_PACKAGE_ID=' .env | cut -d= -f2-)
 if [ -n "$current_pkg" ]; then
-  echo "✅ .env 已有 CHUI_PACKAGE_ID=$current_pkg，跳過部署（要重佈署請先清空該行）"
+  echo "✅ .env 已有 CHUI_PACKAGE_ID=${current_pkg}，跳過部署（要重佈署請先清空該行）"
 else
   # ⚠️ vault 合約在 chui-contracts 的 main 分支（repo 預設分支可能指向
   #    另一套舊架構的合約），一律鎖定 main。

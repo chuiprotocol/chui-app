@@ -116,13 +116,18 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
   need("topup-form").addEventListener("submit", async (e) => {
     e.preventDefault();
     const input = need("topup-usdc") as HTMLInputElement;
-    const usdcAmount = BigInt(Math.max(1, Math.floor(Number(input.value || "3"))));
+    const usdcValue = Number(input.value || "1");
     try {
+      if (!Number.isFinite(usdcValue) || usdcValue < 0.3) {
+        throw new Error("授權額度最低 0.3 USDC");
+      }
+      // 轉成最小單位（6 位小數）後全程整數運算
+      const usdcUnits = BigInt(Math.round(usdcValue * 1_000_000));
       if (!packageId) throw new Error("合約尚未部署（Hub 未設定 CHUI_PACKAGE_ID）");
-      msg("info", `請在 Slush 確認這「唯一一次」的授權（${usdcAmount} USDC 進你自己的 Vault＋0.05 SUI gas 給 Agent）…`);
+      msg("info", `請在 Slush 確認這「唯一一次」的授權（${usdcValue} USDC 進你自己的 Vault＋0.05 SUI gas 給 Agent）…`);
       const tx = session.buildAuthorizeTransaction(
         packageId, moduleName, usdcCoinType,
-        usdcAmount * USDC, usdcAmount * USDC, // 單筆上限預設＝全額
+        usdcUnits, usdcUnits, // 單筆上限預設＝全額
       );
       const { txDigest } = await signAndExecuteWithUserWallet(tx, network);
       msg("info", "授權交易已上鏈，讀取 Vault 資訊…");

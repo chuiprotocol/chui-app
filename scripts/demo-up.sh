@@ -17,13 +17,17 @@ echo "== 建置前端（三個站）=="
 pnpm --filter @chui/storefront-template --filter @chui/merchant-a --filter @chui/voice-app build
 
 start() { # name, port, command...
-  local name=$1 port=$2; shift 2
-  if python3 -c "import socket,sys; s=socket.socket(); sys.exit(0 if s.connect_ex(('127.0.0.1',$port))==0 else 1)"; then
-    echo "  ↻ $name（port $port 已在跑，略過）"
+  # 注意：macOS 內建 bash 3.2 在 $var 後緊貼全形字元會解析錯誤，
+  # 一律用 ${var} 且變數後面接 ASCII 字元。
+  local name="$1"
+  local port="$2"
+  shift 2
+  if python3 -c "import socket,sys; s=socket.socket(); sys.exit(0 if s.connect_ex(('127.0.0.1',${port}))==0 else 1)"; then
+    echo "  [skip] ${name} (port ${port} 已在跑)"
     return
   fi
-  ("$@" >> ".demo-logs/$name.log" 2>&1 &)
-  echo "  ▶ $name → http://localhost:$port（log: .demo-logs/$name.log）"
+  ("$@" >> ".demo-logs/${name}.log" 2>&1 &)
+  echo "  [run]  ${name} -> http://localhost:${port} (log: .demo-logs/${name}.log)"
 }
 
 echo "== 啟動服務 =="

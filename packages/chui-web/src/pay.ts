@@ -62,6 +62,9 @@ export async function signAndExecuteWithUserWallet(
   const { accounts } = await wallet.features["standard:connect"].connect();
   const account = accounts[0];
   if (!account) throw new Error("錢包沒有可用帳戶");
+  // coinWithBalance 等 intent 在序列化時就需要 sender 才能解析——
+  // 連上錢包拿到地址後立刻補上（錢包端仍會覆核）
+  tx.setSenderIfNotSet(account.address);
   const result = await signAndExecuteTransaction(wallet, {
     transaction: tx,
     account,
@@ -82,6 +85,7 @@ export async function payWithSuiWallet(checkout: CheckoutParams): Promise<PayRes
 
   const digestBytes = hexToBytes(checkout.order_digest_hex);
   const tx = new Transaction();
+  tx.setSender(account.address); // coinWithBalance 解析需要 sender
   // 錢包會自行補 sender 與 gas；coinWithBalance 從使用者的 USDC 切出精確金額
   tx.moveCall({
     target: `${checkout.package_id}::${checkout.module}::${checkout.function}`,

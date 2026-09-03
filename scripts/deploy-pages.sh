@@ -22,7 +22,7 @@ echo "Hub 公開網址：$HUB_URL"
 deploy() { # app_dir project_name 顯示名
   local dir=$1 project=$2 label=$3
   echo ""
-  echo "== 建置 $label（VITE_HUB_URL=$HUB_URL）=="
+  echo "== 建置 ${label}（VITE_HUB_URL=${HUB_URL}）=="
   (cd "$dir" && VITE_HUB_URL="$HUB_URL" npx vite build)
   echo "== 部署 $label → Pages 專案 $project =="
   npx wrangler pages project create "$project" --production-branch=main 2>/dev/null || true

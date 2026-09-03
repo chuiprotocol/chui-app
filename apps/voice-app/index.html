@@ -20,13 +20,13 @@
     <section id="authorize-screen" class="hidden">
       <div class="card center">
         <div class="bigicon">🏦</div>
-        <h2>授權 <span class="accent">3 USDC</span> 給你的點餐 Agent</h2>
+        <h2>授權 <span class="accent">USDC 額度</span>給你的點餐 Agent</h2>
         <p class="bullet">💰 錢進<b>你自己的鏈上 Vault</b>，不是給我們</p>
         <p class="bullet">🎫 Agent 只拿到「額度內代付」的權限</p>
         <p class="bullet">🛑 隨時可撤銷、剩餘金額隨時領回</p>
         <div id="agent-status"></div>
         <form id="topup-form">
-          <input id="topup-usdc" type="number" value="3" min="1" step="1" />
+          <input id="topup-usdc" type="number" value="1" min="0.3" step="0.1" />
           <button type="submit" class="primary wide">用 Slush 錢包授權（只需這一次）</button>
         </form>
         <p class="fineprint">Sui Testnet 測試幣・授權後點餐全程零按鍵</p>
