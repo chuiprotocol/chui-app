@@ -20,7 +20,7 @@ jobs:
       - name: 安裝相依
         run: pip install -r apps/api/requirements.txt
       - name: Lint（ruff）
-        run: ruff check apps/api/chui_api apps/api/eval apps/api/tests scripts/prebuild-tts.py
+        run: ruff check apps/api/chui_api apps/api/eval apps/api/tests apps/hub/chui_hub scripts/prebuild-tts.py
       - name: 單元與整合測試
         run: cd apps/api && python -m pytest tests/ -q
       - name: 重排序評估（品質門檻：無聲猜錯即失敗）
@@ -48,3 +48,9 @@ jobs:
         run: pnpm --filter @chui/chain-service lint
       - name: 參考店家語法檢查
         run: pnpm --filter @chui/reference-merchant lint
+      - name: Demo 各端建置（公版店面／商家A／語音入口／共用庫）
+        run: |
+          pnpm --filter @chui/web lint
+          pnpm --filter @chui/storefront-template build
+          pnpm --filter @chui/merchant-a build
+          pnpm --filter @chui/voice-app build

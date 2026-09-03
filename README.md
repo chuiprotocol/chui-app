@@ -6,8 +6,14 @@
 > 鏈上看不到你買了什麼。
 
 **Chui 是基礎設施**：終端使用者永遠不會看到這個名字，他們只會看到
-「快樂豬早餐店」的 LINE bot 聽懂了「中冰奶」，然後測試幣從自己的
-錢包進了店家的錢包。
+店家的網站聽懂了「中冰奶」，然後測試幣從自己的錢包進了店家的錢包。
+
+> **🎬 Demo（最新）**：兩家異質商家（自家系統經 adapter 接入的「快樂鹽酥雞」
+> ＋公版店面開的「好喝奶茶店」）＋語音入口 App＋即時封包面板，
+> Slush 錢包 USDC on Sui Testnet 結帳。
+> 協議規格見 **[PROTOCOL.md](PROTOCOL.md)**、演示腳本見 **[DEMO.md](DEMO.md)**、
+> 一鍵啟動 `./scripts/demo-up.sh`。合約在 chui-contracts 的
+> `contracts/sui/`（`./deploy.sh` 一鍵部署）。
 
 ---
 

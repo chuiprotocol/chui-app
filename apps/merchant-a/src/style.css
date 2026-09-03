@@ -1,0 +1,31 @@
+/* 快樂鹽酥雞官網：深色夜市風——這是「這家店自己的網站」，不是公版 */
+* { box-sizing: border-box; }
+body { margin: 0; font-family: "Noto Sans TC", system-ui, sans-serif; background: #191410; color: #f2e8dc; }
+.wrap { max-width: 520px; margin: 0 auto; padding: 16px; }
+header { text-align: center; }
+.logo { font-size: 2.2rem; }
+header h1 { margin: 4px 0 0; color: #f2a93b; letter-spacing: 2px; }
+.tagline { color: #9a8a75; margin: 4px 0 12px; }
+.card { background: #241d16; border-radius: 14px; padding: 16px; margin: 12px 0; border: 1px solid #3a2f24; }
+.card h2 { font-size: 1rem; margin: 0 0 10px; color: #f2a93b; }
+.menu-list { display: flex; flex-direction: column; gap: 6px; }
+.menu-row { display: flex; justify-content: space-between; border-bottom: 1px dashed #3a2f24; padding: 7px 0; }
+.menu-row .price { color: #f2a93b; font-weight: 700; }
+.menu-row .mods { color: #9a8a75; font-size: .8rem; }
+button { border: none; border-radius: 10px; padding: 13px 16px; font-size: 1rem; cursor: pointer; width: 100%; margin: 5px 0; font-family: inherit; }
+.talk { background: #f2a93b; color: #241d16; font-weight: 800; font-size: 1.1rem; }
+.talk.recording { background: #d0342c; color: #fff; }
+.primary { background: #6b4f2c; color: #f2e8dc; }
+.pay { background: #1a7f5a; color: #fff; font-weight: 700; font-size: 1.05rem; }
+.ghost { background: #35291d; color: #cbbb9f; }
+.or { text-align: center; color: #6f6152; font-size: .8rem; margin: 8px 0 4px; }
+input { width: 100%; padding: 12px; border: 1px solid #4a3b2a; background: #191410; color: #f2e8dc; border-radius: 10px; margin: 6px 0; font-size: 1rem; }
+.readback { font-size: 1.15rem; font-weight: 700; color: #ffd58a; }
+.quote-line { display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px dashed #3a2f24; font-size: .95rem; }
+.error { background: #3a1513; color: #ff9d94; padding: 10px 14px; border-radius: 10px; margin: 8px 0; }
+.info { background: #14263a; color: #9ec9ff; padding: 10px 14px; border-radius: 10px; margin: 8px 0; }
+.ok { background: #12301f; color: #7fdca4; padding: 10px 14px; border-radius: 10px; margin: 8px 0; }
+.hidden { display: none; }
+footer { text-align: center; color: #6f6152; font-size: .75rem; margin: 20px 0; }
+code { word-break: break-all; background: #35291d; border-radius: 4px; padding: 1px 4px; }
+a { color: #f2a93b; }

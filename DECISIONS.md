@@ -121,6 +121,47 @@
   聲母混淆）是有據可依的，能量化重排序的救回能力。
 - **代價**：數字不能宣稱為端到端準確率；真機驗證列入 TESTING.md C。
 
+## D14.（demo 改版）支付模型改為「每筆錢包簽名」，合約只做 settle＋事件
+
+- **情境**：新 demo 規格明定「用手機的 Slush 打開商家官網點餐並以
+  USDC on Sui Testnet 結帳」——付款人親手簽每一筆。
+- **決定**：合約 `chui::pay::settle<T>(coin, merchant, digest)` 一個 entry
+  function：coin 直接轉給店家（非託管）、發 SettlementEvent。不做 Mandate
+  預授權（demo 規則：只做列出的東西）。金額以 coin 面額為準
+  （`coinWithBalance` 切出精確金額），合約不信任呼叫端另傳的數字。
+- **代價**：先前 apps/api 的 mandate/sponsored 路徑與這條路徑並存於
+  repo（未刪除），demo 不使用。
+
+## D15. Hub 的鏈上驗證走 JSON-RPC，且「絕不憑空標記已付款」
+
+- **決定**：前端回報 tx_digest 後，Hub 向 fullnode 查 SettlementEvent，
+  digest／amount／merchant 三者皆符才標 `settled_verified`；查不到或
+  連不上一律 `pending_verification`（可重試），並把驗證結果推上面板。
+- **理由**：demo 要「回傳真實交易編號」；一個假成功就毀掉整個主張。
+
+## D16. 跨商家路由＝對每家菜單各跑一次封閉詞彙重排序、取最高信心
+
+- **決定**：語音入口 App 的 parse 不帶 merchant_id；Hub 對 registry 內
+  每家商家的封閉詞彙各解析一次，信心最高者得單，排名推上面板。
+- **理由**：重排序引擎本來就是 per-menu 的封閉詞彙比對，跨商家路由是
+  它的自然推廣，也是「一段語音對 A、B 兩家下單」的最簡實作。
+- **代價**：商家數量大時要改成倒排索引預篩；demo 兩家無此問題。
+
+## D17. 商家B＝公版 template 的第一個 config 實例
+
+- **情境**：需求 1 說「獨立寫兩家應用」，需求 2 與架構節說「商家B用
+  公版 template 開店」。兩者對 B 有張力。
+- **決定**：依架構節（較具體）：B 是公版 template＋`config/goodtea.json`
+  的實例，有自己的行程、資料與網址；A 才是完全獨立的 legacy 系統。
+  這同時完成「公版商家應用」這個交付項。
+- **代價**：B 沒有「手刻」的獨立程式碼——但這正是公版的賣點。
+
+## D18. USDC 換匯率固定於 Hub 設定（1 元 = 0.032 USDC）
+
+- **決定**：`USDC_UNITS_PER_TWD=32000`（6 位小數），整數運算。
+  Circle testnet faucet 每 2 小時 20 USDC ≈ 625 元額度，夠一場 demo。
+- **代價**：不是即時匯率；正式版應由報價層決定幣別與匯率。
+
 ## D13. 單機版 rate limit 與 in-memory 菜單引擎快取
 
 - **決定**：滑動視窗 rate limit 與 RerankEngine 快取都放行程記憶體。

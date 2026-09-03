@@ -1,0 +1,19 @@
+{
+  "$comment": "adapter 的翻譯對照表：legacy sku/mod ↔ 協議 id/名稱/同義詞。口語同義詞（含台語、誤辨字）是接入協議時由整合者補上的——自家系統裡沒有這種資訊。",
+  "items": {
+    "FC-001": { "id": "fried-chicken", "synonyms": ["鹹酥雞", "鹽穌雞", "嚴酥雞", "鹽酥機", "iâm-soo-ke"] },
+    "FC-002": { "id": "tempura", "synonyms": ["甜不辣拉", "天不辣", "tinn-put-la̍h"] },
+    "FC-003": { "id": "chicken-skin", "synonyms": ["機皮", "雞屁"] },
+    "FC-004": { "id": "squid", "synonyms": ["油魚鬚", "尤魚鬚", "魷魚須"] },
+    "FC-005": { "id": "sweet-potato-fries", "synonyms": ["地瓜條", "薯條", "地瓜"] },
+    "FC-006": { "id": "rice-blood", "synonyms": ["米血糕", "豬血糕", "米雪"] }
+  },
+  "mods": {
+    "SPICY": { "option_id": "spicy", "option_name": "辣度",
+               "no_choice": { "id": "NO", "name": "不辣", "synonyms": ["原味"] },
+               "yes_choice": { "id": "YES", "name": "加辣", "synonyms": ["要辣", "辣的", "小辣", "加拉"] } },
+    "GARLIC": { "option_id": "garlic", "option_name": "加蒜",
+                "no_choice": { "id": "NO", "name": "不加蒜", "synonyms": [] },
+                "yes_choice": { "id": "YES", "name": "加蒜", "synonyms": ["要蒜", "加蒜頭", "加算"] } }
+  }
+}

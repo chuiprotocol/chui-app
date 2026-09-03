@@ -1,0 +1,50 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>載入中…</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1 id="shop-name">…</h1>
+      <p id="shop-tagline" class="tagline"></p>
+    </header>
+
+    <div id="msg"></div>
+
+    <section class="card">
+      <h2>菜單</h2>
+      <div id="menu" class="menu-grid"></div>
+    </section>
+
+    <section class="card">
+      <h2>用說的點餐</h2>
+      <button id="talk-btn" class="talk">🎙️ 按住說話</button>
+      <div class="or">或用打字的</div>
+      <form id="text-form">
+        <input id="text-input" placeholder="例：一杯珍珠奶茶半糖去冰" autocomplete="off" />
+        <button type="submit" class="primary">送出</button>
+      </form>
+    </section>
+
+    <section class="card hidden" id="quote-card">
+      <h2>確認訂單</h2>
+      <p id="readback" class="readback"></p>
+      <div id="quote-lines"></div>
+      <button id="pay-btn" class="pay">以 USDC 付款（Slush 錢包）</button>
+      <button id="cancel-btn" class="ghost">取消</button>
+    </section>
+
+    <section class="card hidden" id="receipt-card">
+      <h2>付款完成 🎉</h2>
+      <div id="receipt"></div>
+    </section>
+
+    <footer>Powered by 嘴付協議 · Sui Testnet（測試幣，非真實資金）</footer>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

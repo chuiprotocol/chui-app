@@ -403,6 +403,10 @@ class RerankEngine:
                 overlap = min(c.end, m.end) - max(c.start, m.start)
                 if overlap <= 0:
                     continue
+                # 被選中比對「完整包含」且更長的情況（「珍珠奶茶」涵蓋「奶茶」）
+                # 不構成歧義：更長、更特定的品項名勝出
+                if m.start >= c.start and m.end <= c.end and (m.end - m.start) < (c.end - c.start):
+                    continue
                 if abs(m.score - c.score) < config.RERANK_AMBIGUITY_MARGIN and m.score >= 0.60:
                     return (c.entry.surface, m.entry.surface)
         return None

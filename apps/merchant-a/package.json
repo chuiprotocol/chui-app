@@ -1,0 +1,22 @@
+{
+  "name": "@chui/merchant-a",
+  "private": true,
+  "version": "0.1.0",
+  "description": "商家A「快樂鹽酥雞」：模擬已有自己系統的店——legacy 後端＋官網，經 adapter 接入嘴付協議",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit -p tsconfig.json && vite build",
+    "lint": "tsc --noEmit -p tsconfig.json && node --check backend/server.js && node --check adapter/server.js",
+    "test": "npm run lint",
+    "start:backend": "node backend/server.js",
+    "start:adapter": "node adapter/server.js"
+  },
+  "dependencies": {
+    "@chui/web": "workspace:*",
+    "express": "^4.19.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "vite": "^5.4.0"
+  }
+}

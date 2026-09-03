@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>嘴付</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>👄 嘴付</h1>
+      <p class="tagline">一段語音，哪家都能點——說了就算，付了就走</p>
+    </header>
+
+    <section class="card">
+      <h2>接上協議的商家</h2>
+      <div id="merchants" class="merchant-list">載入中…</div>
+    </section>
+
+    <div id="msg"></div>
+
+    <section class="card center">
+      <button id="talk-btn" class="talk">🎙️<br />按住說話</button>
+      <p class="hint">不用先選店家——協議會依你說的內容自動找到對的店</p>
+      <form id="text-form">
+        <input id="text-input" placeholder="例：我要一份鹽酥雞加辣" autocomplete="off" />
+        <button type="submit" class="primary">用打字的</button>
+      </form>
+    </section>
+
+    <section class="card hidden" id="quote-card">
+      <div class="routed">📍 <span id="routed-merchant"></span></div>
+      <p id="readback" class="readback"></p>
+      <div id="quote-lines"></div>
+      <button id="pay-btn" class="pay">以 USDC 付款（Slush 錢包）</button>
+      <button id="cancel-btn" class="ghost">取消</button>
+    </section>
+
+    <section class="card hidden" id="receipt-card">
+      <h2>付款完成 🎉</h2>
+      <div id="receipt"></div>
+    </section>
+
+    <footer>嘴付協議 demo · Sui Testnet（測試幣，非真實資金）</footer>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="zh-Hant-TW">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>快樂鹽酥雞</title>
+  <link rel="stylesheet" href="/src/style.css" />
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="logo">🍗</div>
+      <h1>快樂鹽酥雞</h1>
+      <p class="tagline">夜市老攤 · 現在用說的也能點</p>
+    </header>
+
+    <div id="msg"></div>
+
+    <section class="card">
+      <h2>菜單</h2>
+      <div id="menu" class="menu-list"></div>
+    </section>
+
+    <section class="card">
+      <h2>用說的點餐</h2>
+      <button id="talk-btn" class="talk">🎙️ 按住說話</button>
+      <div class="or">或用打字的</div>
+      <form id="text-form">
+        <input id="text-input" placeholder="例：我要一份鹽酥雞加辣" autocomplete="off" />
+        <button type="submit" class="primary">送出</button>
+      </form>
+    </section>
+
+    <section class="card hidden" id="quote-card">
+      <h2>確認訂單</h2>
+      <p id="readback" class="readback"></p>
+      <div id="quote-lines"></div>
+      <button id="pay-btn" class="pay">以 USDC 付款（Slush 錢包）</button>
+      <button id="cancel-btn" class="ghost">取消</button>
+    </section>
+
+    <section class="card hidden" id="receipt-card">
+      <h2>付款完成，下鍋了 🎉</h2>
+      <div id="receipt"></div>
+    </section>
+
+    <footer>自家系統 × 嘴付協議（經 adapter 接入）· Sui Testnet 測試幣</footer>
+  </div>
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>

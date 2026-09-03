@@ -1,0 +1,21 @@
+{
+  "$comment": "Chui Hub 商家 registry。payout_address 請換成你自己的兩個 Sui Testnet 地址（收款用；demo 也可先共用一個）。",
+  "merchants": [
+    {
+      "merchant_id": "happy-chicken",
+      "name": "快樂鹽酥雞",
+      "integration": "adapter",
+      "chui_endpoint": "http://127.0.0.1:9101",
+      "payout_address": "0x0000000000000000000000000000000000000000000000000000000000000a01",
+      "web_url": "http://localhost:9102"
+    },
+    {
+      "merchant_id": "goodtea",
+      "name": "好喝奶茶店",
+      "integration": "native",
+      "chui_endpoint": "http://127.0.0.1:9201",
+      "payout_address": "0x0000000000000000000000000000000000000000000000000000000000000b02",
+      "web_url": "http://localhost:9202"
+    }
+  ]
+}

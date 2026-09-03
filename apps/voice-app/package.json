@@ -1,0 +1,21 @@
+{
+  "name": "@chui/voice-app",
+  "private": true,
+  "version": "0.1.0",
+  "description": "嘴付語音入口：一支 App、一段語音，對接上協議的任何商家下單結帳",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit -p tsconfig.json && vite build",
+    "lint": "tsc --noEmit -p tsconfig.json && node --check server.js",
+    "test": "npm run lint",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@chui/web": "workspace:*",
+    "express": "^4.19.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "vite": "^5.4.0"
+  }
+}

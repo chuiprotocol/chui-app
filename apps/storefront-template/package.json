@@ -1,0 +1,21 @@
+{
+  "name": "@chui/storefront-template",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Chui 公版商家應用：改 config JSON 即可開店，原生支援嘴付協議",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit -p tsconfig.json && vite build",
+    "lint": "tsc --noEmit -p tsconfig.json && node --check server.js",
+    "test": "npm run lint",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "@chui/web": "workspace:*",
+    "express": "^4.19.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.0",
+    "vite": "^5.4.0"
+  }
+}

@@ -7,3 +7,5 @@ chui.db*
 tts_cache/
 .ruff_cache/
 .pytest_cache/
+.demo-logs/
+merchant-data.json
