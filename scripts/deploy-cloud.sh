@@ -25,6 +25,11 @@ if ! command -v flyctl >/dev/null && ! command -v fly >/dev/null; then
   export PATH="$HOME/.fly/bin:$PATH"
 fi
 FLY=$(command -v flyctl || command -v fly)
+# 支援 token 登入：FLY_API_TOKEN=xxxx ./scripts/deploy-cloud.sh
+# （flyctl 會自動讀 FLY_API_TOKEN；token 不落地、不進 git）
+if [ -n "${FLY_API_TOKEN:-}" ]; then
+  echo "使用 FLY_API_TOKEN 登入"
+fi
 "$FLY" auth whoami >/dev/null 2>&1 || "$FLY" auth login
 
 say "2/4 建立／取得 app（固定網址）"
