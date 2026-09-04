@@ -1,0 +1,18 @@
+# Fly.io 部署設定（app 名稱由 scripts/deploy-cloud.sh 首跑時寫入）
+primary_region = "nrt"
+
+[build]
+
+[env]
+  PORT = "8700"
+
+[http_service]
+  internal_port = 8700
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 0
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "512mb"

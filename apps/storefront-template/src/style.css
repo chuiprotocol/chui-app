@@ -258,3 +258,13 @@ button.primary:active { background: var(--chui-primary-press); }
   .overlay { align-items: center; }
   .sheet { border-radius: 22px; max-height: 88vh; }
 }
+
+/* 永遠浮在最上層的關閉鍵：對話再長也關得掉（按下即停止錄音） */
+.overlay-close {
+  position: fixed; top: max(10px, env(safe-area-inset-top)); right: 14px; z-index: 70;
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 1px solid var(--chui-line); cursor: pointer;
+  background: var(--chui-surface-card); color: var(--chui-ink);
+  font-size: 1.1rem; font-weight: 700; box-shadow: var(--shadow);
+}
+.overlay-close:active { opacity: 0.75; }

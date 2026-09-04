@@ -537,13 +537,9 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
   const overlay = $("voice-overlay");
   const openBtn = $("open-voice");
   if (overlay && openBtn) {
-    // foodpanda 式：首頁常駐菜單，按「嘴付下單」才開語音面板
-    openBtn.addEventListener("click", () => {
-      overlay.classList.remove("hidden");
-      document.body.classList.add("no-scroll");
-      void enterVoicePanel();
-    });
-    $("close-voice")?.addEventListener("click", () => {
+    // 關閉面板的唯一出口：停止錄音（釋放麥克風）、丟棄未送出內容、
+    // 中止倒數、停掉語音合成。✕／背景灰幕／Esc 都走這裡。
+    const closePanel = () => {
       overlay.classList.add("hidden");
       document.body.classList.remove("no-scroll");
       pendingParsed = null;
@@ -551,6 +547,23 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
       pauseLoop("已暫停");
       if (recorder.isRecording) recorder.stop();
       try { speechSynthesis.cancel(); } catch { /* 無合成器 */ }
+      clearMsg();
+    };
+    // foodpanda 式：首頁常駐菜單，按「嘴付下單」才開語音面板
+    openBtn.addEventListener("click", () => {
+      overlay.classList.remove("hidden");
+      document.body.classList.add("no-scroll");
+      void enterVoicePanel();
+    });
+    $("close-voice")?.addEventListener("click", closePanel);
+    $("overlay-close")?.addEventListener("click", closePanel);
+    // 點背景灰幕關閉（點到面板本身不關）
+    overlay.addEventListener("click", (e) => {
+      if (e.target === overlay) closePanel();
+    });
+    // Esc 關閉
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape" && !overlay.classList.contains("hidden")) closePanel();
     });
     // 已授權用戶：把額度先撈起來顯示在首頁 chip
     void refreshStatus();
