@@ -97,7 +97,8 @@ head_rev=$(git -C "$CONTRACTS_DIR" rev-parse HEAD)
 if [ -n "$current_pkg" ] && [ "$current_rev" = "$head_rev" ]; then
   echo "✅ 合約無變更（${head_rev:0:8}），沿用 CHUI_PACKAGE_ID=${current_pkg}"
 else
-  [ -n "$current_pkg" ] && echo "合約已更新（$current_rev -> $head_rev），重佈署…"
+  # 注意：macOS bash 3.2 對「$var 後緊貼全形字元」會解析錯誤，一律用 ${var}
+  [ -n "${current_pkg}" ] && echo "合約已更新（${current_rev} -> ${head_rev}），重佈署…"
   (cd "$CONTRACTS_DIR/contracts/sui" && ./deploy.sh)   # 內含 sui move test
   PKG=$(python3 -c "import json; print(json.load(open('$CONTRACTS_DIR/deployments/testnet.json'))['package_id'])")
   python3 - "$PKG" "$head_rev" <<'EOF'
