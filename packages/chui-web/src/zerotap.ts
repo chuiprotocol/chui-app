@@ -113,8 +113,12 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
   const packageId = String(health.package_id ?? "");
   const moduleName = String(health.module ?? "vault");
   const unitsPerTwd = Number(health.usdc_units_per_twd ?? 0);
-  const twdToUsdc = (twd: number) =>
-    unitsPerTwd > 0 ? `≈ ${((twd * unitsPerTwd) / 1_000_000).toFixed(2)} USDC` : "";
+  // 訂單相關的 ≈USDC 一律用「該筆訂單鎖定的匯率」（parsed.fx），
+  // 開頁時抓的 healthz 匯率只當備援——oracle 中途故障／跳價也不會顯示不一致
+  const twdToUsdc = (twd: number, orderUnitsPerTwd?: number) => {
+    const units = orderUnitsPerTwd ?? unitsPerTwd;
+    return units > 0 ? `≈ ${((twd * units) / 1_000_000).toFixed(2)} USDC` : "";
+  };
 
   const session = await ChuiAgentSession.load(network);
   // Seal 存證（設定不齊時 sealVault 為 null，存證失敗會誠實顯示、不擋付款流程）
@@ -346,7 +350,7 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
     clearMsg();
     bubble("user", parsed.intent.stt_text || "（語音輸入）");
     const routed = merchantId ? "" : `📍 ${parsed.merchant_name}｜`;
-    const usdcNote = twdToUsdc(parsed.quote.total);
+    const usdcNote = twdToUsdc(parsed.quote.total, parsed.fx?.units_per_twd);
     const question = parsed.readback.text.replace("，確認嗎？", "");
     bubble("agent", `${routed}${question}${usdcNote ? `（${usdcNote}）` : ""}——確認就下單付款，取消就放棄 🎙️`);
     pendingParsed = parsed;
@@ -407,7 +411,7 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
           <div class="step">✓ Agent 自動付款 ${(amountUnits / 1_000_000).toFixed(2)} USDC（口頭確認＋倒數後零按鍵）</div>
           <div class="step">${verified ? "✓ 鏈上驗證通過（digest／金額／店家相符）" : `⏳ 鏈上驗證中：${settlement.verify_reason ?? ""}`}</div>
           <a class="txlink" href="${settlement.explorer_url}" target="_blank" rel="noreferrer">🔗 在 Sui explorer 查看交易 ↗</a>`);
-        bubble("agent", `付款完成！取餐單號 <b>${merchantRef}</b>，總共 ${p.quote.total} 元（${twdToUsdc(p.quote.total) || "USDC"}）。還要什麼跟我說～`);
+        bubble("agent", `付款完成！取餐單號 <b>${merchantRef}</b>，總共 ${p.quote.total} 元（${twdToUsdc(p.quote.total, p.fx?.units_per_twd) || "USDC"}）。還要什麼跟我說～`);
         clearMsg();
         consecutiveErrors = 0;
         consecutiveMisses = 0;

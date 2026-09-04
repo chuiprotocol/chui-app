@@ -255,6 +255,9 @@ async def parse_order(
         },
         "quote": {"lines": lines, "total": total, "currency": "TWD"},
         "readback": {"text": readback},
+        # 這筆訂單「鎖定」的匯率：前端顯示 ≈USDC 一律用它，
+        # 不用開頁時抓的舊值——oracle 中途故障或跳價都不會造成顯示不一致
+        "fx": {"units_per_twd": units_per_twd, "source": fx_source},
     }
 
 
