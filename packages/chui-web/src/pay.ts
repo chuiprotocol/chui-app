@@ -16,9 +16,26 @@ import {
   type MinimallyRequiredFeatures,
 } from "@mysten/wallet-standard";
 import { Transaction, coinWithBalance } from "@mysten/sui/transactions";
+import { SuiGrpcClient } from "@mysten/sui/grpc";
 import type { CheckoutParams } from "./hub.js";
 
 type SuiWallet = WalletWithFeatures<MinimallyRequiredFeatures>;
+
+// coinWithBalance 等 intent 在序列化時需要連鏈查詢（選出用戶的 USDC coin），
+// 但 Slush 呼叫 toJSON() 時不帶 client——所以交給錢包前，
+// 先用我們自己的 client 把 intent 就地解析成實際指令。
+const grpcClients = new Map<string, SuiGrpcClient>();
+function clientFor(network: string): SuiGrpcClient {
+  let client = grpcClients.get(network);
+  if (!client) {
+    client = new SuiGrpcClient({
+      network: network as "testnet",
+      baseUrl: `https://fullnode.${network}.sui.io:443`,
+    });
+    grpcClients.set(network, client);
+  }
+  return client;
+}
 
 /** 找出頁面上可用的 Sui 錢包（Slush 等）。晚註冊的錢包也等得到。 */
 export async function findSuiWallet(timeoutMs = 3000): Promise<SuiWallet> {
@@ -62,9 +79,10 @@ export async function signAndExecuteWithUserWallet(
   const { accounts } = await wallet.features["standard:connect"].connect();
   const account = accounts[0];
   if (!account) throw new Error("錢包沒有可用帳戶");
-  // coinWithBalance 等 intent 在序列化時就需要 sender 才能解析——
-  // 連上錢包拿到地址後立刻補上（錢包端仍會覆核）
+  // intent 解析需要 sender（查誰的 coin）——連上錢包拿到地址後立刻補上
   tx.setSenderIfNotSet(account.address);
+  // 先把 coinWithBalance 等 intent 解析掉，錢包拿到的就是普通交易
+  await tx.prepareForSerialization({ client: clientFor(network) });
   const result = await signAndExecuteTransaction(wallet, {
     transaction: tx,
     account,
@@ -96,6 +114,9 @@ export async function payWithSuiWallet(checkout: CheckoutParams): Promise<PayRes
       tx.pure.vector("u8", Array.from(digestBytes)),
     ],
   });
+
+  // 先解析 coinWithBalance intent（見 clientFor 註解），再交給錢包
+  await tx.prepareForSerialization({ client: clientFor(checkout.network) });
 
   // 便利函式會自動 fallback 舊版 feature 並把回傳正規化
   const result = await signAndExecuteTransaction(wallet, {
