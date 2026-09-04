@@ -16,6 +16,7 @@
  */
 
 import { ClarificationNeeded, HubClient, type CheckoutParams, type ParseResponse } from "./hub.js";
+import { hubDownMessage } from "./config.js";
 import { ChuiAgentSession } from "./session.js";
 import { TapToTalkRecorder } from "./autovoice.js";
 import { runAutoOrder } from "./autoflow.js";
@@ -103,8 +104,8 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
   let health: Record<string, unknown>;
   try {
     health = await (await fetch(`${hub.baseUrl}/healthz`)).json();
-  } catch (e) {
-    msg("error", `連不上 Chui Hub：${(e as Error).message}`);
+  } catch {
+    msg("error", hubDownMessage(hub.baseUrl));
     return;
   }
   const network = String(health.network);

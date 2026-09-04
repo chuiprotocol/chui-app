@@ -5,7 +5,7 @@
  * 自家 legacy 後端與 adapter 跑在 Hub 旁邊，網站完全不需要碰它們。
  */
 
-import { HubClient, resolveRuntimeConfig, wireVoiceLoop } from "@chui/web";
+import { HubClient, hubDownMessage, resolveRuntimeConfig, wireVoiceLoop } from "@chui/web";
 
 const MERCHANT_ID = "happy-chicken";
 
@@ -44,7 +44,9 @@ async function boot() {
         </div>
       </div>`).join("");
   } catch (e) {
-    $("menu").innerHTML = `<div class="error">${(e as Error).message}</div>`;
+    const raw = (e as Error).message;
+    $("menu").innerHTML =
+      `<div class="error">${raw.includes("fetch") ? hubDownMessage(hub.baseUrl) : raw}</div>`;
   }
 
   await wireVoiceLoop({ hub, merchantId: MERCHANT_ID });

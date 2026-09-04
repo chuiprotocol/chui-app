@@ -6,7 +6,7 @@
  * 2. 店內（?m=goodtea）：標準零按鍵流程（一次性授權 → 純語音下單付款）。
  */
 
-import { HubClient, resolveRuntimeConfig, wireVoiceLoop } from "@chui/web";
+import { HubClient, hubDownMessage, resolveRuntimeConfig, wireVoiceLoop } from "@chui/web";
 
 const $ = (id: string) => document.getElementById(id)!;
 const show = (id: string) => $(id).classList.remove("hidden");
@@ -55,7 +55,9 @@ async function renderList(hub: HubClient) {
         <span class="go">前往官網 ↗</span></a>`;
     }).join("");
   } catch (e) {
-    $("merchant-cards").innerHTML = `<div class="error">載入商家清單失敗：${(e as Error).message}</div>`;
+    const raw = (e as Error).message;
+    $("merchant-cards").innerHTML =
+      `<div class="error">${raw.includes("fetch") ? hubDownMessage(hub.baseUrl) : `載入商家清單失敗：${raw}`}</div>`;
   }
 }
 
@@ -90,7 +92,9 @@ async function enterStore(hub: HubClient, merchantId: string) {
         </div>`)
       .join("");
   } catch (e) {
-    $("msg").innerHTML = `<div class="error">${(e as Error).message}</div>`;
+    const raw = (e as Error).message;
+    $("msg").innerHTML =
+      `<div class="error">${raw.includes("fetch") ? hubDownMessage(hub.baseUrl) : raw}</div>`;
   }
 
   $("back-link").addEventListener("click", (e) => {
