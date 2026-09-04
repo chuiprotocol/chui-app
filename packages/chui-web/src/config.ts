@@ -21,14 +21,23 @@ export interface AppRuntimeConfig {
   merchantId?: string;
 }
 
-/** 探測 hub 是否活著（healthz，6 秒逾時）。 */
+/** hub 網址必須是絕對 http(s)——否則 fetch 會變相對路徑打到自己網站，
+ *  拿回 200 的 HTML 被誤判成活著（實例：?hub=Binary）。 */
+export function looksLikeHubUrl(url: string): boolean {
+  return /^https?:\/\/.+/.test(url);
+}
+
+/** 探測 hub 是否活著（healthz 必須回 JSON 且 ok=true，6 秒逾時）。 */
 export async function hubAlive(url: string): Promise<boolean> {
+  if (!looksLikeHubUrl(url)) return false;
   try {
     const ctrl = new AbortController();
     const timer = setTimeout(() => ctrl.abort(), PROBE_TIMEOUT_MS);
     const resp = await fetch(`${url.replace(/\/$/, "")}/healthz`, { signal: ctrl.signal });
     clearTimeout(timer);
-    return resp.ok;
+    if (!resp.ok) return false;
+    const body = await resp.json().catch(() => null);
+    return body?.ok === true;
   } catch {
     return false;
   }
@@ -47,13 +56,14 @@ export async function resolveRuntimeConfig(): Promise<AppRuntimeConfig> {
   const envHub = (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_HUB_URL;
   const envMerchant = (import.meta as unknown as { env?: Record<string, string> }).env?.VITE_MERCHANT_ID;
 
-  if (override) {
+  if (override && looksLikeHubUrl(override)) {
     // 活著才記住：避免把打錯／過期的網址存起來害之後每次開頁都壞
     if (await hubAlive(override)) {
       await idbSet(HUB_STORAGE, override).catch(() => undefined);
     }
     return { hubUrl: override, merchantId: envMerchant };
   }
+  // 不像網址的 ?hub=（如 ?hub=Binary）直接忽略，走下層 fallback
   const remembered = await idbGet<string>(HUB_STORAGE).catch(() => undefined);
   if (remembered) {
     if (await hubAlive(remembered)) {

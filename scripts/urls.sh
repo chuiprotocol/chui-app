@@ -38,11 +38,18 @@ if [ -z "${HUB_URL}" ]; then
   echo "開新隧道…"
   (cloudflared tunnel --url http://localhost:8700 > .demo-logs/tunnel.log 2>&1 &)
   for i in $(seq 1 30); do
-    HUB_URL=$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' .demo-logs/tunnel.log | head -1 || true)
+    # -a：cloudflared 的 log 夾雜非文字位元組時，grep 會改印
+    # 「Binary file … matches」——這串字曾被當成網址塞進 ?hub=。
+    # 一律強制當文字處理，且抽出的字串必須真的是 trycloudflare 網址。
+    HUB_URL=$(grep -a -oE 'https://[a-z0-9-]+\.trycloudflare\.com' .demo-logs/tunnel.log | head -1 || true)
     [ -n "${HUB_URL}" ] && break
     sleep 1
   done
-  [ -n "${HUB_URL}" ] || die "隧道啟動失敗，看 .demo-logs/tunnel.log"
+  case "${HUB_URL}" in
+    https://*.trycloudflare.com) ;;
+    *) echo "--- tunnel.log 最後 20 行 ---"; tail -20 .demo-logs/tunnel.log
+       die "隧道啟動失敗（沒抽到合法網址），完整 log：.demo-logs/tunnel.log" ;;
+  esac
   # 等隧道真的通（DNS 生效可能要幾秒），最多 30 秒
   for i in $(seq 1 30); do
     curl -s -m 5 "${HUB_URL}/healthz" | grep -q '"ok"' && break

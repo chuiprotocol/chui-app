@@ -35,8 +35,10 @@ const SHOP_EMOJI: Record<string, string> = { "happy-chicken": "🍗", goodtea: "
 async function renderList(hub: HubClient) {
   show("list-view");
   try {
-    const { merchants } = await hub.merchants();
-    $("merchant-cards").innerHTML = (merchants as MerchantRow[]).map((m) => {
+    const resp = await hub.merchants();
+    const merchants = (resp?.merchants ?? []) as MerchantRow[];
+    if (!merchants.length) throw new Error("Hub 回應裡沒有商家清單（fetch）");
+    $("merchant-cards").innerHTML = merchants.map((m) => {
       const emoji = SHOP_EMOJI[m.merchant_id] ?? "🍽️";
       if (m.integration === "native") {
         // 公版店面：留在本站進店（保留 ?hub= 覆寫參數）
