@@ -12,13 +12,13 @@
   },
   "order_ref_prefix": "TEA",
   "menu": {
-    "menu_version": "2026-09-04",
+    "menu_version": "2026-09-04.2",
     "currency": "TWD",
     "items": [
       {
         "id": "bubble-milk-tea",
         "name": "珍珠奶茶",
-        "base_price": 130,
+        "base_price": 65,
         "synonyms": [
           "珍奶",
           "波霸奶茶",
@@ -48,7 +48,7 @@
                   "大",
                   "大的"
                 ],
-                "price_delta": 10
+                "price_delta": 5
               }
             ]
           },
@@ -143,7 +143,7 @@
       {
         "id": "milk-tea",
         "name": "奶茶",
-        "base_price": 45,
+        "base_price": 22,
         "synonyms": [
           "內茶",
           "拿茶",
@@ -172,7 +172,7 @@
                   "大",
                   "大的"
                 ],
-                "price_delta": 10
+                "price_delta": 5
               }
             ]
           },
@@ -243,7 +243,7 @@
       {
         "id": "green-tea",
         "name": "四季春青茶",
-        "base_price": 35,
+        "base_price": 18,
         "synonyms": [
           "青茶",
           "四季春",
@@ -270,7 +270,7 @@
                 "synonyms": [
                   "大"
                 ],
-                "price_delta": 10
+                "price_delta": 5
               }
             ]
           },
@@ -333,7 +333,7 @@
       {
         "id": "lemon-black-tea",
         "name": "檸檬紅茶",
-        "base_price": 45,
+        "base_price": 22,
         "synonyms": [
           "檸紅",
           "檸檬洪茶",
@@ -360,7 +360,7 @@
                 "synonyms": [
                   "大"
                 ],
-                "price_delta": 10
+                "price_delta": 5
               }
             ]
           },

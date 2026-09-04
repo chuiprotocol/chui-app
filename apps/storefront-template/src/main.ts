@@ -25,10 +25,14 @@ async function boot() {
   root.setProperty("--accent", config.shop.theme.accent);
   root.setProperty("--bg", config.shop.theme.background);
 
-  // 原生商家：自己的協議菜單就是展示來源
+  // 原生商家：自己的協議菜單就是展示來源；匯率由 Hub 提供標注 ≈USDC
+  const health = await (await fetch(`${config.hub_url.replace(/\/$/, "")}/healthz`)).json().catch(() => ({}));
+  const unitsPerTwd = Number(health.usdc_units_per_twd ?? 0);
+  const usdc = (twd: number) => unitsPerTwd > 0
+    ? `<span class="usdc-note">≈ ${((twd * unitsPerTwd) / 1_000_000).toFixed(2)} USDC</span>` : "";
   const menu = await (await fetch("/chui/menu")).json();
   $("menu").innerHTML = menu.items.map((item: { name: string; base_price: number }) =>
-    `<div class="menu-item"><b>${item.name}</b><span class="price">${item.base_price} 元起</span></div>`,
+    `<div class="menu-item"><b>${item.name}</b><span class="price">${item.base_price} 元起${usdc(item.base_price)}</span></div>`,
   ).join("");
 
   await wireVoiceLoop({

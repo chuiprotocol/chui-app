@@ -23,6 +23,11 @@ async function boot() {
 
   // 菜單：走協議（Hub ← adapter ← 自家 legacy 系統），官網零後端相依
   try {
+    // 匯率也由 Hub 提供，台幣旁標注約多少 USDC
+    const health = await (await fetch(`${hub.baseUrl}/healthz`)).json().catch(() => ({}));
+    const unitsPerTwd = Number(health.usdc_units_per_twd ?? 0);
+    const usdc = (twd: number) => unitsPerTwd > 0
+      ? `<span class="usdc-note">≈ ${((twd * unitsPerTwd) / 1_000_000).toFixed(2)} USDC</span>` : "";
     const resp = await fetch(`${hub.baseUrl}/v1/merchants/${MERCHANT_ID}/menu`);
     const body = await resp.json();
     if (!resp.ok) throw new Error(body?.detail?.message ?? `菜單取得失敗（${resp.status}）`);
@@ -31,7 +36,7 @@ async function boot() {
         <span>${item.name}
           <span class="mods">${item.options.flatMap((o) => o.choices.filter((c) => c.price_delta > 0 || c.name.startsWith("加")).map((c) => c.name)).join("・")}</span>
         </span>
-        <span class="price">${item.base_price} 元</span>
+        <span class="price">${item.base_price} 元${usdc(item.base_price)}</span>
       </div>`).join("");
   } catch (e) {
     $("menu").innerHTML = `<div class="error">${(e as Error).message}</div>`;

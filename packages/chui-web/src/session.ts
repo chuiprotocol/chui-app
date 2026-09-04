@@ -120,6 +120,43 @@ export class ChuiAgentSession {
   }
 
   /**
+   * 加值交易（交給用戶的 Slush 簽）：把 USDC 存進「既有的」Vault，額度累計。
+   * 有綁定就走這條，不再建新 Vault（新 Vault 會把舊的錢丟下）。
+   * includeGasTopUp：agent gas 快用完時順帶補 0.05 SUI。
+   */
+  buildDepositTransaction(
+    moduleName: string,
+    usdcCoinType: string,
+    usdcUnits: bigint,
+    includeGasTopUp: boolean,
+  ): Transaction {
+    if (!this.binding) throw new Error("尚未授權，無法加值——請先完成一次性授權");
+    const tx = new Transaction();
+    if (includeGasTopUp) {
+      const [gasCoin] = tx.splitCoins(tx.gas, [TOPUP_GAS_MIST]);
+      tx.transferObjects([gasCoin], this.address);
+    }
+    tx.moveCall({
+      target: `${this.binding.packageId}::${moduleName}::deposit`,
+      typeArguments: [usdcCoinType],
+      arguments: [
+        tx.object(this.binding.vaultId),
+        coinWithBalance({ type: usdcCoinType, balance: usdcUnits }),
+      ],
+    });
+    return tx;
+  }
+
+  /** 等交易最終落地（加值後刷新額度前用）。 */
+  async waitForSettled(txDigest: string): Promise<void> {
+    try {
+      await this.client.waitForTransaction({ digest: txDigest });
+    } catch (e) {
+      throw wrapChainError(e, this.network);
+    }
+  }
+
+  /**
    * 授權交易上鏈後，從 VaultCreated 事件取出 vault_id / cap_id 並落地綁定。
    * 事件讀不到時退回「掃 agent 名下的 AgentCap 物件」。
    */

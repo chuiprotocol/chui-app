@@ -61,3 +61,18 @@ a { color: #f2a93b; }
 .txlink { color: #f2a93b; font-size: .78rem; word-break: break-all; }
 .fallback { margin: 8px 0; color: #9a8a75; font-size: .8rem; }
 .fallback summary { cursor: pointer; }
+
+/* 結束對話鍵：隨時可停止聆聽，不會誤下單 */
+.endchat {
+  margin-top: 10px;
+  background: transparent;
+  border: 1px solid var(--accent, #d9a066);
+  color: var(--accent, #d9a066);
+  border-radius: 999px;
+  padding: 6px 18px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+.endchat:active { opacity: 0.7; }
+/* 台幣旁的 USDC 標注 */
+.usdc-note { opacity: 0.65; font-size: 0.82em; margin-left: 6px; }

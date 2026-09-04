@@ -29,7 +29,8 @@ export interface AutoOrderCallbacks {
   onError?: (error: Error) => void;
 }
 
-export type AutoOrderInput = { text: string } | { audio: Blob };
+/** parsed＝口頭確認流程已解析並經使用者同意的訂單，直接進下單付款。 */
+export type AutoOrderInput = { text: string } | { audio: Blob } | { parsed: ParseResponse };
 
 /** 跑完整的零按鍵流程。回傳 true = 已完成付款；false = 澄清中或失敗。 */
 export async function runAutoOrder(
@@ -40,11 +41,16 @@ export async function runAutoOrder(
   merchantId?: string,
 ): Promise<boolean> {
   try {
-    callbacks.onProgress?.("辨識中…");
-    const parsed = "text" in input
-      ? await hub.parseText(input.text, merchantId)
-      : await hub.parseAudio(input.audio, merchantId);
-    callbacks.onQuote?.(parsed);
+    let parsed: ParseResponse;
+    if ("parsed" in input) {
+      parsed = input.parsed;
+    } else {
+      callbacks.onProgress?.("辨識中…");
+      parsed = "text" in input
+        ? await hub.parseText(input.text, merchantId)
+        : await hub.parseAudio(input.audio, merchantId);
+      callbacks.onQuote?.(parsed);
+    }
 
     callbacks.onProgress?.(`向 ${parsed.merchant_name} 下單…`);
     const confirmed = await hub.confirm(parsed.order_id);

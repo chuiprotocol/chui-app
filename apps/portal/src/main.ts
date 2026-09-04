@@ -63,8 +63,12 @@ async function enterStore(hub: HubClient, merchantId: string) {
     $("page-title").textContent = `🧋 ${body.name}`;
     $("page-tagline").textContent = "嘴付公版店面 · 用說的就能點";
     document.title = body.name;
+    const health = await (await fetch(`${hub.baseUrl}/healthz`)).json().catch(() => ({}));
+    const unitsPerTwd = Number(health.usdc_units_per_twd ?? 0);
+    const usdc = (twd: number) => unitsPerTwd > 0
+      ? `<span class="usdc-note">≈ ${((twd * unitsPerTwd) / 1_000_000).toFixed(2)} USDC</span>` : "";
     $("store-menu").innerHTML = (body.menu.items as { name: string; base_price: number }[])
-      .map((item) => `<div class="menu-row"><span>${item.name}</span><span class="price">${item.base_price} 元起</span></div>`)
+      .map((item) => `<div class="menu-row"><span>${item.name}</span><span class="price">${item.base_price} 元起${usdc(item.base_price)}</span></div>`)
       .join("");
   } catch (e) {
     $("msg").innerHTML = `<div class="error">${(e as Error).message}</div>`;

@@ -43,9 +43,10 @@ export interface SettlementResponse {
   explorer_url: string;
 }
 
-/** 信心不足時 Hub 回 422，這個錯誤帶著要唸給使用者聽的澄清問題。 */
+/** 信心不足時 Hub 回 422，這個錯誤帶著要唸給使用者聽的澄清問題。
+ *  sttText＝Hub 聽到的原文——口頭確認階段（「確認」「取消」）靠它判讀。 */
 export class ClarificationNeeded extends Error {
-  constructor(public question: string, public candidates: string[]) {
+  constructor(public question: string, public candidates: string[], public sttText = "") {
     super(question);
   }
 }
@@ -66,6 +67,7 @@ async function unwrap<T>(resp: Response): Promise<T> {
     throw new ClarificationNeeded(
       String(detail?.question ?? message),
       Array.isArray(detail?.candidates) ? (detail.candidates as string[]) : [],
+      String(detail?.stt_text ?? ""),
     );
   }
   throw new HubError(code, message, resp.status);

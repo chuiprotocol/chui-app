@@ -35,8 +35,8 @@ from .verify import (
 )
 
 # 1 元（TWD）換多少 USDC 最小單位（6 位小數）。
-# 內部測試匯率：1 元 = 0.001538 USDC → 鹽酥雞加辣 65 元 ≈ 0.10 USDC、
-# 珍珠奶茶 130 元 ≈ 0.20 USDC（省測試幣）。正式演示可調回 32000。
+# 內部測試匯率：1 元 = 0.001538 USDC → 鹽酥雞 32 元 ≈ 0.05 USDC、
+# 珍珠奶茶 65 元 ≈ 0.10 USDC（省測試幣）。正式演示可調回 32000。
 USDC_UNITS_PER_TWD = int(os.environ.get("USDC_UNITS_PER_TWD", "1538"))
 # Sui Testnet 的 USDC coin type（Circle 官方 testnet 發行）
 USDC_COIN_TYPE = os.environ.get(

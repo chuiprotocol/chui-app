@@ -16,19 +16,19 @@ const HUB_PUBLIC_URL = process.env.HUB_PUBLIC_URL || 'http://localhost:8700';
 
 // ---- 自家菜單（legacy 格式：sku / label / cents / 扁平 mods）----
 const PRODUCTS = [
-  { sku: 'FC-001', label: '鹽酥雞', cents: 6500,
+  { sku: 'FC-001', label: '鹽酥雞', cents: 3200,
     mods: [{ code: 'SPICY', label: '加辣', extra_cents: 0 },
-           { code: 'GARLIC', label: '加蒜', extra_cents: 1000 }] },
-  { sku: 'FC-002', label: '甜不辣', cents: 4000,
+           { code: 'GARLIC', label: '加蒜', extra_cents: 500 }] },
+  { sku: 'FC-002', label: '甜不辣', cents: 2000,
     mods: [{ code: 'SPICY', label: '加辣', extra_cents: 0 }] },
-  { sku: 'FC-003', label: '雞皮', cents: 3500,
+  { sku: 'FC-003', label: '雞皮', cents: 1800,
     mods: [{ code: 'SPICY', label: '加辣', extra_cents: 0 }] },
-  { sku: 'FC-004', label: '魷魚鬚', cents: 8000,
+  { sku: 'FC-004', label: '魷魚鬚', cents: 4000,
     mods: [{ code: 'SPICY', label: '加辣', extra_cents: 0 }] },
-  { sku: 'FC-005', label: '地瓜薯條', cents: 4500, mods: [] },
-  { sku: 'FC-006', label: '米血', cents: 3000,
+  { sku: 'FC-005', label: '地瓜薯條', cents: 2200, mods: [] },
+  { sku: 'FC-006', label: '米血', cents: 1500,
     mods: [{ code: 'SPICY', label: '加辣', extra_cents: 0 },
-           { code: 'GARLIC', label: '加蒜', extra_cents: 1000 }] },
+           { code: 'GARLIC', label: '加蒜', extra_cents: 500 }] },
 ];
 
 const app = express();

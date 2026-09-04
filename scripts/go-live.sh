@@ -60,6 +60,20 @@ echo "✅ gas OK"
 # ---------- 2. 部署合約 ----------
 say "2/6 部署 chui::vault 合約"
 [ -f .env ] || cp .env.example .env
+# 內部測試匯率一律矯正為 1538（舊 .env 可能殘留 32000，會把 40 元算成 1.28 USDC）
+python3 - <<'EOF'
+import re
+from pathlib import Path
+p = Path('.env')
+t = p.read_text()
+if re.search(r'(?m)^USDC_UNITS_PER_TWD=', t):
+    t2 = re.sub(r'(?m)^USDC_UNITS_PER_TWD=.*$', 'USDC_UNITS_PER_TWD=1538', t)
+else:
+    t2 = t.rstrip('\n') + '\nUSDC_UNITS_PER_TWD=1538\n'
+if t2 != t:
+    p.write_text(t2)
+    print('✅ .env 匯率已矯正：USDC_UNITS_PER_TWD=1538（內部測試）')
+EOF
 current_pkg=$(grep '^CHUI_PACKAGE_ID=' .env | cut -d= -f2-)
 if [ -n "$current_pkg" ]; then
   echo "✅ .env 已有 CHUI_PACKAGE_ID=${current_pkg}，跳過部署（要重佈署請先清空該行）"
