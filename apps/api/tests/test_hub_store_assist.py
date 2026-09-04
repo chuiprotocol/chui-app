@@ -59,3 +59,32 @@ def test_assist_prompt_contains_vocab_and_text():
     prompt = assist.build_prompt("點一杯真奶半糖", ["珍珠奶茶", "半糖", "去冰"])
     assert "珍珠奶茶" in prompt and "點一杯真奶半糖" in prompt
     assert "無法對應" in prompt  # 模型的「拒答」出口必須寫在提示裡
+
+
+def test_order_store_mongo_path_with_mongomock(monkeypatch):
+    """用 mongomock 驗證 Atlas 程式路徑（upsert／讀回／_id 剝除／更新覆寫）。
+
+    誠實聲明：這驗的是我們的程式邏輯，不是真 Atlas 網路連線——
+    真連線由部署後 healthz 的 order_store=mongodb-atlas 驗證。
+    """
+    mongomock = pytest.importorskip("mongomock")
+    import pymongo
+
+    monkeypatch.setattr(pymongo, "MongoClient", mongomock.MongoClient)
+    monkeypatch.setenv("MONGODB_URI", "mongodb://mongomock/")
+    monkeypatch.setenv("MONGODB_DB", "chui_test")
+    from chui_hub.store import OrderStore
+
+    store = OrderStore()
+    assert store.backend == "mongodb-atlas"
+    order = {"order_id": "ord_m1", "status": "quoted", "total": 65, "tx_digest": ""}
+    store.save(order)
+    got = store.get("ord_m1")
+    assert got == order and "_id" not in got
+    # Mongo 模式 get 回傳的是「複本」：改完必須 save 才會落庫
+    got["status"] = "settled_verified"
+    got["tx_digest"] = "0xabc"
+    store.save(got)
+    again = store.get("ord_m1")
+    assert again["status"] == "settled_verified" and again["tx_digest"] == "0xabc"
+    assert store.get("ord_none") is None
