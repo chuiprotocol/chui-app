@@ -17,6 +17,8 @@ export PATH="$HOME/.local/bin:$PATH"
 say() { printf '\n\033[1;35m== %s ==\033[0m\n' "$1"; }
 die() { printf '\n\033[1;31m❌ %s\033[0m\n' "$1"; exit 1; }
 # 任何一行失敗都明確報出行號與指令——不再無聲中斷、走不到印網址那步
+# （errtrace：子 shell／函式內的失敗也要觸發 trap）
+set -o errtrace
 trap 'printf "\n\033[1;31m❌ go-live 在第 %s 行失敗：%s\n   請把這段訊息貼回給我們排查\033[0m\n" "${LINENO}" "${BASH_COMMAND}"' ERR
 
 # ---------- 0. 基本工具 ----------
@@ -36,6 +38,16 @@ if ! command -v sui >/dev/null; then
   suiup install sui@testnet
 fi
 sui --version
+
+# Testnet 的 protocol 版本前進很快，CLI 太舊會讓合約發佈失敗——
+# brew 裝的 sui 有新版就自動升級（實測 1.68/protocol 118 已發不上 protocol 136 的網路）
+if command -v brew >/dev/null && brew list --versions sui >/dev/null 2>&1; then
+  if [ -n "$(brew outdated --quiet sui 2>/dev/null || true)" ]; then
+    echo "sui CLI 有新版，自動升級中（發佈合約需要跟上 Testnet protocol）…"
+    brew upgrade sui || echo "⚠️ 自動升級失敗——若稍後發佈合約失敗，請手動執行 brew upgrade sui"
+    sui --version
+  fi
+fi
 
 # 建立設定與地址（--yes 全用預設，非互動）
 sui client --yes envs >/dev/null 2>&1 || true
