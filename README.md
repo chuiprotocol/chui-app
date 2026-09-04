@@ -112,6 +112,17 @@ flowchart TB
   Seal key server 發鑰前會 dry-run 鏈上 `log_policy::seal_approve`——
   **只有用戶錢包與店家能解密，嘴付平台（Hub）無權看**。
 
+## 外部服務整合
+
+| 服務 | 用途 | 沒設定時 | healthz 揭露 |
+|---|---|---|---|
+| **Atlas Oracle**（`atlasoracle.io`，價格預言機） | 菜單台幣 → 鏈上 USDC 的**即時匯率**：Pull API 簽章報價（30 秒快取），匯率在報價當下鎖進訂單、整數運算；`ATLAS_RATE_MULTIPLIER` 供內部測試縮小匯率省測試幣 | 退回 `.env` 的 `USDC_UNITS_PER_TWD` 固定匯率 | `fx_source: atlas-oracle / static-env` |
+| **MongoDB Atlas**（資料庫雲，與上者只是撞名） | **訂單持久化**：訂單／取餐單號／付款與鏈上驗證狀態存雲端資料庫——Hub 重啟不掉單，冪等檢查升級成真資料庫層；`./scripts/setup-atlas.sh '<連線字串>'` 一鍵接線 | 退回行程記憶體（重啟清空） | `order_store: mongodb-atlas / memory` |
+| EastRouter（LLM 聚合 API） | 語音解析信心不足時把原文**重述成菜單詞彙標準句**再解析；LLM 只做重述，扣款仍要口頭確認＋5 秒防呆倒數 | 直接走澄清流程 | `llm_assist: eastrouter / off` |
+| Seal ＋ Walrus（Mysten） | 點餐對話 log **端對端加密存證**：瀏覽器內加密、密文上 Walrus，只有用戶錢包與店家可解（見架構圖⑥） | 不做存證（不影響付款） | `seal_key_servers` 等欄位 |
+
+以上全部「可插拔、失敗誠實退回」：任何一個外部服務掛掉都不會擋住點餐主流程。
+
 ## 冪等性（同一筆訂單 confirm N 次只扣一次）
 
 1. 已結算 → 直接回同一張收據（HTTP 200）。
