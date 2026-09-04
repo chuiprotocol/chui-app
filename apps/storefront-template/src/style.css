@@ -1,52 +1,51 @@
-/* 好喝奶茶店（公版店面）——foodpanda 式外送風格（RWD、亮色、卡片菜單＋語音面板）。 */
+/* Chui Protocol 設計系統（三站共用）。
+ *
+ * 顏色一律來自 branding/chui-tokens.css 的變數：
+ * - 品牌色（--chui-primary 深藍）永不佔用狀態色；
+ * - 綠／黃／紅（--chui-ok / --chui-pending / --chui-fail）保留給支付狀態；
+ * - [data-theme="dark"] 自動深色（index.html 依系統偏好設定 data-theme）。
+ * 插畫採 anthropic-art skill 的三層式手繪語彙（滿版底色＋象牙白承載形＋粗黑線）。
+ */
 
-:root {
-  --primary: #a9713c;
-  --primary-deep: #8c5a2b;
-  --accent: #d9a066;
-  --bg: #fbf6ef;
-  --card: #ffffff;
-  --ink: #2a1e1b;
-  --ink-soft: #8a7a70;
-  --line: #eee0cd;
-  --ok: #2f9e44;
-  --err: #e03131;
-  --radius: 18px;
-  --shadow: 0 4px 18px rgba(90, 60, 25, 0.10);
-}
+@import "./chui-tokens.css";
 
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
 body {
-  background: var(--bg);
-  color: var(--ink);
+  background: var(--chui-surface);
+  color: var(--chui-ink);
   font-family: "PingFang TC", "Noto Sans TC", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
 body.no-scroll { overflow: hidden; }
 .hidden { display: none !important; }
 
+:root {
+  --radius: 16px;
+  --shadow: 0 3px 14px rgba(16, 26, 46, 0.08);
+}
+[data-theme="dark"] :root, [data-theme="dark"] { --shadow: 0 3px 14px rgba(0, 0, 0, 0.4); }
+
 /* ---- 頂部 app bar ---- */
 .appbar {
   position: sticky; top: 0; z-index: 30;
   display: flex; align-items: center; gap: 12px;
   padding: 10px clamp(14px, 4vw, 40px);
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--line);
+  background: var(--chui-surface-card);
+  border-bottom: 1px solid var(--chui-line);
 }
-.appbar .logo { width: 42px; height: 42px; border-radius: 12px; }
+.appbar .logo { width: 40px; height: 40px; border-radius: 10px; }
 .appbar .titles { flex: 1; min-width: 0; }
 .appbar h1 { margin: 0; font-size: 1.05rem; letter-spacing: 0.02em; }
-.appbar .tagline { margin: 0; font-size: 0.74rem; color: var(--ink-soft); }
+.appbar .tagline { margin: 0; font-size: 0.74rem; color: var(--chui-ink-muted); }
 .chip {
   font-size: 0.74rem; padding: 4px 10px; border-radius: 999px;
-  background: #f7ecdd; color: var(--primary-deep); border: 1px solid #e5cfae;
-  white-space: nowrap;
+  background: var(--chui-primary-soft); color: var(--chui-primary);
+  border: 1px solid var(--chui-line); white-space: nowrap; font-weight: 600;
 }
 .chip:empty { display: none; }
 
-/* ---- 嘴付下單 CTA ---- */
+/* ---- 嘴付下單 CTA（品牌深藍、扁平） ---- */
 .cta-voice {
   display: flex; align-items: center; justify-content: center; gap: 10px;
   width: min(680px, calc(100% - 28px));
@@ -54,28 +53,25 @@ body.no-scroll { overflow: hidden; }
   padding: 14px 18px;
   border: 0; border-radius: 999px; cursor: pointer;
   font-size: 1.05rem; font-weight: 700; color: #fff;
-  background: linear-gradient(120deg, var(--primary), var(--accent));
-  box-shadow: 0 8px 22px rgba(140, 90, 43, 0.35);
-  transition: transform 0.12s ease;
+  background: var(--chui-primary);
+  box-shadow: var(--shadow);
+  transition: transform 0.12s ease, background 0.12s ease;
 }
-.cta-voice:active { transform: scale(0.97); }
-.cta-voice .sub { font-size: 0.72rem; font-weight: 500; opacity: 0.9; }
+.cta-voice:active { transform: scale(0.97); background: var(--chui-primary-press); }
+.cta-voice .sub { font-size: 0.72rem; font-weight: 500; opacity: 0.85; }
 
-/* ---- Hero ---- */
+/* ---- Hero（anthropic-art 手繪插畫） ---- */
 .hero {
   margin: 14px auto 0; width: min(680px, calc(100% - 28px));
-  border-radius: var(--radius);
-  padding: 20px 22px;
-  color: #fff;
-  background:
-    radial-gradient(circle at 88% 20%, rgba(255, 255, 255, 0.22) 0 46px, transparent 47px),
-    linear-gradient(120deg, var(--primary-deep), var(--primary) 55%, var(--accent));
+  border-radius: var(--radius); overflow: hidden;
+  border: 1px solid var(--chui-line);
+  background: var(--chui-surface-card);
   box-shadow: var(--shadow);
-  display: flex; align-items: center; gap: 16px;
 }
-.hero .dish { font-size: 2.6rem; filter: drop-shadow(0 3px 4px rgba(0,0,0,0.2)); }
-.hero h2 { margin: 0 0 4px; font-size: 1.2rem; }
-.hero p { margin: 0; font-size: 0.8rem; opacity: 0.92; }
+.hero-art { display: block; width: 100%; height: auto; }
+.hero-copy { padding: 12px 18px 14px; border-top: 1px solid var(--chui-line); }
+.hero-copy h2 { margin: 0 0 4px; font-size: 1.1rem; }
+.hero-copy p { margin: 0; font-size: 0.8rem; color: var(--chui-ink-muted); }
 
 /* ---- 內容 ---- */
 main { width: min(680px, calc(100% - 28px)); margin: 0 auto; padding-bottom: 90px; }
@@ -83,52 +79,54 @@ main { width: min(680px, calc(100% - 28px)); margin: 0 auto; padding-bottom: 90p
   display: flex; align-items: baseline; gap: 8px;
   margin: 22px 4px 10px; font-size: 1.05rem; font-weight: 800;
 }
-.section-title small { color: var(--ink-soft); font-weight: 500; }
+.section-title small { color: var(--chui-ink-muted); font-weight: 500; }
 
 .menu-grid {
   display: grid; gap: 12px;
   grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
 }
 .menu-card {
-  background: var(--card); border-radius: var(--radius);
-  box-shadow: var(--shadow); border: 1px solid var(--line);
+  background: var(--chui-surface-card); border-radius: var(--radius);
+  box-shadow: var(--shadow); border: 1px solid var(--chui-line);
   overflow: hidden; display: flex; flex-direction: column;
 }
 .menu-card .thumb {
   display: flex; align-items: center; justify-content: center;
   font-size: 2.4rem; padding: 18px 0 10px;
-  background: linear-gradient(180deg, #f7eddd, #fff);
+  background: var(--chui-primary-soft);
 }
-.menu-card .info { padding: 4px 12px 12px; }
+.menu-card .info { padding: 8px 12px 12px; }
 .menu-card .name { font-weight: 700; font-size: 0.95rem; }
-.menu-card .mods { font-size: 0.7rem; color: var(--ink-soft); min-height: 1.1em; margin-top: 2px; }
+.menu-card .mods { font-size: 0.7rem; color: var(--chui-ink-muted); min-height: 1.1em; margin-top: 2px; }
 .menu-card .pricerow { display: flex; align-items: baseline; gap: 6px; margin-top: 8px; }
-.menu-card .price { font-weight: 800; color: var(--primary-deep); }
-.usdc-note { font-size: 0.68rem; color: var(--ink-soft); }
+.menu-card .price { font-weight: 800; color: var(--chui-primary); }
+.usdc-note { font-size: 0.68rem; color: var(--chui-ink-muted); }
 
+/* 支付狀態訊息：綠＝已確認、黃＝進行中、紅＝失敗（品牌色不越界） */
 #msg { width: min(680px, calc(100% - 28px)); margin: 10px auto 0; }
 #msg .error, #msg .info, #msg .ok {
   padding: 12px 14px; border-radius: 12px; font-size: 0.88rem; margin-bottom: 8px;
+  background: var(--chui-surface-card);
 }
-#msg .error { background: #fff0f0; color: var(--err); border: 1px solid #ffc9c9; }
-#msg .info { background: #eef6ff; color: #1864ab; border: 1px solid #bdddff; }
-#msg .ok { background: #ebfbee; color: var(--ok); border: 1px solid #b2f2bb; }
+#msg .error { color: var(--chui-fail); border: 1.5px solid var(--chui-fail); }
+#msg .info { color: var(--chui-pending); border: 1.5px solid var(--chui-pending); }
+#msg .ok { color: var(--chui-ok); border: 1.5px solid var(--chui-ok); }
 
 footer {
-  text-align: center; color: var(--ink-soft); font-size: 0.72rem;
+  text-align: center; color: var(--chui-ink-muted); font-size: 0.72rem;
   padding: 22px 12px 30px;
 }
 
 /* ---- 語音面板（overlay bottom sheet） ---- */
 .overlay {
   position: fixed; inset: 0; z-index: 50;
-  background: rgba(30, 15, 5, 0.45);
+  background: rgba(16, 26, 46, 0.5);
   display: flex; align-items: flex-end; justify-content: center;
 }
 .sheet {
   width: min(680px, 100%);
   max-height: 92dvh; overflow-y: auto;
-  background: var(--bg);
+  background: var(--chui-surface);
   border-radius: 22px 22px 0 0;
   padding: 0 16px 24px;
   animation: sheet-up 0.22s ease;
@@ -137,60 +135,64 @@ footer {
 .sheet-head {
   position: sticky; top: 0; z-index: 5;
   display: flex; align-items: center; justify-content: space-between;
-  padding: 14px 2px 10px; background: var(--bg);
+  padding: 14px 2px 10px; background: var(--chui-surface);
   font-weight: 800; font-size: 1rem;
 }
 .sheet-head .close {
-  border: 0; background: #fff; width: 34px; height: 34px; border-radius: 50%;
-  font-size: 1rem; cursor: pointer; box-shadow: var(--shadow);
+  border: 1px solid var(--chui-line); background: var(--chui-surface-card);
+  color: var(--chui-ink);
+  width: 34px; height: 34px; border-radius: 50%;
+  font-size: 1rem; cursor: pointer;
 }
 
 .card {
-  background: var(--card); border-radius: var(--radius);
-  box-shadow: var(--shadow); border: 1px solid var(--line);
+  background: var(--chui-surface-card); border-radius: var(--radius);
+  box-shadow: var(--shadow); border: 1px solid var(--chui-line);
   padding: 18px; margin-top: 12px;
 }
 .card.center { text-align: center; }
 .card h2 { margin: 6px 0 10px; font-size: 1.05rem; }
 .bigicon { font-size: 2.2rem; }
-.accent { color: var(--primary-deep); }
+.accent { color: var(--chui-primary); }
 .bullet { font-size: 0.85rem; text-align: left; margin: 6px 0; }
-.fineprint { font-size: 0.72rem; color: var(--ink-soft); text-align: center; margin-top: 10px; }
-.fineprint a { color: var(--primary-deep); }
+.fineprint { font-size: 0.72rem; color: var(--chui-ink-muted); text-align: center; margin-top: 10px; }
+.fineprint a { color: var(--chui-primary); }
 .info { font-size: 0.82rem; }
-code { background: #f6ede2; border-radius: 6px; padding: 1px 5px; font-size: 0.85em; }
+code { background: var(--chui-primary-soft); border-radius: 6px; padding: 1px 5px; font-size: 0.85em; }
 
 form#topup-form { display: flex; gap: 8px; margin-top: 12px; }
 #topup-usdc {
-  flex: 0 0 84px; border: 1px solid var(--line); border-radius: 12px;
-  padding: 10px 12px; font-size: 1rem; text-align: center; background: #fff;
+  flex: 0 0 84px; border: 1px solid var(--chui-line); border-radius: 12px;
+  padding: 10px 12px; font-size: 1rem; text-align: center;
+  background: var(--chui-surface-card); color: var(--chui-ink);
 }
 button.primary {
   flex: 1; border: 0; border-radius: 12px; cursor: pointer;
-  background: linear-gradient(120deg, var(--primary), var(--accent));
+  background: var(--chui-primary);
   color: #fff; font-weight: 700; font-size: 0.95rem; padding: 12px 14px;
 }
-button.primary:active { opacity: 0.85; }
+button.primary:active { background: var(--chui-primary-press); }
 
-/* 語音畫面 */
+/* 語音畫面：聆聽中＝pending 黃（等待狀態，不用品牌色） */
 .micwrap { text-align: center; padding: 18px 0 4px; }
 .mic {
   width: 92px; height: 92px; margin: 0 auto; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
   font-size: 2.2rem; cursor: pointer; user-select: none;
-  background: #fff; box-shadow: var(--shadow); border: 3px solid var(--line);
+  background: var(--chui-surface-card); box-shadow: var(--shadow);
+  border: 3px solid var(--chui-line);
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 .mic.live {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 8px rgba(140, 90, 43, 0.12), var(--shadow);
+  border-color: var(--chui-pending);
+  box-shadow: 0 0 0 8px color-mix(in srgb, var(--chui-pending) 16%, transparent), var(--shadow);
   animation: pulse 1.6s infinite;
 }
-@keyframes pulse { 50% { box-shadow: 0 0 0 16px rgba(140, 90, 43, 0.06), var(--shadow); } }
-.listening { margin-top: 10px; font-size: 0.85rem; color: var(--ink-soft); }
+@keyframes pulse { 50% { box-shadow: 0 0 0 16px color-mix(in srgb, var(--chui-pending) 7%, transparent), var(--shadow); } }
+.listening { margin-top: 10px; font-size: 0.85rem; color: var(--chui-ink-muted); }
 .endchat {
   margin-top: 10px; background: transparent; cursor: pointer;
-  border: 1.5px solid var(--primary); color: var(--primary-deep);
+  border: 1.5px solid var(--chui-primary); color: var(--chui-primary);
   border-radius: 999px; padding: 6px 18px; font-size: 0.88rem; font-weight: 600;
 }
 .endchat:active { opacity: 0.7; }
@@ -200,40 +202,57 @@ button.primary:active { opacity: 0.85; }
   max-width: 86%; padding: 10px 14px; border-radius: 16px; font-size: 0.9rem;
   box-shadow: var(--shadow); line-height: 1.5;
 }
-.bubble.user { align-self: flex-end; background: linear-gradient(120deg, var(--primary), var(--primary-deep)); color: #fff; border-bottom-right-radius: 4px; }
-.bubble.agent { align-self: flex-start; background: #fff; border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+.bubble.user { align-self: flex-end; background: var(--chui-primary); color: #fff; border-bottom-right-radius: 4px; }
+.bubble.agent { align-self: flex-start; background: var(--chui-surface-card); border: 1px solid var(--chui-line); border-bottom-left-radius: 4px; }
 
 .progress-card {
-  background: #fff; border: 1px dashed var(--accent); border-radius: 14px;
+  background: var(--chui-surface-card); border: 1.5px dashed var(--chui-ok); border-radius: 14px;
   padding: 12px 14px; font-size: 0.82rem;
 }
 .progress-card .step { margin: 3px 0; }
-.progress-card .logline { color: var(--ink-soft); }
-.txlink { display: inline-block; margin-top: 6px; color: var(--primary-deep); font-weight: 600; font-size: 0.82rem; }
+.progress-card .logline { color: var(--chui-ink-muted); }
+.txlink { display: inline-block; margin-top: 6px; color: var(--chui-primary); font-weight: 600; font-size: 0.82rem; }
 .sealed-id code { word-break: break-all; }
 
-/* 防呆倒數卡 */
+/* 防呆倒數卡：紅＝可中止的危險動作 */
 .regret { text-align: center; }
 .regret-title { font-size: 1rem; }
-.regret-count { color: var(--err); font-size: 1.3em; }
-.regret-sub { font-size: 0.8rem; color: var(--ink-soft); margin: 4px 0 10px; }
+.regret-count { color: var(--chui-fail); font-size: 1.3em; }
+.regret-sub { font-size: 0.8rem; color: var(--chui-ink-muted); margin: 4px 0 10px; }
 .regret-btn {
   border: 0; border-radius: 999px; cursor: pointer;
-  background: var(--err); color: #fff; font-weight: 800; font-size: 1rem;
-  padding: 12px 26px; box-shadow: 0 6px 16px rgba(224, 49, 49, 0.35);
+  background: var(--chui-fail); color: #fff; font-weight: 800; font-size: 1rem;
+  padding: 12px 26px; box-shadow: var(--shadow);
 }
 .regret-btn:disabled { opacity: 0.4; }
-.regret-done .regret-title { color: var(--ok); }
+.regret-done .regret-title { color: var(--chui-ok); }
 
 .fallback { margin-top: 12px; font-size: 0.85rem; }
-.fallback summary { color: var(--ink-soft); cursor: pointer; }
+.fallback summary { color: var(--chui-ink-muted); cursor: pointer; }
 .fallback form { display: flex; gap: 8px; margin-top: 8px; }
 .fallback input {
-  flex: 1; border: 1px solid var(--line); border-radius: 12px;
-  padding: 10px 12px; font-size: 0.95rem; background: #fff;
+  flex: 1; border: 1px solid var(--chui-line); border-radius: 12px;
+  padding: 10px 12px; font-size: 0.95rem;
+  background: var(--chui-surface-card); color: var(--chui-ink);
 }
 
-/* RWD：桌機三欄菜單、面板置中成對話框 */
+/* ---- 入口：商家卡片（portal 用；其他站無此節點無妨） ---- */
+.merchant-cards { display: grid; gap: 12px; grid-template-columns: 1fr; }
+.merchant-card {
+  display: flex; align-items: center; gap: 12px; text-decoration: none;
+  background: var(--chui-surface-card); color: var(--chui-ink);
+  border: 1px solid var(--chui-line); border-radius: var(--radius);
+  box-shadow: var(--shadow); padding: 16px;
+}
+.merchant-card .memoji { font-size: 2rem; }
+.merchant-card .mname { font-weight: 800; font-size: 1rem; flex: 1; }
+.merchant-card .kind { font-size: 0.68rem; padding: 3px 9px; border-radius: 999px; font-weight: 600; }
+.merchant-card .kind.native { background: var(--chui-primary-soft); color: var(--chui-primary); }
+.merchant-card .kind.adapter { background: var(--chui-line); color: var(--chui-ink-muted); }
+.merchant-card .go { font-size: 0.78rem; color: var(--chui-primary); font-weight: 700; }
+
+/* RWD：桌機三欄菜單、面板置中、商家卡兩欄 */
+@media (min-width: 640px) { .merchant-cards { grid-template-columns: 1fr 1fr; } }
 @media (min-width: 900px) {
   .menu-grid { grid-template-columns: repeat(3, 1fr); }
   .overlay { align-items: center; }

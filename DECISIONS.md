@@ -269,3 +269,27 @@
 - **代價**：每筆訂單多 5 秒；重佈署使舊授權失效（testnet 可接受）。
   沙箱無 sui CLI／無鏈上與 Walrus 出網，Move 測試與存證上傳由
   deploy.sh 與真機驗證把關。
+
+## D24. Chui 品牌系統落地：tokens、mark 家族、anthropic-art 手繪插畫語彙
+
+- **情境**：用戶提供 chui-tokens.css（深藍品牌 #2340E6、狀態色綠黃紅
+  保留給支付、含深色模式），指定四件品牌資產的用途，並要求安裝
+  anthropic-art skill 應用到 UI。
+- **決定**：
+  1. `branding/`：chui-tokens.css（canonical）＋自繪 chui-mark.svg
+     （深藍單色：對話框＋硬幣＋聲波點）、chui-lockup.svg（橫式加
+     Chui Protocol 字樣，README 頂圖）、chui-mark-inverse.svg
+     （currentColor）、追加 chui-app-icon.svg（象牙白承載形打底——
+     純深藍 mark 在深色 UI 上不可見，App/favicon 場景需要底）。
+  2. 三站 CSS 全面改吃 tokens：品牌深藍只用於互動元素；支付狀態
+     嚴格用 --chui-ok/-pending/-fail（聆聽中＝pending 黃、倒數棄單
+     ＝fail 紅、鏈上驗證卡＝ok 綠）；扁平化（去掉漸層，符合手繪
+     語彙的 flat 原則）；依系統偏好自動深色（data-theme 腳本）。
+  3. anthropic-art skill 安裝於 .claude/skills/anthropic-art（供
+     之後的 Claude session 使用）。本環境無點陣圖生成工具，改以
+     「SVG 手寫」實作其三層式規範（滿版 accent 底、55–80% 不規則
+     象牙白承載形、#141413 圓頭粗線）：三張 hero 插畫（portal＝
+     sky 手遞話語成硬幣、鹽酥雞＝clay 紙袋熱氣、奶茶＝oat 珍奶
+     聲波）＋兩顆商家 logo 重繪，並記錄於本條目以示誠實。
+- **代價**：voice-app（舊入口）僅換 icon 未整套改版；商家站不再有
+  各自主色（識別交給 logo 與 hero 插畫），符合「品牌色不越界」規則。

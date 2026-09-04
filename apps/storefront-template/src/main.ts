@@ -20,10 +20,7 @@ async function boot() {
   document.title = config.shop.name;
   $("shop-name").textContent = config.shop.name;
   $("shop-tagline").textContent = config.shop.tagline;
-  const root = document.documentElement.style;
-  root.setProperty("--primary", config.shop.theme.primary);
-  root.setProperty("--accent", config.shop.theme.accent);
-  root.setProperty("--bg", config.shop.theme.background);
+  // 顏色統一走 Chui 設計 tokens（chui-tokens.css）；店家識別交給 logo 與 hero 插畫
 
   // 原生商家：自己的協議菜單就是展示來源；匯率由 Hub 提供標注 ≈USDC
   const health = await (await fetch(`${config.hub_url.replace(/\/$/, "")}/healthz`)).json().catch(() => ({}));

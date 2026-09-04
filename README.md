@@ -1,3 +1,5 @@
+<p align="center"><img src="branding/chui-lockup.svg" alt="Chui Protocol 嘴付協議" width="430" /></p>
+
 # Chui Protocol（嘴付協議）—— 應用層
 
 > 用一句話點餐，用一筆鏈上交易付款。

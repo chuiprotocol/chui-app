@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 240">
+  <!-- 快樂鹽酥雞 hero（anthropic-art 三層式）：clay 滿版底、象牙白承載形、近黑手繪線。
+       隱喻：紙袋鹽酥雞冒著熱氣，旁邊一句話就是一枚硬幣。 -->
+  <rect width="640" height="240" fill="#D97757"/>
+  <path fill="#FAF9F5" d="M96 52 Q66 60 64 100 Q60 150 88 184 Q116 210 200 206 L470 202 Q562 200 576 152 Q588 106 562 70 Q536 40 452 42 L180 46 Q122 44 96 52 Z"/>
+  <g stroke="#141413" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- 紙袋（不對稱梯形，折口） -->
+    <path stroke-width="9" d="M210 108 L200 190 Q200 198 210 198 L306 196 Q314 196 314 188 L308 106"/>
+    <path stroke-width="8" d="M204 122 L312 120"/>
+    <!-- 袋裡的雞塊：三個不規則塊 -->
+    <path stroke-width="8" d="M228 104 Q224 84 244 82 Q262 80 262 98"/>
+    <path stroke-width="8" d="M264 100 Q266 78 288 82 Q304 86 298 104"/>
+    <path stroke-width="8" d="M240 106 Q246 94 258 100"/>
+    <!-- 熱氣兩撇 -->
+    <path stroke-width="7" d="M244 62 Q238 48 246 36"/>
+    <path stroke-width="7" d="M278 60 Q286 46 278 32"/>
+    <!-- 辣椒 -->
+    <path stroke-width="8" d="M356 166 Q392 172 400 146 Q404 132 392 126 Q392 152 356 166 Z"/>
+    <path stroke-width="7" d="M388 122 Q396 112 406 116"/>
+    <!-- 對話框裡一枚硬幣：說了就付 -->
+    <path stroke-width="8.5" d="M446 74 Q428 78 428 98 L428 118 Q428 136 448 138 L462 140 L456 160 L488 140 L528 138 Q546 136 546 118 L546 96 Q546 76 526 76 Z"/>
+    <circle cx="487" cy="107" r="17" stroke-width="7.5" stroke-dasharray="94 8"/>
+    <path stroke-width="7" d="M487 98 L487 117 M481 103.5 L494 103"/>
+  </g>
+  <circle cx="332" cy="92" r="6" fill="#141413"/>
+  <circle cx="418" cy="180" r="5.5" fill="#141413"/>
+</svg>

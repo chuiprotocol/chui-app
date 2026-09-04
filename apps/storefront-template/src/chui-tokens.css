@@ -1,0 +1,38 @@
+/* Chui Protocol — colour tokens
+   Rule: the brand colour never occupies a state colour.
+   Green / amber / red stay reserved for payment states. */
+
+:root {
+  /* Base */
+  --chui-ink:          #101A2E;  /* logo, headings, dark surfaces */
+  --chui-ink-muted:    #5A6879;  /* secondary text, captions */
+  --chui-surface:      #F7F8FA;  /* page background */
+  --chui-surface-card: #FFFFFF;
+  --chui-line:         #E3E7EC;  /* dividers, input borders */
+
+  /* Brand / interactive */
+  --chui-primary:      #2340E6;  /* links, buttons, focus ring */
+  --chui-primary-press:#1A2FAF;
+  --chui-primary-soft: #E8ECFF;  /* selected rows, info banners */
+
+  /* Payment states — do not reuse for branding */
+  --chui-ok:           #0E8A5F;  /* transfer confirmed on chain */
+  --chui-pending:      #B7791F;  /* listening / awaiting finality */
+  --chui-fail:         #D1342B;  /* rejected, reverted, risk-blocked */
+}
+
+[data-theme="dark"] {
+  --chui-ink:          #F2F5F9;
+  --chui-ink-muted:    #94A2B4;
+  --chui-surface:      #0B1220;
+  --chui-surface-card: #131C2E;
+  --chui-line:         #23304A;
+
+  --chui-primary:      #6A82FF;
+  --chui-primary-press:#8C9EFF;
+  --chui-primary-soft: #1A2445;
+
+  --chui-ok:           #35C48D;
+  --chui-pending:      #E0A63C;
+  --chui-fail:         #FF6B60;
+}

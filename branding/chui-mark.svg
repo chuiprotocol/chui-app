@@ -1,14 +1,17 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120">
-  <!-- App icon 版：象牙白承載形打底（深淺色主題都清楚），上面是 chui-mark。
-       favicon、頁面 logo 用這顆；純深藍單色版（chui-mark.svg）留給白底場景。 -->
-  <rect width="120" height="120" rx="28" fill="#FAF9F5"/>
-  <path fill="none" stroke="#E3E7EC" stroke-width="2" d="M14 6 Q6 8 6 20 L6 100 Q6 114 20 114 L100 114 Q114 114 114 100 L114 20 Q114 6 100 6 Z" opacity="0.6"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none">
+  <!-- Chui Protocol mark：深藍單色（--chui-ink #101A2E）。
+       手繪語彙（anthropic-art skill）：粗細不均的圓頭線條、刻意不對稱。
+       語意：對話框（開口點餐）＋硬幣（說了就付）＋聲波點。 -->
   <g stroke="#101A2E" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- 對話框：手繪不規則輪廓，尾巴朝左下 -->
     <path stroke-width="8.5"
       d="M30 22 Q22 23 20.5 33 L19.5 62 Q19.5 72 29 73.5 L36 74.5 L30.5 92 L54 75.5 L86 74 Q96.5 73 97.5 62.5 L98.5 34 Q98.5 23.5 88 22.5 Z"/>
+    <!-- 硬幣：框內偏右，圓不正、有缺口 -->
     <circle cx="66" cy="48" r="15.5" stroke-width="7.5" stroke-dasharray="82 10"/>
+    <!-- 硬幣上的「付」意符：一豎一橫的極簡記號 -->
     <path stroke-width="6.5" d="M66 40.5 L66 56"/>
     <path stroke-width="6" d="M60.5 44 L72 43.5"/>
+    <!-- 聲波：兩個實心點＋一撇（說話中） -->
     <path stroke-width="7" d="M36 41 Q39 46 36 52"/>
   </g>
   <circle cx="44" cy="44" r="4.6" fill="#101A2E"/>

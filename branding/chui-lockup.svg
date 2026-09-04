@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 430 120" fill="none">
+  <!-- Chui Protocol 橫式 lockup：標誌＋字樣（README 頂端、簡報封面用） -->
+  <g>
+  <!-- Chui Protocol mark：深藍單色（--chui-ink #101A2E）。
+       手繪語彙（anthropic-art skill）：粗細不均的圓頭線條、刻意不對稱。
+       語意：對話框（開口點餐）＋硬幣（說了就付）＋聲波點。 -->
+  <g stroke="#101A2E" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- 對話框：手繪不規則輪廓，尾巴朝左下 -->
+    <path stroke-width="8.5"
+      d="M30 22 Q22 23 20.5 33 L19.5 62 Q19.5 72 29 73.5 L36 74.5 L30.5 92 L54 75.5 L86 74 Q96.5 73 97.5 62.5 L98.5 34 Q98.5 23.5 88 22.5 Z"/>
+    <!-- 硬幣：框內偏右，圓不正、有缺口 -->
+    <circle cx="66" cy="48" r="15.5" stroke-width="7.5" stroke-dasharray="82 10"/>
+    <!-- 硬幣上的「付」意符：一豎一橫的極簡記號 -->
+    <path stroke-width="6.5" d="M66 40.5 L66 56"/>
+    <path stroke-width="6" d="M60.5 44 L72 43.5"/>
+    <!-- 聲波：兩個實心點＋一撇（說話中） -->
+    <path stroke-width="7" d="M36 41 Q39 46 36 52"/>
+  </g>
+  <circle cx="44" cy="44" r="4.6" fill="#101A2E"/>
+  <circle cx="44" cy="55" r="4.6" fill="#101A2E"/>
+</g>
+  <text x="132" y="62" font-family="ui-rounded, 'Avenir Next', 'PingFang TC', system-ui, sans-serif"
+        font-size="40" font-weight="800" fill="#101A2E" letter-spacing="0.5">Chui Protocol</text>
+  <text x="134" y="92" font-family="'PingFang TC', 'Noto Sans TC', system-ui, sans-serif"
+        font-size="21" font-weight="600" fill="#5A6879" letter-spacing="6">嘴付協議・說了就算，付了就走</text>
+</svg>

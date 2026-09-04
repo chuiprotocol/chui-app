@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 240">
+  <!-- 好喝奶茶店 hero（anthropic-art 三層式）：oat 滿版底、象牙白承載形、近黑手繪線。
+       隱喻：一杯珍奶插著吸管，聲波飄出去換回一枚硬幣。 -->
+  <rect width="640" height="240" fill="#E3DACC"/>
+  <path fill="#FAF9F5" d="M90 48 Q62 56 60 98 Q56 148 82 182 Q108 210 192 206 L466 202 Q560 200 576 152 Q590 104 564 66 Q538 38 454 40 L176 44 Q118 42 90 48 Z"/>
+  <g stroke="#141413" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <!-- 杯身（上寬下窄、線條微晃） -->
+    <path stroke-width="9" d="M226 84 L214 186 Q214 196 226 196 L294 194 Q304 194 304 184 L296 82"/>
+    <path stroke-width="8" d="M218 100 L302 98"/>
+    <!-- 吸管（斜插） -->
+    <path stroke-width="8" d="M282 82 L306 34 L322 40 L298 86"/>
+    <!-- 珍珠：實心點 -->
+    <circle cx="240" cy="172" r="7" fill="#141413" stroke="none"/>
+    <circle cx="260" cy="178" r="7" fill="#141413" stroke="none"/>
+    <circle cx="280" cy="171" r="7" fill="#141413" stroke="none"/>
+    <circle cx="251" cy="158" r="7" fill="#141413" stroke="none"/>
+    <circle cx="271" cy="157" r="7" fill="#141413" stroke="none"/>
+    <!-- 聲波三撇 -->
+    <path stroke-width="8" d="M348 96 Q356 112 348 130"/>
+    <path stroke-width="8" d="M376 88 Q388 112 376 138"/>
+    <path stroke-width="8" d="M406 80 Q422 112 406 146"/>
+    <!-- 硬幣 -->
+    <circle cx="496" cy="116" r="36" stroke-width="9" stroke-dasharray="200 14"/>
+    <path stroke-width="8" d="M496 98 L495 136 M483 110 L510 109"/>
+  </g>
+  <circle cx="442" cy="66" r="5.5" fill="#141413"/>
+</svg>
