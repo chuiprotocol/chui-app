@@ -68,14 +68,27 @@ app.add_middleware(
 
 # 訂單儲存：MONGODB_URI 有設走 MongoDB Atlas（跨重啟持久化），
 # 沒設退回行程記憶體（本地 demo 原行為）。見 store.py。
-from . import assist
+from . import assist, oracle
 from .store import OrderStore
 
 store = OrderStore()
 
 
+async def effective_units_per_twd() -> tuple[int, str]:
+    """回傳（1 元台幣的 USDC 最小單位, 來源）。
+
+    Atlas Oracle 有設定且拉得到 → 即時簽章匯率（30 秒快取）；
+    否則退回 .env 的固定匯率——來源如實回報給 healthz／面板。
+    """
+    live = await oracle.units_per_twd()
+    if live is not None:
+        return live, "atlas-oracle"
+    return USDC_UNITS_PER_TWD, "static-env" if not oracle.enabled() else "static-env(oracle 失敗退回)"
+
+
 @app.get("/healthz")
 async def healthz():
+    units, fx_source = await effective_units_per_twd()
     return {
         "ok": True,
         "network": SUI_NETWORK,
@@ -84,7 +97,8 @@ async def healthz():
         "module": CHUI_MODULE,
         "settle_function": CHUI_FN_SETTLE,
         "usdc_coin_type": USDC_COIN_TYPE,
-        "usdc_units_per_twd": USDC_UNITS_PER_TWD,
+        "usdc_units_per_twd": units,
+        "fx_source": fx_source,
         "seal_key_servers": SEAL_KEY_SERVERS,
         "walrus_publisher": WALRUS_PUBLISHER,
         "walrus_aggregator": WALRUS_AGGREGATOR,
@@ -203,6 +217,10 @@ async def parse_order(
                "total": total, "created_at": int(time.time())}
     digest_hex = order_digest(details, salt)
 
+    units_per_twd, fx_source = await effective_units_per_twd()
+    if fx_source == "atlas-oracle":
+        bus.emit("hub", "hub", "fx.rate",
+                 f"Atlas Oracle 即時匯率：1 元 = {units_per_twd / 1_000_000:.6f} USDC")
     order_id = "ord_" + uuid.uuid4().hex[:12]
     order = {
         "order_id": order_id,
@@ -211,7 +229,9 @@ async def parse_order(
         "total": total,
         "digest_hex": digest_hex,
         "salt_hex": salt.hex(),
-        "amount_units": total * USDC_UNITS_PER_TWD,
+        "amount_units": total * units_per_twd,  # 匯率鎖定在報價當下（整數運算）
+        "fx_source": fx_source,
+        "units_per_twd": units_per_twd,
         "status": "quoted",
         "readback": readback,
         "created_at": int(time.time()),

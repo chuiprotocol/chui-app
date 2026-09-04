@@ -88,3 +88,40 @@ def test_order_store_mongo_path_with_mongomock(monkeypatch):
     again = store.get("ord_m1")
     assert again["status"] == "settled_verified" and again["tx_digest"] == "0xabc"
     assert store.get("ord_none") is None
+
+
+# ---- Atlas Oracle 匯率換算 ----
+
+def test_oracle_units_conversion():
+    import chui_hub.oracle as oracle
+
+    # TWD_USD：1 台幣 ≈ 0.0325 USD → 32500 units/元
+    assert oracle.units_per_twd_from_price(0.0325, "TWD_USD", 1.0) == 32500
+    # USD_TWD：1 美元 ≈ 30.77 台幣 → 1e6/30.77 ≈ 32499
+    assert oracle.units_per_twd_from_price(30.77, "USD_TWD", 1.0) == 32499
+    # 內部測試縮放（真實匯率的 5%）
+    assert oracle.units_per_twd_from_price(0.0325, "TWD_USD", 0.05) == 1625
+    with pytest.raises(ValueError):
+        oracle.units_per_twd_from_price(0, "TWD_USD", 1.0)
+    with pytest.raises(ValueError):
+        oracle.units_per_twd_from_price(1.0, "WAT", 1.0)
+
+
+def test_oracle_parse_latest_response():
+    import chui_hub.oracle as oracle
+
+    body = {"data": {"parsedPayload":
+            '[{"feedId":"624","price":999832025250886479,"timestampSeconds":"1780993491"}]'}}
+    price = oracle.parse_latest_response(body, "624")
+    assert abs(price - 0.999832) < 1e-4
+    with pytest.raises(ValueError):
+        oracle.parse_latest_response(body, "999")
+
+
+def test_oracle_disabled_returns_none(monkeypatch):
+    for key in ("ATLAS_ORACLE_API_KEY", "ATLAS_FEED_ID"):
+        monkeypatch.delenv(key, raising=False)
+    import chui_hub.oracle as oracle
+    importlib.reload(oracle)
+    assert oracle.enabled() is False
+    assert asyncio.run(oracle.units_per_twd()) is None  # 不打任何網路

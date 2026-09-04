@@ -317,3 +317,21 @@
   memory/off、點餐 API 正常）；三條線上路徑須部署後以 healthz 與
   真機流程驗證。pymongo 為同步驅動，在 async handler 內呼叫（訂單
   寫入極小，demo 可接受；正式版應換 motor）。
+
+## D26. Atlas Oracle 即時匯率（贊助商整合＝Atlas Oracle，非 MongoDB Atlas）
+
+- **情境**：賽方的「Atlas」是 Atlas Oracle（價格預言機，Pull API 回帶
+  簽章報價）——與已接的 MongoDB Atlas（訂單持久化）只是撞名，兩者並存。
+- **決定**：菜單台幣→鏈上 USDC 的匯率改為可插拔：設定
+  ATLAS_ORACLE_API_KEY＋ATLAS_FEED_ID 即用 Atlas Oracle 即時報價
+  （30 秒快取；ATLAS_FEED_MEANING 支援 TWD_USD／USD_TWD 兩種 feed
+  語意；ATLAS_RATE_MULTIPLIER 供內部測試把真實匯率縮小省測試幣），
+  匯率在「報價當下」鎖進訂單（整數運算），fx 來源與 units 一併落單。
+  沒設定或呼叫失敗一律退回 .env 固定匯率——healthz 的 fx_source 如實
+  顯示 atlas-oracle／static-env，面板同步發 fx.rate 事件。
+- **代價／誠實聲明**：oracle 回應的 ECDSA 簽章目前保留原文供稽核但
+  「未做鏈下驗章」（需 keccak/secp256k1 相依，列正式版 TODO）；
+  沙箱無法連 atlasoracle.io——單元測試覆蓋換算（TWD_USD/USD_TWD/
+  縮放/非法值）、回應解析與停用路徑（40 pytest 全綠），線上路徑
+  待金鑰發放後以 healthz fx_source=atlas-oracle 驗證。USD≈USDC 的
+  近似（未疊第二條 USDC/USD feed）也如實記錄。
