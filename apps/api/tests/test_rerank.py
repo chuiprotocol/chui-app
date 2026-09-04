@@ -80,3 +80,58 @@ def test_dataset_quality_gate(engine):
         if result.ok or not result.clarification_question:
             silent_wrong += 1
     assert silent_wrong == 0, "應澄清樣本絕不允許無聲接受"
+
+
+# ---- 真機實測回歸（好喝奶茶店情境）----
+
+TEA_MENU = {
+    "items": [
+        {
+            "id": "green-tea", "name": "四季春青茶", "base_price": 18,
+            "synonyms": ["青茶", "四季春", "清茶"],
+            "options": [
+                {"id": "sugar", "name": "甜度", "required": True, "default": "FULL",
+                 "choices": [
+                     {"id": "FULL", "name": "正常糖", "synonyms": ["全糖"], "price_delta": 0},
+                     {"id": "NONE", "name": "無糖", "synonyms": ["不要糖", "烏湯"], "price_delta": 0},
+                 ]},
+                {"id": "ice", "name": "冰塊", "required": True, "default": "NORMAL",
+                 "choices": [
+                     {"id": "NORMAL", "name": "正常冰", "synonyms": [], "price_delta": 0},
+                     {"id": "LESS", "name": "少冰", "synonyms": ["小冰"], "price_delta": 0},
+                 ]},
+            ],
+        },
+    ]
+}
+
+
+@pytest.fixture(scope="module")
+def tea_engine():
+    return RerankEngine(TEA_MENU)
+
+
+def test_item_name_digit_is_not_quantity(tea_engine):
+    """「四」季春青茶的「四」不可被搶去當 4 份（中文數字必須跟著量詞）。"""
+    r = tea_engine.parse(["點一杯四季春青茶烏湯小冰"])
+    assert r.ok
+    assert len(r.items) == 1
+    assert r.items[0].qty == 1
+    assert r.items[0].options == {"sugar": "NONE", "ice": "LESS"}
+
+
+def test_synonym_split_does_not_duplicate_item(tea_engine):
+    """「四季春」＋「青茶」兩段同義詞比對不可把同一品項拆成兩筆。"""
+    r = tea_engine.parse(["我要點一杯四季春青茶無糖少冰"])
+    assert r.ok
+    assert len(r.items) == 1
+    assert r.items[0].qty == 1
+
+
+def test_defaults_are_silent_in_explicit_options(tea_engine):
+    """沒明講的必填預設值要靜默套用：explicit_options 不含它、覆誦不唸。"""
+    r = tea_engine.parse(["一杯四季春青茶"])
+    assert r.ok
+    item = r.items[0]
+    assert item.options == {"sugar": "FULL", "ice": "NORMAL"}  # 訂單仍帶完整預設
+    assert item.explicit_options == {}  # 但沒有一項是使用者說的

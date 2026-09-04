@@ -21,8 +21,14 @@ export class TapToTalkRecorder {
   private stream: MediaStream | null = null;
   private audioContext: AudioContext | null = null;
   private stopTimer: number | null = null;
+  private hadVoice = false;
 
   constructor(private options: TapToTalkOptions = {}) {}
+
+  /** 上一段錄音期間是否真的有人聲（超過靜音門檻）——沒有就別送辨識。 */
+  get voiceDetected(): boolean {
+    return this.hadVoice;
+  }
 
   get isSupported(): boolean {
     return typeof navigator !== "undefined"
@@ -44,6 +50,7 @@ export class TapToTalkRecorder {
 
     this.stream = await navigator.mediaDevices.getUserMedia({ audio: true });
     this.chunks = [];
+    this.hadVoice = false;
     const mimeType = MediaRecorder.isTypeSupported("audio/webm") ? "audio/webm" : "";
     const recorder = mimeType
       ? new MediaRecorder(this.stream, { mimeType })
@@ -74,7 +81,10 @@ export class TapToTalkRecorder {
       const rms = Math.sqrt(sum / buf.length);
       onLevel?.(rms);
       const elapsed = Date.now() - startedAt;
-      if (rms > silenceThreshold) lastVoiceAt = Date.now();
+      if (rms > silenceThreshold) {
+        lastVoiceAt = Date.now();
+        this.hadVoice = true;
+      }
       const silentFor = Date.now() - lastVoiceAt;
       if ((elapsed >= minMs && silentFor >= silenceMs) || elapsed >= maxMs) {
         this.stop();

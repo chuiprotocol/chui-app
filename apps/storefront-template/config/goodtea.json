@@ -12,7 +12,7 @@
   },
   "order_ref_prefix": "TEA",
   "menu": {
-    "menu_version": "2026-09-04.2",
+    "menu_version": "2026-09-04.3",
     "currency": "TWD",
     "items": [
       {
@@ -26,32 +26,6 @@
           "珍珠內茶"
         ],
         "options": [
-          {
-            "id": "size",
-            "name": "大小",
-            "required": true,
-            "default": "M",
-            "choices": [
-              {
-                "id": "M",
-                "name": "中杯",
-                "synonyms": [
-                  "中",
-                  "中的"
-                ],
-                "price_delta": 0
-              },
-              {
-                "id": "L",
-                "name": "大杯",
-                "synonyms": [
-                  "大",
-                  "大的"
-                ],
-                "price_delta": 5
-              }
-            ]
-          },
           {
             "id": "sugar",
             "name": "甜度",
@@ -113,6 +87,7 @@
                 "id": "LESS",
                 "name": "少冰",
                 "synonyms": [
+                  "小冰",
                   "少bing"
                 ],
                 "price_delta": 0
@@ -150,32 +125,6 @@
           "奶查"
         ],
         "options": [
-          {
-            "id": "size",
-            "name": "大小",
-            "required": true,
-            "default": "M",
-            "choices": [
-              {
-                "id": "M",
-                "name": "中杯",
-                "synonyms": [
-                  "中",
-                  "中的"
-                ],
-                "price_delta": 0
-              },
-              {
-                "id": "L",
-                "name": "大杯",
-                "synonyms": [
-                  "大",
-                  "大的"
-                ],
-                "price_delta": 5
-              }
-            ]
-          },
           {
             "id": "sugar",
             "name": "甜度",
@@ -221,6 +170,15 @@
                 "price_delta": 0
               },
               {
+                "id": "LESS",
+                "name": "少冰",
+                "synonyms": [
+                  "小冰",
+                  "少bing"
+                ],
+                "price_delta": 0
+              },
+              {
                 "id": "FREE",
                 "name": "去冰",
                 "synonyms": [
@@ -250,30 +208,6 @@
           "清茶"
         ],
         "options": [
-          {
-            "id": "size",
-            "name": "大小",
-            "required": true,
-            "default": "M",
-            "choices": [
-              {
-                "id": "M",
-                "name": "中杯",
-                "synonyms": [
-                  "中"
-                ],
-                "price_delta": 0
-              },
-              {
-                "id": "L",
-                "name": "大杯",
-                "synonyms": [
-                  "大"
-                ],
-                "price_delta": 5
-              }
-            ]
-          },
           {
             "id": "sugar",
             "name": "甜度",
@@ -319,6 +253,15 @@
                 "price_delta": 0
               },
               {
+                "id": "LESS",
+                "name": "少冰",
+                "synonyms": [
+                  "小冰",
+                  "少bing"
+                ],
+                "price_delta": 0
+              },
+              {
                 "id": "FREE",
                 "name": "去冰",
                 "synonyms": [
@@ -340,30 +283,6 @@
           "寧檬紅茶"
         ],
         "options": [
-          {
-            "id": "size",
-            "name": "大小",
-            "required": true,
-            "default": "M",
-            "choices": [
-              {
-                "id": "M",
-                "name": "中杯",
-                "synonyms": [
-                  "中"
-                ],
-                "price_delta": 0
-              },
-              {
-                "id": "L",
-                "name": "大杯",
-                "synonyms": [
-                  "大"
-                ],
-                "price_delta": 5
-              }
-            ]
-          },
           {
             "id": "sugar",
             "name": "甜度",

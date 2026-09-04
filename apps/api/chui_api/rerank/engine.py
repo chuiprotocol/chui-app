@@ -72,8 +72,11 @@ class ParsedItem:
     item_id: str
     name: str
     qty: int
-    options: dict[str, str]        # option_id -> choice_id
+    options: dict[str, str]        # option_id -> choice_id（含必填預設值）
     score: float
+    # 使用者「明講」的選項（覆誦只唸這些；沒說的預設值靜默套用，
+    # 不會像「中杯」那樣被強行唸出來嚇到人）
+    explicit_options: dict[str, str] = field(default_factory=dict)
 
 
 @dataclass
@@ -222,8 +225,13 @@ class RerankEngine:
                 j += 1
             if j > i:
                 num = _parse_cn_number(text[i:j])
-                if num is not None and num > 0:
-                    if j < len(text) and text[j] in _MEASURE_WORDS:
+                has_measure = j < len(text) and text[j] in _MEASURE_WORDS
+                # 中文數字必須跟著量詞（一「杯」）才算數量——
+                # 否則「四」季春青茶的「四」會被搶去當 4 份。
+                # 阿拉伯數字（「3 鹽酥雞」）辨識度夠，量詞可省。
+                is_cn = any(not ch.isdigit() for ch in text[i:j])
+                if num is not None and num > 0 and (has_measure or not is_cn):
+                    if has_measure:
                         j += 1  # 連量詞一起吃掉
                     quantities.append((len(out), num, text[i:j]))
                     i = j
@@ -339,8 +347,11 @@ class RerankEngine:
             return []
         matches = sorted(matches, key=lambda m: (m.end, m.start))
         n = len(matches)
-        # 權重 = (分數 − 底線) × 長度：讓「短而準」贏過「長而勉強」的比對
-        weight = [max(m.score - 0.55, 0.01) * (m.end - m.start) for m in matches]
+        # 權重 = (分數 − 底線) × 長度：讓「短而準」贏過「長而勉強」的比對。
+        # 每段再扣一點固定成本：完整比對與「同義詞拆兩段」打平時
+        # （「四季春青茶」 vs 「四季春」＋「青茶」），偏好單一長比對，
+        # 否則同一品項會被拆成兩筆。
+        weight = [max(m.score - 0.55, 0.01) * (m.end - m.start) - 0.02 for m in matches]
         best: list[float] = [0.0] * (n + 1)
         take: list[bool] = [False] * n
         prev_idx: list[int] = [0] * n
@@ -431,7 +442,8 @@ class RerankEngine:
                 mapping = surf_map.get(cm.entry.matched_surface)
                 if mapping:
                     options[mapping[0]] = mapping[1]
-            # 補上必填選項的預設值
+            explicit = dict(options)  # 到這裡為止都是使用者明講的
+            # 補上必填選項的預設值（靜默套用，覆誦不唸）
             for opt in menu_item.get("options", []):
                 if opt.get("required") and opt["id"] not in options:
                     options[opt["id"]] = opt.get("default", opt["choices"][0]["id"])
@@ -448,9 +460,11 @@ class RerankEngine:
                     mapping = surf_map.get(raw)
                     if mapping:
                         options[mapping[0]] = mapping[1]
+                        explicit[mapping[0]] = mapping[1]
             items.append(ParsedItem(
                 item_id=menu_item["id"], name=menu_item["name"],
                 qty=qty, options=options, score=im.score,
+                explicit_options=explicit,
             ))
         return items
 
@@ -461,16 +475,15 @@ class RerankEngine:
     # ---- 顯示 ----
 
     def _describe_item(self, item: ParsedItem) -> str:
-        """組出人話描述：「中杯 冰 奶茶」。"""
+        """組出人話描述：「半糖 去冰 奶茶」——只唸使用者明講的選項。"""
         menu_item = self.items_by_id[item.item_id]
         parts: list[str] = []
         for opt in menu_item.get("options", []):
-            cid = item.options.get(opt["id"])
+            cid = item.explicit_options.get(opt["id"])
             if not cid:
                 continue
             choice = next((c for c in opt["choices"] if c["id"] == cid), None)
-            # 非必填且是預設值就不唸出來，覆誦才不會又臭又長
-            if choice and (opt.get("required") or cid != opt.get("default")):
+            if choice:
                 parts.append(choice["name"])
         parts.append(menu_item["name"])
         label = "".join(parts)

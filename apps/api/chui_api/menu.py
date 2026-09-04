@@ -48,6 +48,8 @@ def quote_items(menu: dict, items: list[ParsedItem]) -> tuple[list[dict], int]:
         menu_item = items_by_id[parsed.item_id]
         unit = menu_item["base_price"]
         option_names: list[str] = []
+        spoken_option_names: list[str] = []
+        explicit = getattr(parsed, "explicit_options", None) or {}
         for opt in menu_item.get("options", []):
             cid = parsed.options.get(opt["id"])
             if not cid:
@@ -57,6 +59,10 @@ def quote_items(menu: dict, items: list[ParsedItem]) -> tuple[list[dict], int]:
                 raise ValidationFailedError(f"品項 {parsed.item_id} 沒有選項值 {cid}")
             unit += choice.get("price_delta", 0)
             option_names.append(choice["name"])
+            # 覆誦只唸使用者「明講」的選項；沒說的預設值（如預設冰塊）
+            # 靜默套用，不對用戶強行宣告
+            if explicit.get(opt["id"]) == cid:
+                spoken_option_names.append(choice["name"])
         line_total = unit * parsed.qty
         total += line_total
         lines.append({
@@ -65,17 +71,24 @@ def quote_items(menu: dict, items: list[ParsedItem]) -> tuple[list[dict], int]:
             "qty": parsed.qty,
             "options": parsed.options,
             "option_names": option_names,
+            "spoken_option_names": spoken_option_names,
             "unit_price": unit,
             "line_total": line_total,
         })
     return lines, total
 
 
+def _spoken_names(line: dict) -> list[str]:
+    """覆誦用選項名：只唸使用者明講的（舊呼叫端沒帶時退回全部）。"""
+    names = line.get("spoken_option_names")
+    return names if names is not None else line["option_names"]
+
+
 def readback_text(lines: list[dict], total: int) -> str:
-    """覆誦整句（線上 TTS 用）：「中杯冰奶茶，總共 25 元，確認嗎？」"""
+    """覆誦整句（線上 TTS 用）：「半糖去冰珍珠奶茶，總共 65 元，確認嗎？」"""
     parts: list[str] = []
     for line in lines:
-        desc = "".join(line["option_names"]) + line["name"]
+        desc = "".join(_spoken_names(line)) + line["name"]
         if line["qty"] > 1:
             desc += f" {line['qty']} 份"
         parts.append(desc)
@@ -91,7 +104,7 @@ def readback_fragments(lines: list[dict], total: int) -> list[str]:
     """
     fragments: list[str] = []
     for line in lines:
-        fragments.extend(line["option_names"])
+        fragments.extend(_spoken_names(line))
         fragments.append(line["name"])
         if line["qty"] > 1:
             fragments.append(f"{line['qty']} 份")

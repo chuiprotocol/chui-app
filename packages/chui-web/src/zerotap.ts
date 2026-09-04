@@ -218,14 +218,16 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
         return;
       }
       if (!looping) return; // 錄音中按了「結束對話」——丟棄這段，不下單
+      // 全程沒偵測到人聲（環境安靜／只有底噪）→ 不送辨識、不算失敗，
+      // 直接回到聆聽——避免空錄音連環「沒對到品項」把對話莫名暫停
+      if (!recorder.voiceDetected || audio.size < 1200) { continue; }
       setListening(false, "處理中⋯");
-      if (audio.size < 1200) continue; // 太短視為噪音，直接回到聆聽
       await handleInput({ audio });
       if (consecutiveErrors >= 2) {
         pauseLoop("連續失敗，已暫停——點一下麥克風繼續");
         return;
       }
-      if (consecutiveMisses >= 2) {
+      if (consecutiveMisses >= 3) {
         pauseLoop("連續沒聽清楚，先暫停休息——點一下麥克風繼續");
         return;
       }
