@@ -66,8 +66,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# demo 範圍內訂單存記憶體即可（重啟即清空；無登入、無持久化需求）
-ORDERS: dict[str, dict] = {}
+# 訂單儲存：MONGODB_URI 有設走 MongoDB Atlas（跨重啟持久化），
+# 沒設退回行程記憶體（本地 demo 原行為）。見 store.py。
+from . import assist
+from .store import OrderStore
+
+store = OrderStore()
 
 
 @app.get("/healthz")
@@ -84,6 +88,8 @@ async def healthz():
         "seal_key_servers": SEAL_KEY_SERVERS,
         "walrus_publisher": WALRUS_PUBLISHER,
         "walrus_aggregator": WALRUS_AGGREGATOR,
+        "order_store": store.backend,
+        "llm_assist": "eastrouter" if assist.enabled() else "off",
         "merchants": [m.merchant_id for m in registry.all()],
     }
 
@@ -156,14 +162,38 @@ async def parse_order(
         bus.emit("hub", "hub", "route.rank", f"跨商家路由：{ranking}")
 
     if not result.ok:
-        bus.emit("hub", source, "chui.clarify", result.clarification_question or "請再說一次")
-        raise ClarificationNeededError(
-            result.clarification_question or "請再說一次",
-            question=result.clarification_question,
-            candidates=result.clarification_candidates or [],
-            confidence=round(result.confidence, 3),
-            stt_text=result.source_text,
-        )
+        # EastRouter 備援：信心不足時請 LLM 把原文重述成「只含菜單詞彙」
+        # 的標準句再解析一次。LLM 只做重述——重述句仍要過封閉詞彙解析、
+        # 口頭確認與 5 秒防呆倒數，永不直接觸發扣款。
+        if assist.enabled():
+            menu_names: list[str] = []
+            for m in targets:
+                menu = await m.menu()
+                for it in menu.get("items", []):
+                    menu_names.append(it["name"])
+                    menu_names.extend(
+                        c["name"] for opt in it.get("options", []) for c in opt["choices"]
+                    )
+            rephrased = await assist.rephrase_order(result.source_text, menu_names)
+            if rephrased:
+                bus.emit("hub", "hub", "llm.rephrase",
+                         f"EastRouter 重述：{rephrased[:40]}")
+                retry = []
+                for m in targets:
+                    engine = await m.engine()
+                    retry.append((m, engine.parse([rephrased])))
+                m2, r2 = max(retry, key=lambda pair: pair[1].confidence)
+                if r2.ok:
+                    merchant, result = m2, r2
+        if not result.ok:
+            bus.emit("hub", source, "chui.clarify", result.clarification_question or "請再說一次")
+            raise ClarificationNeededError(
+                result.clarification_question or "請再說一次",
+                question=result.clarification_question,
+                candidates=result.clarification_candidates or [],
+                confidence=round(result.confidence, 3),
+                stt_text=result.source_text,
+            )
 
     menu = await merchant.menu()
     lines, total = quote_items(menu, result.items)
@@ -174,7 +204,7 @@ async def parse_order(
     digest_hex = order_digest(details, salt)
 
     order_id = "ord_" + uuid.uuid4().hex[:12]
-    ORDERS[order_id] = {
+    order = {
         "order_id": order_id,
         "merchant_id": merchant.merchant_id,
         "lines": lines,
@@ -189,6 +219,7 @@ async def parse_order(
         "tx_digest": "",
         "verify_reason": "",
     }
+    store.save(order)
     bus.emit("hub", source, "chui.quote",
              f"{merchant.name}：{readback}（信心 {result.confidence:.2f}）",
              {"order_id": order_id, "total": total})
@@ -214,9 +245,10 @@ class ConfirmRequest(BaseModel):
 
 
 def _get_order(order_id: str) -> dict:
-    order = ORDERS.get(order_id)
+    order = store.get(order_id)
     if order is None:
-        raise NotFoundError(f"訂單 {order_id} 不存在（Hub 重啟會清空 demo 訂單）")
+        hint = "" if store.backend != "memory" else "（記憶體模式：Hub 重啟會清空訂單）"
+        raise NotFoundError(f"訂單 {order_id} 不存在{hint}")
     return order
 
 
@@ -244,6 +276,7 @@ async def confirm_order(req: ConfirmRequest):
             raise OrderRejectedError(f"商家拒單：{body}")
         order["merchant_ref"] = str(body.get("merchant_ref", ""))
         order["status"] = "confirmed"
+        store.save(order)
         bus.emit(f"merchant:{merchant.merchant_id}", "hub", "chui.order.accepted",
                  f"接單成功（單號 {order['merchant_ref']}）")
 
@@ -315,6 +348,7 @@ async def _verify_and_notify(order: dict) -> dict:
         order["status"] = "pending_verification"
         order["verify_reason"] = outcome["reason"]
         bus.emit("sui", "hub", "chain.unverified", f"暫未驗證：{outcome['reason']}")
+    store.save(order)
     return outcome
 
 
@@ -329,6 +363,7 @@ async def report_settlement(order_id: str, req: SettlementRequest):
         raise ValidationFailedError("這筆訂單已綁定另一個 tx_digest，拒絕覆寫")
     order["tx_digest"] = req.tx_digest
     order["status"] = "paid_submitted"
+    store.save(order)
     bus.emit("user", "hub", "chui.settlement", f"回報交易 {req.tx_digest[:12]}…")
     await _verify_and_notify(order)
     return {"order_id": order_id, "status": order["status"],

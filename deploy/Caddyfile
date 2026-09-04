@@ -1,0 +1,4 @@
+# 自動 HTTPS 反向代理：HUB_DOMAIN（<IP>.sslip.io）→ 後端容器 8700
+{$HUB_DOMAIN} {
+	reverse_proxy chui:8700
+}

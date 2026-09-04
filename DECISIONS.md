@@ -293,3 +293,27 @@
      聲波）＋兩顆商家 logo 重繪，並記錄於本條目以示誠實。
 - **代價**：voice-app（舊入口）僅換 icon 未整套改版；商家站不再有
   各自主色（識別交給 logo 與 hero 插畫），符合「品牌色不越界」規則。
+
+## D25. 贊助資源整合：GMI Cloud 上雲、Atlas 訂單持久化、EastRouter LLM 備援
+
+- **情境**：手機打不到 localhost；黑客松贊助資源（GMI Cloud／MongoDB
+  Atlas／EastRouter）能用就用、限免費額度。Fly.io 方案棄用（殘留檔已刪）。
+- **決定**：
+  1. GMI 上雲（主流前後端分離）：後端整包單容器（既有 Dockerfile）＋
+     Caddy 自動 HTTPS（<IP>.sslip.io，免買網域）via docker-compose；
+     scripts/deploy-gmi.sh 一鍵 SSH 部署（裝 Docker→rsync 程式碼與
+     .env→compose up→等憑證與 healthz→印固定網址）。手機 ?hub= 帶一次
+     固定網址即可，永不再變。
+  2. Atlas 持久化：新增 OrderStore——MONGODB_URI 有設走 Atlas（訂單
+     整份 upsert、啟動即 ping 驗證，壞設定直接失敗絕不無聲退回）；
+     沒設退回記憶體（本地原行為）。healthz 誠實揭露 order_store。
+  3. EastRouter 備援：封閉詞彙解析信心不足時，把 STT 原文交給
+     EastRouter（OpenAI 相容 API）重述成「只含菜單詞彙」的標準句再
+     解析一次。安全邊界：LLM 只做重述——重述句仍要過封閉詞彙解析、
+     口頭確認、5 秒防呆倒數；三個 env 齊才啟用（不猜端點）；失敗一律
+     走原澄清流程。healthz 揭露 llm_assist。
+- **代價／誠實聲明**：沙箱無法連 GMI／Atlas／EastRouter——單元測試
+  只覆蓋退回行為與純函式（36 pytest 全綠、本地 Hub 冒煙 healthz＝
+  memory/off、點餐 API 正常）；三條線上路徑須部署後以 healthz 與
+  真機流程驗證。pymongo 為同步驅動，在 async handler 內呼叫（訂單
+  寫入極小，demo 可接受；正式版應換 motor）。
