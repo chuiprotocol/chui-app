@@ -125,3 +125,16 @@ def test_oracle_disabled_returns_none(monkeypatch):
     importlib.reload(oracle)
     assert oracle.enabled() is False
     assert asyncio.run(oracle.units_per_twd()) is None  # 不打任何網路
+
+
+def test_oracle_usdc_usd_mode():
+    """Atlas 目前只有 USDC/USD feed：加密腿即時、台幣腿設定值。"""
+    import chui_hub.oracle as oracle
+
+    # 1 USDC = 0.9998 USD、1 USD = 31.5 TWD → 1 TWD ≈ 0.031753 USDC
+    units = oracle.units_per_twd_from_price(0.9998, "USDC_USD", 1.0, 31.5)
+    assert units == 31752
+    # 內部測試縮放 5%
+    assert oracle.units_per_twd_from_price(0.9998, "USDC_USD", 0.05, 31.5) == 1588
+    with pytest.raises(ValueError):
+        oracle.units_per_twd_from_price(0.9998, "USDC_USD", 1.0, 0)
