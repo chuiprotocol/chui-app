@@ -4,13 +4,16 @@
   "version": "0.1.0",
   "description": "Chui 瀏覽器端程式庫：Hub client、按住錄音、Slush（Wallet Standard）USDC 結帳",
   "type": "module",
-  "exports": { ".": "./src/index.ts" },
+  "exports": {
+    ".": "./src/index.ts"
+  },
   "scripts": {
     "lint": "tsc --noEmit -p tsconfig.json",
     "build": "tsc --noEmit -p tsconfig.json",
     "test": "tsc --noEmit -p tsconfig.json"
   },
   "dependencies": {
+    "@mysten/seal": "1.4.8",
     "@mysten/sui": "^2.26.2",
     "@mysten/wallet-standard": "^0.21.22"
   },

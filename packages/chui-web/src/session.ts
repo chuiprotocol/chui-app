@@ -25,6 +25,8 @@ export interface AgentBinding {
   vaultId: string;
   capId: string;
   packageId: string;
+  /** Vault 擁有者（用戶錢包）地址——Seal 加密存證的身分之一 */
+  ownerAddress?: string;
 }
 
 export interface AgentStatus {
@@ -168,6 +170,7 @@ export class ChuiAgentSession {
     }
     let vaultId = "";
     let capId = "";
+    let ownerAddress = "";
     // 主路徑：交易事件
     try {
       const result = await this.client.getTransaction({
@@ -179,6 +182,7 @@ export class ChuiAgentSession {
         if (event.eventType === `${packageId}::${moduleName}::VaultCreated` && event.json) {
           vaultId = String(event.json.vault_id ?? "");
           capId = String(event.json.cap_id ?? "");
+          ownerAddress = String(event.json.owner ?? "");
         }
       }
     } catch { /* 走備援 */ }
@@ -195,10 +199,29 @@ export class ChuiAgentSession {
       vaultId = String((cap.json as Record<string, unknown> | null)?.vault_id ?? "");
       if (!vaultId) throw new Error("AgentCap 缺少 vault_id 欄位——合約版本不符？");
     }
-    const binding: AgentBinding = { vaultId, capId, packageId };
+    const binding: AgentBinding = { vaultId, capId, packageId, ownerAddress };
     this.binding = binding;
     await idbSet(BINDING_STORAGE, binding);
     return binding;
+  }
+
+  /** Vault 擁有者（用戶錢包）地址：綁定沒存到時退回讀鏈上 Vault。 */
+  async ownerAddress(): Promise<string> {
+    if (!this.binding) throw new Error("尚未授權");
+    if (this.binding.ownerAddress) return this.binding.ownerAddress;
+    const resp = await this.client
+      .getObject({ objectId: this.binding.vaultId, include: { json: true } })
+      .catch((e) => { throw wrapChainError(e, this.network); });
+    const owner = String((resp.object.json as Record<string, unknown> | null)?.owner ?? "");
+    if (!owner) throw new Error("讀不到 Vault 擁有者地址");
+    this.binding = { ...this.binding, ownerAddress: owner };
+    await idbSet(BINDING_STORAGE, this.binding);
+    return owner;
+  }
+
+  /** 給 Seal／Walrus 存證模組共用同一個 fullnode 連線。 */
+  get grpcClient(): SuiGrpcClient {
+    return this.client;
   }
 
   /** 查授權狀態：Vault 額度、cap 是否有效、agent gas。 */

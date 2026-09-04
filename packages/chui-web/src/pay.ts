@@ -91,6 +91,20 @@ export async function signAndExecuteWithUserWallet(
   return { txDigest: result.digest, account };
 }
 
+/** 用「使用者的」錢包簽個人訊息——Seal session key 取鑰時證明身分用。 */
+export async function signPersonalMessageWithUserWallet(message: Uint8Array): Promise<string> {
+  const wallet = await findSuiWallet();
+  const { accounts } = await wallet.features["standard:connect"].connect();
+  const account = accounts[0];
+  if (!account) throw new Error("錢包沒有可用帳戶");
+  const feature = (wallet.features as Record<string, unknown>)["sui:signPersonalMessage"] as
+    | { signPersonalMessage: (args: { message: Uint8Array; account: WalletAccount }) => Promise<{ signature: string }> }
+    | undefined;
+  if (!feature) throw new Error("此錢包不支援簽個人訊息（signPersonalMessage）");
+  const { signature } = await feature.signPersonalMessage({ message, account });
+  return signature;
+}
+
 /** 連線錢包並簽名執行結算交易。回傳鏈上交易 digest。 */
 export async function payWithSuiWallet(checkout: CheckoutParams): Promise<PayResult> {
   if (!checkout.package_id) {

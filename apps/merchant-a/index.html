@@ -3,62 +3,90 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>快樂鹽酥雞</title>
+  <title>快樂鹽酥雞｜嘴付語音點餐</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="stylesheet" href="/src/style.css" />
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <div class="logo">🍗</div>
+  <header class="appbar">
+    <img class="logo" src="/logo.svg" alt="快樂鹽酥雞" />
+    <div class="titles">
       <h1>快樂鹽酥雞</h1>
-      <p class="tagline">夜市老攤 · 現在用說的也能點</p>
-      <span id="quota-chip" class="chip"></span>
-    </header>
+      <p class="tagline">夜市老攤 · 自家系統 × 嘴付協議</p>
+    </div>
+    <span id="quota-chip" class="chip"></span>
+  </header>
 
-    <div id="msg"></div>
-
-    <!-- 🅐 首次：唯一一次動手——授權 -->
-    <section id="authorize-screen" class="hidden">
-      <div class="card center">
-        <div class="bigicon">🏦</div>
-        <h2>授權 <span class="accent">USDC 額度</span>給你的點餐 Agent</h2>
-        <p class="bullet">💰 錢進<b>你自己的鏈上 Vault</b>，不是給店家或平台</p>
-        <p class="bullet">🎫 Agent 只拿到「額度內代付」的權限</p>
-        <p class="bullet">🛑 隨時可撤銷、剩餘金額隨時領回</p>
-        <div id="agent-status"></div>
-        <form id="topup-form">
-          <input id="topup-usdc" type="number" value="1" min="0.3" step="0.1" />
-          <button type="submit" class="primary">用 Slush 錢包授權（只需這一次）</button>
-        </form>
-        <p class="fineprint">Sui Testnet 測試幣・授權後點餐全程零按鍵</p>
-      </div>
-    </section>
-
-    <!-- 🅑 回訪：純語音，零按鍵 -->
-    <section id="voice-screen" class="hidden">
-      <div class="micwrap">
-        <div id="mic-circle" class="mic">🎙️</div>
-        <div id="listen-status" class="listening">準備中⋯</div>
-        <button id="end-chat" class="endchat" type="button">⏹ 結束對話</button>
-      </div>
-      <div id="transcript" class="transcript"></div>
-      <details class="fallback">
-        <summary>打字備援（麥克風不可用時）</summary>
-        <form id="text-form">
-          <input id="text-input" placeholder="例：我要一份鹽酥雞加辣" autocomplete="off" />
-          <button type="submit" class="primary">送出（即下單付款）</button>
-        </form>
-      </details>
-      <p class="fineprint"><a href="#" id="revoke-link">撤銷授權</a>（Slush 簽一筆，立即生效）</p>
-    </section>
-
-    <section class="card">
-      <h2>菜單</h2>
-      <div id="menu" class="menu-list"></div>
-    </section>
-
-    <footer>自家系統 × 嘴付協議（經 adapter 接入）· Sui Testnet 測試幣</footer>
+  <div class="hero">
+    <div class="dish">🍗</div>
+    <div>
+      <h2>用「說」的點鹽酥雞</h2>
+      <p>開口點餐 → Agent 覆誦確認 → 5 秒防呆 → 自動付款取號</p>
+    </div>
   </div>
+
+  <button id="open-voice" class="cta-voice" type="button">
+    🎙 嘴付下單
+    <span class="sub">Chui Agent 語音點餐</span>
+  </button>
+
+  <div id="msg"></div>
+
+  <main>
+    <div class="section-title">菜單 <small>價格含 ≈USDC（Sui Testnet 測試幣）</small></div>
+    <div id="menu" class="menu-grid"></div>
+  </main>
+
+  <footer>自家系統 × 嘴付協議（經 adapter 接入）· Sui Testnet 測試幣 · 對話紀錄 Seal 端對端加密</footer>
+
+  <!-- 語音面板（overlay bottom sheet） -->
+  <div id="voice-overlay" class="overlay hidden">
+    <div class="sheet">
+      <div class="sheet-head">
+        <span>🎙 嘴付點餐 · Chui Agent</span>
+        <button id="close-voice" class="close" type="button">✕</button>
+      </div>
+
+      <!-- 🅐 首次：唯一一次動手——授權／加值 -->
+      <section id="authorize-screen" class="hidden">
+        <div class="card center">
+          <div class="bigicon">🏦</div>
+          <h2>授權 <span class="accent">USDC 額度</span>給你的點餐 Agent</h2>
+          <p class="bullet">💰 錢進<b>你自己的鏈上 Vault</b>，不是給店家或平台</p>
+          <p class="bullet">🎫 Agent 只拿到「額度內代付」的權限</p>
+          <p class="bullet">🛑 隨時可撤銷、剩餘金額隨時領回；已授權再按＝加值累計</p>
+          <div id="agent-status"></div>
+          <form id="topup-form">
+            <input id="topup-usdc" type="number" value="1" min="0.3" step="0.1" />
+            <button type="submit" class="primary">用 Slush 錢包授權</button>
+          </form>
+          <p class="fineprint">Sui Testnet 測試幣・授權後點餐全程零按鍵</p>
+        </div>
+      </section>
+
+      <!-- 🅑 回訪：純語音 -->
+      <section id="voice-screen" class="hidden">
+        <div class="micwrap">
+          <div id="mic-circle" class="mic">🎙️</div>
+          <div id="listen-status" class="listening">準備中⋯</div>
+          <button id="end-chat" class="endchat" type="button">⏹ 結束對話</button>
+        </div>
+        <div id="transcript" class="transcript"></div>
+        <details class="fallback">
+          <summary>打字備援（麥克風不可用時）</summary>
+          <form id="text-form">
+            <input id="text-input" placeholder="例：我要一份鹽酥雞加辣" autocomplete="off" />
+            <button type="submit" class="primary">送出</button>
+          </form>
+        </details>
+        <p class="fineprint">
+          <a href="#" id="revoke-link">撤銷授權</a>（Slush 簽一筆，立即生效）·
+          對話紀錄 Seal 加密上傳 Walrus，只有你與店家能解
+        </p>
+      </section>
+    </div>
+  </div>
+
   <script type="module" src="/src/main.ts"></script>
 </body>
 </html>

@@ -242,3 +242,30 @@
 - **代價**：「三鹽酥雞」這種省略量詞的中文數字講法不再當數量
   （會被當成雜訊或同義詞比對），實測上台灣口語點餐幾乎必帶量詞，
   可接受。
+
+## D23. 防呆倒數棄單＋foodpanda 式改版＋對話紀錄 Seal/Walrus 端對端加密
+
+- **情境**：用戶要求 (1) 送出後仍可反悔的防呆機制 (2) foodpanda/ubereats
+  風格 RWD 首頁（菜單常駐＋頂部嘴付下單鍵）(3) 點餐對話 log 加密存證，
+  只有用戶與店家能解、平台無權看 (4) 認真設計 logo/favicon。
+- **決定**：
+  1. 防呆倒數：口頭「確認」之後、`agent_settle` 扣款之前固定 5 秒
+     倒數，畫面出現大顆「✋ 反悔棄單」；按下即整單放棄、零扣款
+     （Hub 訂單停留在 quoted，無副作用）。結束對話鍵也會中止倒數。
+  2. 三站改版（快樂鹽酥雞／好喝奶茶店公版／嘴付入口）：亮色外送
+     風設計系統（sticky app bar＋品牌 hero＋卡片菜單 grid＋overlay
+     bottom sheet 語音面板），手機單欄、桌機三欄、面板置中；
+     手繪 SVG logo（嘴付＝對話框＋嘴唇＋付字金幣；鹽酥雞＝紙袋
+     炸雞＋辣椒；奶茶＝珍奶杯）兼作 favicon。
+  3. 對話存證：log 在「用戶瀏覽器內」以 Seal（門檻式 IBE，threshold 1/2
+     Mysten testnet key servers）加密，身分 id＝用戶地址(32B)‖店家
+     地址(32B)；密文由瀏覽器直傳 Walrus（5 epochs）。合約新增
+     `chui::log_policy::seal_approve`：只放行 id 內兩方，key server
+     發鑰前 dry-run 之——Hub 全程接觸不到明文與金鑰。前端附
+     「用 Slush 解密查看」證明鑰匙在用戶手上。存證失敗誠實顯示、
+     不影響付款。
+  4. go-live 以 CHUI_CONTRACTS_REV 追蹤合約版本，main 有新 commit
+     （如本次 log_policy）自動重佈署並提示重新授權。
+- **代價**：每筆訂單多 5 秒；重佈署使舊授權失效（testnet 可接受）。
+  沙箱無 sui CLI／無鏈上與 Walrus 出網，Move 測試與存證上傳由
+  deploy.sh 與真機驗證把關。

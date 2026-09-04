@@ -117,6 +117,9 @@ importers:
 
   packages/chui-web:
     dependencies:
+      '@mysten/seal':
+        specifier: 1.4.8
+        version: 1.4.8(@mysten/sui@2.26.2(typescript@5.9.3))
       '@mysten/sui':
         specifier: ^2.26.2
         version: 2.26.2(typescript@5.9.3)
@@ -421,6 +424,11 @@ packages:
 
   '@mysten/bcs@2.1.1':
     resolution: {integrity: sha512-IDYomoQ6+yvOIClBHmNdScttv+h/HbGGHLEdUmGQptR3YdqqLM5vJD28wf2QP/UXCEBkCoG7TOT6pFNw8ExYmA==}
+
+  '@mysten/seal@1.4.8':
+    resolution: {integrity: sha512-wZNVOTV3vicAPC3DVpRnYpGol20BanVgPLQAVthFLCpF5oTza1B6qIWnRWW30tL3pg330GgiuTB9htLV+NRuOA==}
+    peerDependencies:
+      '@mysten/sui': ^2.29.0
 
   '@mysten/sui@2.26.2':
     resolution: {integrity: sha512-G1ILAQ9HY98UJsLH2SAJv5DXuWNI3i7xBZBL77U6DW/MCoCISBj5HpeJ3xaSClXSTgHMbPyHDxs5XMhEAnKLAg==}
@@ -1436,6 +1444,13 @@ snapshots:
     dependencies:
       '@mysten/utils': 0.4.1
       '@scure/base': 2.3.0
+
+  '@mysten/seal@1.4.8(@mysten/sui@2.26.2(typescript@5.9.3))':
+    dependencies:
+      '@mysten/bcs': 2.1.1
+      '@mysten/sui': 2.26.2(typescript@5.9.3)
+      '@noble/curves': 2.3.0
+      '@noble/hashes': 2.3.0
 
   '@mysten/sui@2.26.2(typescript@5.9.3)':
     dependencies:

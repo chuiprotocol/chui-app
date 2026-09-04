@@ -7,7 +7,7 @@
  * 「不確定就問」仍然是底線，因為連要買什麼都不知道就不可能扣對錢。
  */
 
-import { ClarificationNeeded, HubClient, type ParseResponse, type SettlementResponse } from "./hub.js";
+import { ClarificationNeeded, HubClient, type CheckoutParams, type ParseResponse, type SettlementResponse } from "./hub.js";
 import { ChuiAgentSession } from "./session.js";
 
 export interface AutoOrderCallbacks {
@@ -25,6 +25,8 @@ export interface AutoOrderCallbacks {
     /** 實付金額（USDC 最小單位） */
     amountUnits: number;
     settlement: SettlementResponse;
+    /** 結帳參數（含店家收款地址——加密存證的身分之一） */
+    checkout: CheckoutParams;
   }) => void;
   onError?: (error: Error) => void;
 }
@@ -69,6 +71,7 @@ export async function runAutoOrder(
       txDigest,
       amountUnits: confirmed.checkout.amount_units,
       settlement,
+      checkout: confirmed.checkout,
     });
     return true;
   } catch (err) {

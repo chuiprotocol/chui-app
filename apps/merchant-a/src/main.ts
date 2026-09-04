@@ -31,12 +31,17 @@ async function boot() {
     const resp = await fetch(`${hub.baseUrl}/v1/merchants/${MERCHANT_ID}/menu`);
     const body = await resp.json();
     if (!resp.ok) throw new Error(body?.detail?.message ?? `菜單取得失敗（${resp.status}）`);
+    const EMOJI: Record<string, string> = {
+      鹽酥雞: "🍗", 甜不辣: "🍢", 雞皮: "🍘", 魷魚鬚: "🦑", 地瓜薯條: "🍠", 米血: "🍡",
+    };
     $("menu").innerHTML = (body.menu.items as ProtocolMenuItem[]).map((item) => `
-      <div class="menu-row">
-        <span>${item.name}
-          <span class="mods">${item.options.flatMap((o) => o.choices.filter((c) => c.price_delta > 0 || c.name.startsWith("加")).map((c) => c.name)).join("・")}</span>
-        </span>
-        <span class="price">${item.base_price} 元${usdc(item.base_price)}</span>
+      <div class="menu-card">
+        <div class="thumb">${EMOJI[item.name] ?? "🍽️"}</div>
+        <div class="info">
+          <div class="name">${item.name}</div>
+          <div class="mods">${item.options.flatMap((o) => o.choices.filter((c) => c.price_delta > 0 || c.name.startsWith("加")).map((c) => c.name)).join("・")}</div>
+          <div class="pricerow"><span class="price">${item.base_price} 元</span>${usdc(item.base_price)}</div>
+        </div>
       </div>`).join("");
   } catch (e) {
     $("menu").innerHTML = `<div class="error">${(e as Error).message}</div>`;

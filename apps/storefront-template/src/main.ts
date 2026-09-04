@@ -30,9 +30,19 @@ async function boot() {
   const unitsPerTwd = Number(health.usdc_units_per_twd ?? 0);
   const usdc = (twd: number) => unitsPerTwd > 0
     ? `<span class="usdc-note">≈ ${((twd * unitsPerTwd) / 1_000_000).toFixed(2)} USDC</span>` : "";
+  const EMOJI: Record<string, string> = {
+    珍珠奶茶: "🧋", 奶茶: "🥤", 四季春青茶: "🍵", 檸檬紅茶: "🍋",
+  };
   const menu = await (await fetch("/chui/menu")).json();
-  $("menu").innerHTML = menu.items.map((item: { name: string; base_price: number }) =>
-    `<div class="menu-item"><b>${item.name}</b><span class="price">${item.base_price} 元起${usdc(item.base_price)}</span></div>`,
+  $("menu").innerHTML = menu.items.map((item: { name: string; base_price: number }) => `
+    <div class="menu-card">
+      <div class="thumb">${EMOJI[item.name] ?? "🥤"}</div>
+      <div class="info">
+        <div class="name">${item.name}</div>
+        <div class="mods">統一大杯</div>
+        <div class="pricerow"><span class="price">${item.base_price} 元起</span>${usdc(item.base_price)}</div>
+      </div>
+    </div>`,
   ).join("");
 
   await wireVoiceLoop({

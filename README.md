@@ -58,37 +58,57 @@ Chui 的回答：**封閉詞彙重排序**解決（1），**多層冪等防線**
 ## 架構
 
 ```mermaid
-flowchart LR
-    subgraph consumer["消費者"]
-        LINE["LINE / LIFF<br/>（錄音、確認、收據）"]
-        CONSOLE["Chui 後台<br/>（錢包、授權、撤銷）"]
+flowchart TB
+    subgraph phone["消費者手機（瀏覽器＋Slush 錢包）"]
+        UI["商家官網／嘴付公版入口<br/>（Cloudflare Pages，foodpanda 式菜單＋🎙 嘴付下單鍵）"]
+        AGENT["Chui Agent（頁面內）<br/>session key，只持 AgentCap＋gas"]
+        REGRET["🛑 防呆倒數 5 秒<br/>口頭確認後、扣款前<br/>可一鍵「反悔棄單」"]
+        SEAL["Seal 加密器（瀏覽器內）<br/>對話 log → IBE 密文"]
     end
-    subgraph merchant["店家（快樂豬）"]
-        BOT["LINE bot<br/>只 import @chui/sdk"]
+    subgraph hub["Chui Hub（協議中樞，無法看到明文 log）"]
+        PARSE["語音解析<br/>STT＋封閉詞彙重排序<br/>信心不足必澄清"]
+        ROUTE["跨商家路由＋報價<br/>salted digest"]
+        VERIFY["鏈上驗證<br/>digest／金額／店家三符"]
     end
-    subgraph chui["Chui 應用層（本 repo）"]
-        SDK["packages/sdk<br/>TypeScript SDK"]
-        API["apps/api<br/>FastAPI"]
-        RERANK["封閉詞彙重排序<br/>拼音距離＋混淆表"]
-        TTS["TTS 降級鏈<br/>快取→11Labs 3s→edge-tts→片段拼接"]
-        CS["chain-service<br/>@mysten/sui v2 sidecar"]
+    subgraph merchants["商家"]
+        MA["快樂鹽酥雞<br/>自家 legacy 系統×adapter"]
+        MB["好喝奶茶店<br/>公版 storefront（config 開店）"]
     end
-    subgraph sui["Sui Testnet"]
-        MANDATE["Mandate<br/>(shared object)<br/>per_tx_limit / revoke"]
+    subgraph sui["Sui Testnet（合約全自寫：chui-contracts）"]
+        VAULT["vault::Vault（shared）<br/>資金屬於用戶；per_tx 上限<br/>revoke／withdraw 隨時可用"]
+        POLICY["log_policy::seal_approve<br/>只放行「用戶或店家」取鑰"]
     end
-    LINE -->|語音/文字| BOT
-    BOT -->|parseOrder / confirmOrder| SDK --> API
-    API --> RERANK
-    API --> TTS
-    API -->|settle（只上 salted digest）| CS -->|sponsored tx| MANDATE
-    CONSOLE -->|建立/撤銷 Mandate（zkLogin 簽名，gas 贊助）| API
+    subgraph storage["去中心化儲存"]
+        WALRUS["Walrus<br/>只存密文 blob"]
+        KS["Seal key servers<br/>發鑰前 dry-run seal_approve"]
+    end
+
+    UI -->|"① 一次性授權／加值（Slush 簽）"| VAULT
+    UI -->|"② 語音"| PARSE --> ROUTE
+    ROUTE -->|"③ 覆誦＋口頭確認"| UI
+    UI --> REGRET
+    REGRET -->|"④ 倒數走完"| AGENT
+    AGENT -->|"⑤ agent_settle（合約強制限額）"| VAULT
+    VAULT -->|"USDC 直達"| merchants
+    ROUTE -->|轉發訂單| MA
+    ROUTE -->|轉發訂單| MB
+    VERIFY -->|讀事件| VAULT
+    SEAL -->|"⑥ 密文上傳"| WALRUS
+    KS -->|取鑰驗身分| POLICY
 ```
 
 資料流重點：
+- **防呆倒數（④）**：使用者口頭說「確認」之後、真正扣款之前，固定有
+  5 秒反悔窗口，畫面上有大顆「✋ 反悔棄單」——按下即整單放棄、零扣款。
+- **資金不離開用戶**：USDC 在用戶自己的 `Vault`（shared object），
+  Agent 只拿 `AgentCap` 權限物件；合約強制單筆上限與餘額檢查，
+  錢從 Vault 直達店家。撤銷／領回隨時可由用戶單方執行。
 - **鏈上只有 digest**：`SHA-256(canonical_json(明細) ‖ 32B CSPRNG salt)`。
   explorer 看不到品項與精確金額組成。
-- **明細密文落地**：AES-256-GCM，金鑰在 parse 回應發給消費者後**伺服器即丟棄**。
-- **gas 全程由 Chui 贊助**（Sui address-balance sponsorship）：消費者不需持有 SUI。
+- **對話 log 端對端加密（⑥）**：整段點餐對話在「用戶瀏覽器內」以
+  Seal（門檻式 IBE）加密後上傳 Walrus；身分 id＝用戶地址‖店家地址，
+  Seal key server 發鑰前會 dry-run 鏈上 `log_policy::seal_approve`——
+  **只有用戶錢包與店家能解密，嘴付平台（Hub）無權看**。
 
 ## 冪等性（同一筆訂單 confirm N 次只扣一次）
 

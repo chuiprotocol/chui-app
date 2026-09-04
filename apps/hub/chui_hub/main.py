@@ -43,6 +43,20 @@ USDC_COIN_TYPE = os.environ.get(
     "CHUI_USDC_COIN_TYPE",
     "0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC",
 )
+# 對話 log 端對端加密存證（Seal＋Walrus）。Hub 只發設定，
+# 加密／上傳都在用戶瀏覽器完成——平台接觸不到明文與金鑰。
+# 預設值＝Mysten 官方 testnet 公開 Seal key server 與 Walrus 節點。
+SEAL_KEY_SERVERS = [
+    s for s in os.environ.get(
+        "SEAL_KEY_SERVERS",
+        "0x73d05d62c18d9374e3ea529e8e0ed6161da1a141a94d3f76ae3fe4e99356db75,"
+        "0xf5d14a81a982144ae441cd7d64b09027f116a468bd36e7eca494f750591623c8",
+    ).split(",") if s.strip()
+]
+WALRUS_PUBLISHER = os.environ.get(
+    "WALRUS_PUBLISHER", "https://publisher.walrus-testnet.walrus.space")
+WALRUS_AGGREGATOR = os.environ.get(
+    "WALRUS_AGGREGATOR", "https://aggregator.walrus-testnet.walrus.space")
 
 app = FastAPI(title="Chui Hub", description="嘴付協議中樞", version="0.2.0")
 app.add_middleware(
@@ -67,6 +81,9 @@ async def healthz():
         "settle_function": CHUI_FN_SETTLE,
         "usdc_coin_type": USDC_COIN_TYPE,
         "usdc_units_per_twd": USDC_UNITS_PER_TWD,
+        "seal_key_servers": SEAL_KEY_SERVERS,
+        "walrus_publisher": WALRUS_PUBLISHER,
+        "walrus_aggregator": WALRUS_AGGREGATOR,
         "merchants": [m.merchant_id for m in registry.all()],
     }
 

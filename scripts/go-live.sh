@@ -74,38 +74,47 @@ if t2 != t:
     p.write_text(t2)
     print('✅ .env 匯率已矯正：USDC_UNITS_PER_TWD=1538（內部測試）')
 EOF
+# ⚠️ vault 合約在 chui-contracts 的 main 分支（repo 預設分支可能指向
+#    另一套舊架構的合約），一律鎖定 main。
+CONTRACTS_DIR=""
+for c in ../chui-contracts ./chui-contracts "$HOME/chui-contracts"; do
+  [ -d "$c/.git" ] && CONTRACTS_DIR="$c" && break
+done
+if [ -z "$CONTRACTS_DIR" ]; then
+  echo "找不到 chui-contracts，clone（main 分支）中…"
+  git clone --branch main https://github.com/chuiprotocol/chui-contracts ../chui-contracts
+  CONTRACTS_DIR=../chui-contracts
+fi
+echo "同步 chui-contracts 到最新 main…"
+git -C "$CONTRACTS_DIR" fetch origin main
+git -C "$CONTRACTS_DIR" checkout -B main origin/main
+[ -d "$CONTRACTS_DIR/contracts/sui" ] || die "chui-contracts 的 main 分支沒有 contracts/sui——請回報"
+
+# 合約版本變了（例如新增 log_policy）就自動重佈署；沒變且已有 package 就跳過
 current_pkg=$(grep '^CHUI_PACKAGE_ID=' .env | cut -d= -f2-)
-if [ -n "$current_pkg" ]; then
-  echo "✅ .env 已有 CHUI_PACKAGE_ID=${current_pkg}，跳過部署（要重佈署請先清空該行）"
+current_rev=$(grep '^CHUI_CONTRACTS_REV=' .env | cut -d= -f2- || true)
+head_rev=$(git -C "$CONTRACTS_DIR" rev-parse HEAD)
+if [ -n "$current_pkg" ] && [ "$current_rev" = "$head_rev" ]; then
+  echo "✅ 合約無變更（${head_rev:0:8}），沿用 CHUI_PACKAGE_ID=${current_pkg}"
 else
-  # ⚠️ vault 合約在 chui-contracts 的 main 分支（repo 預設分支可能指向
-  #    另一套舊架構的合約），一律鎖定 main。
-  CONTRACTS_DIR=""
-  for c in ../chui-contracts ./chui-contracts "$HOME/chui-contracts"; do
-    [ -d "$c/.git" ] && CONTRACTS_DIR="$c" && break
-  done
-  if [ -z "$CONTRACTS_DIR" ]; then
-    echo "找不到 chui-contracts，clone（main 分支）中…"
-    git clone --branch main https://github.com/chuiprotocol/chui-contracts ../chui-contracts
-    CONTRACTS_DIR=../chui-contracts
-  fi
-  # 一律同步到最新的 main（預設分支可能指向另一套舊架構的合約）
-  echo "同步 chui-contracts 到最新 main…"
-  git -C "$CONTRACTS_DIR" fetch origin main
-  git -C "$CONTRACTS_DIR" checkout -B main origin/main
-  [ -d "$CONTRACTS_DIR/contracts/sui" ] || die "chui-contracts 的 main 分支沒有 contracts/sui——請回報"
+  [ -n "$current_pkg" ] && echo "合約已更新（$current_rev -> $head_rev），重佈署…"
   (cd "$CONTRACTS_DIR/contracts/sui" && ./deploy.sh)   # 內含 sui move test
   PKG=$(python3 -c "import json; print(json.load(open('$CONTRACTS_DIR/deployments/testnet.json'))['package_id'])")
-  python3 - "$PKG" <<'EOF'
+  python3 - "$PKG" "$head_rev" <<'EOF'
 import re, sys
 from pathlib import Path
-pkg = sys.argv[1]
+pkg, rev = sys.argv[1], sys.argv[2]
 p = Path('.env')
 t = p.read_text()
 t = re.sub(r'(?m)^CHUI_PACKAGE_ID=.*$', f'CHUI_PACKAGE_ID={pkg}', t)
+if re.search(r'(?m)^CHUI_CONTRACTS_REV=', t):
+    t = re.sub(r'(?m)^CHUI_CONTRACTS_REV=.*$', f'CHUI_CONTRACTS_REV={rev}', t)
+else:
+    t = t.rstrip('\n') + f'\nCHUI_CONTRACTS_REV={rev}\n'
 p.write_text(t)
-print(f'✅ 已寫入 .env：CHUI_PACKAGE_ID={pkg}')
+print(f'✅ 已寫入 .env：CHUI_PACKAGE_ID={pkg}（rev {rev[:8]}）')
 EOF
+  echo "⚠️ 合約重佈署＝新 package：手機上先前的授權會失效，請重新授權（舊 Vault 的錢可用舊 explorer 領回）"
 fi
 
 # ---------- 3. STT key ----------

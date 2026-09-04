@@ -1,30 +1,33 @@
-/** 純語音循環 UI（三個前端共用）——照定稿設計圖實作。
+/** 純語音循環 UI（三個前端共用）。
  *
- * 兩個狀態：
- * 🅐 首次：只有一件事——「授權 N USDC 給你的點餐 Agent」（Slush 簽唯一一筆，
- *    錢進用戶自己的 Vault，agent 只拿 cap）。已有 Vault 時同一顆按鈕改走
- *    vault::deposit「加值」——額度累計，不會另開新 Vault 把舊的錢丟下。
- * 🅑 回訪：麥克風權限已授予 → 開頁自動開始聆聽；之後
- *    說話 → 靜音自動送出 → Agent 口頭覆誦並「問你確認」→ 你說「確認」
- *    才下單付款 → 口頭回報 → 自動回到聆聽。全程零按鍵、隨時可按結束對話。
- *    （瀏覽器安全規定：權限「第一次」授予必須有一次點擊——之後永遠免按。）
+ * 流程（foodpanda 式改版後）：
+ * 首頁常駐菜單，頂部「🎙 嘴付下單」按鈕開啟語音面板（overlay）。
+ * 🅐 首次：授權 N USDC 給點餐 Agent（Slush 簽唯一一筆；已有 Vault 則走
+ *    deposit 加值累計）。
+ * 🅑 之後：說話 → Agent 覆誦並口頭問確認 → 說「確認」→ **5 秒防呆倒數**
+ *    （期間可一鍵「反悔棄單」）→ 倒數走完才自動下單付款 → 口頭回報。
+ * 每筆完成的訂單，整段對話 log 會在瀏覽器內用 Seal 加密、上傳 Walrus——
+ * 只有用戶錢包與店家能解密，嘴付平台無權看。
  *
  * 期望元素 id：msg、authorize-screen、agent-status、topup-form、topup-usdc、
  * voice-screen、mic-circle、listen-status、quota-chip、transcript、
- * text-form、text-input（打字備援）、end-chat（結束對話）、revoke-link（選配）。
+ * text-form、text-input、end-chat；選配：open-voice、voice-overlay、
+ * close-voice、revoke-link。
  */
 
-import { ClarificationNeeded, HubClient, type ParseResponse } from "./hub.js";
+import { ClarificationNeeded, HubClient, type CheckoutParams, type ParseResponse } from "./hub.js";
 import { ChuiAgentSession } from "./session.js";
 import { TapToTalkRecorder } from "./autovoice.js";
 import { runAutoOrder } from "./autoflow.js";
-import { signAndExecuteWithUserWallet } from "./pay.js";
+import { signAndExecuteWithUserWallet, signPersonalMessageWithUserWallet } from "./pay.js";
+import { SealLogVault, type LogEntry } from "./sealog.js";
 
 const USDC = 1_000_000n;
 // 單筆上限（內部測試放寬到 50 USDC；實際可花上限永遠＝Vault 餘額本身）。
-// 上限設太緊會讓「之後加值」被卡住——合約沒有調整上限的入口，重建 Vault 才能改。
 const PER_TX_LIMIT_UNITS = 50_000_000n;
 const MIN_GAS_MIST = 10_000_000n;
+// 防呆倒數秒數：確認後、扣款前的反悔窗口
+const REGRET_SECONDS = 5;
 
 export interface VoiceLoopConfig {
   hub: HubClient;
@@ -74,22 +77,29 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
   const clearMsg = () => { need("msg").innerHTML = ""; };
 
   const transcript = need("transcript");
+  // 對話 log：加密存證的原始素材（settle 後上傳、之後歸零重新累積）
+  let convo: LogEntry[] = [];
+  const logLine = (role: LogEntry["role"], text: string) => {
+    convo.push({ role, text, ts: Date.now() });
+  };
   function bubble(kind: "user" | "agent", html: string) {
     const div = document.createElement("div");
     div.className = `bubble ${kind}`;
     div.innerHTML = html;
     transcript.appendChild(div);
     transcript.scrollTop = transcript.scrollHeight;
+    logLine(kind, div.textContent ?? "");
   }
-  function progressCard(html: string) {
+  function progressCard(html: string): HTMLElement {
     const div = document.createElement("div");
     div.className = "progress-card";
     div.innerHTML = html;
     transcript.appendChild(div);
     transcript.scrollTop = transcript.scrollHeight;
+    return div;
   }
 
-  // ---- Hub 設定（package/module/幣別/匯率都由 Hub 提供，前端零硬編碼）----
+  // ---- Hub 設定（package/module/幣別/匯率/Seal/Walrus 全由 Hub 提供）----
   let health: Record<string, unknown>;
   try {
     health = await (await fetch(`${hub.baseUrl}/healthz`)).json();
@@ -106,6 +116,16 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
     unitsPerTwd > 0 ? `≈ ${((twd * unitsPerTwd) / 1_000_000).toFixed(2)} USDC` : "";
 
   const session = await ChuiAgentSession.load(network);
+  // Seal 存證（設定不齊時 sealVault 為 null，存證失敗會誠實顯示、不擋付款流程）
+  let sealVault: SealLogVault | null = null;
+  try {
+    sealVault = new SealLogVault(session.grpcClient, {
+      packageId,
+      keyServerIds: (health.seal_key_servers as string[] | undefined) ?? [],
+      walrusPublisher: String(health.walrus_publisher ?? ""),
+      walrusAggregator: String(health.walrus_aggregator ?? ""),
+    });
+  } catch { /* 沒設定就不做存證 */ }
 
   // ---- 畫面切換 ----
   const showAuthorize = () => { need("authorize-screen").classList.remove("hidden"); need("voice-screen").classList.add("hidden"); };
@@ -141,7 +161,6 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
       if (!Number.isFinite(usdcValue) || usdcValue < 0.3) {
         throw new Error("授權額度最低 0.3 USDC");
       }
-      // 轉成最小單位（6 位小數）後全程整數運算
       const usdcUnits = BigInt(Math.round(usdcValue * 1_000_000));
       if (!packageId) throw new Error("合約尚未部署（Hub 未設定 CHUI_PACKAGE_ID）");
 
@@ -193,6 +212,8 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
   let looping = false;
   /** 已覆誦、等使用者口頭「確認」的訂單 */
   let pendingParsed: ParseResponse | null = null;
+  /** 倒數中的棄單控制（防呆窗口） */
+  let regretAbort: (() => void) | null = null;
 
   function setListening(on: boolean, label?: string) {
     need("mic-circle").classList.toggle("live", on);
@@ -218,8 +239,7 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
         return;
       }
       if (!looping) return; // 錄音中按了「結束對話」——丟棄這段，不下單
-      // 全程沒偵測到人聲（環境安靜／只有底噪）→ 不送辨識、不算失敗，
-      // 直接回到聆聽——避免空錄音連環「沒對到品項」把對話莫名暫停
+      // 全程沒偵測到人聲 → 不送辨識、不算失敗，直接回到聆聽
       if (!recorder.voiceDetected || audio.size < 1200) { continue; }
       setListening(false, "處理中⋯");
       await handleInput({ audio });
@@ -236,7 +256,6 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
 
   /** 語音／文字輸入的統一入口：確認階段判讀 yes/no，其餘當成新的點餐。 */
   async function handleInput(input: { text: string } | { audio: Blob }): Promise<void> {
-    // ---- 確認階段：先聽懂使用者是「確認」「取消」還是換單 ----
     if (pendingParsed) {
       let said = "";
       let reparsed: ParseResponse | null = null;
@@ -261,6 +280,9 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
         const order = pendingParsed;
         pendingParsed = null;
         bubble("user", said || "（確認）");
+        // ---- 防呆倒數：說了確認也還有 5 秒可以整單反悔 ----
+        const proceed = await regretCountdown(order);
+        if (!proceed) return;
         await settleOrder(order);
         return;
       }
@@ -273,7 +295,6 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
         await speak("好的，取消了。想點什麼再跟我說。");
         return;
       }
-      // 聽起來像新的點餐內容 → 換單重新覆誦
       if (reparsed) {
         pendingParsed = null;
         await propose(reparsed);
@@ -284,13 +305,11 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
         await parseAndPropose(input);
         return;
       }
-      // 聽不清楚 → 重問一次（不重複覆誦整張訂單）
       consecutiveMisses += 1;
       bubble("agent", "🤔 沒聽清楚——說「確認」我就下單付款，說「取消」就放棄這筆。");
       await speak("沒聽清楚，說確認我就下單付款，說取消就放棄");
       return;
     }
-    // ---- 新的點餐 ----
     await parseAndPropose(input);
   }
 
@@ -333,15 +352,58 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
     await speak(`${question}，跟你確認一下，要幫你下單付款嗎？說確認或取消`);
   }
 
-  /** 已確認的訂單 → 下單＋Agent 自動付款＋鏈上驗證。 */
+  /**
+   * 防呆倒數：確認後、真正扣款前的 5 秒反悔窗口。
+   * 回傳 true＝倒數走完照常下單；false＝用戶按了「反悔棄單」。
+   */
+  function regretCountdown(order: ParseResponse): Promise<boolean> {
+    setListening(false, "最後確認中⋯");
+    const card = progressCard(`
+      <div class="regret">
+        <div class="regret-title">⏳ <b><span class="regret-count">${REGRET_SECONDS}</span> 秒</b>後自動下單付款</div>
+        <div class="regret-sub">${order.quote.lines.map((l) => l.name).join("、")}｜${order.quote.total} 元</div>
+        <button type="button" class="regret-btn">✋ 反悔棄單</button>
+      </div>`);
+    const countEl = card.querySelector(".regret-count") as HTMLElement;
+    const btn = card.querySelector(".regret-btn") as HTMLButtonElement;
+    logLine("system", `防呆倒數 ${REGRET_SECONDS} 秒開始`);
+    return new Promise<boolean>((resolve) => {
+      let left = REGRET_SECONDS;
+      const timer = window.setInterval(() => {
+        left -= 1;
+        countEl.textContent = String(left);
+        if (left <= 0) {
+          window.clearInterval(timer);
+          regretAbort = null;
+          btn.disabled = true;
+          card.classList.add("regret-done");
+          logLine("system", "倒數結束，開始下單付款");
+          resolve(true);
+        }
+      }, 1000);
+      const abort = () => {
+        window.clearInterval(timer);
+        regretAbort = null;
+        card.remove();
+        bubble("agent", "🛑 已棄單，一毛錢都沒扣。想重點再跟我說～");
+        clearMsg();
+        void speak("已棄單，沒有扣款。想重點再跟我說。");
+        resolve(false);
+      };
+      regretAbort = abort;
+      btn.addEventListener("click", abort);
+    });
+  }
+
+  /** 已確認＋倒數走完的訂單 → 下單＋Agent 自動付款＋鏈上驗證＋加密存證。 */
   async function settleOrder(parsed: ParseResponse): Promise<void> {
     await runAutoOrder(hub, session, { parsed }, {
       onProgress: (text) => msg("info", text),
-      onSettled: async ({ parsed: p, merchantRef, amountUnits, settlement }) => {
+      onSettled: async ({ parsed: p, merchantRef, amountUnits, settlement, checkout }) => {
         const verified = settlement.status === "settled_verified";
         progressCard(`
           <div class="step">✓ ${p.merchant_name} 已接單（取餐單號 <b>${merchantRef}</b>）</div>
-          <div class="step">✓ Agent 自動付款 ${(amountUnits / 1_000_000).toFixed(2)} USDC（口頭確認後零按鍵）</div>
+          <div class="step">✓ Agent 自動付款 ${(amountUnits / 1_000_000).toFixed(2)} USDC（口頭確認＋倒數後零按鍵）</div>
           <div class="step">${verified ? "✓ 鏈上驗證通過（digest／金額／店家相符）" : `⏳ 鏈上驗證中：${settlement.verify_reason ?? ""}`}</div>
           <a class="txlink" href="${settlement.explorer_url}" target="_blank" rel="noreferrer">🔗 在 Sui explorer 查看交易 ↗</a>`);
         bubble("agent", `付款完成！取餐單號 <b>${merchantRef}</b>，總共 ${p.quote.total} 元（${twdToUsdc(p.quote.total) || "USDC"}）。還要什麼跟我說～`);
@@ -350,6 +412,7 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
         consecutiveMisses = 0;
         await refreshStatus().catch(() => undefined);
         await speak(`付款完成，取餐單號 ${merchantRef.split("-").pop()}，總共 ${p.quote.total} 元`);
+        void sealAndUploadLog(merchantRef, checkout);
       },
       onError: async (err) => {
         consecutiveErrors += 1;
@@ -365,6 +428,41 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
     }, merchantId);
   }
 
+  /** 訂單完成後：整段對話在瀏覽器內 Seal 加密 → 上傳 Walrus → 顯示存證卡。 */
+  async function sealAndUploadLog(merchantRef: string, checkout: CheckoutParams): Promise<void> {
+    if (!sealVault) return; // Hub 沒發 Seal 設定：不做存證（不影響點餐）
+    const entries = convo;
+    convo = []; // 下一筆訂單從新的 log 開始
+    const card = progressCard(`<div class="step">🔐 對話紀錄加密存證中（Seal ＋ Walrus）⋯</div>`);
+    try {
+      const owner = await session.ownerAddress();
+      const sealed = await sealVault.encryptAndUpload(entries, owner, checkout.merchant_address, {
+        merchant_ref: merchantRef,
+      });
+      card.innerHTML = `
+        <div class="step">🔐 對話紀錄已端對端加密上傳 Walrus</div>
+        <div class="step sealed-id">blob：<code>${sealed.blobId.slice(0, 14)}…</code>
+          <a href="${sealed.blobUrl}" target="_blank" rel="noreferrer">密文 ↗</a></div>
+        <div class="step">🔑 只有「你的錢包」與「店家」能解密——嘴付平台無權看</div>
+        <a href="#" class="txlink unseal-link">用 Slush 解密查看（證明鑰匙在你手上）</a>`;
+      card.querySelector(".unseal-link")?.addEventListener("click", async (e) => {
+        e.preventDefault();
+        try {
+          msg("info", "請在 Slush 簽署個人訊息（Seal 取鑰身分證明）…");
+          const log = await sealVault!.fetchAndDecrypt(sealed.blobId, owner, signPersonalMessageWithUserWallet);
+          clearMsg();
+          progressCard(`
+            <div class="step">🔓 解密成功（key server 已驗證你是當事人）</div>
+            ${log.entries.slice(0, 12).map((l) => `<div class="step logline">${l.role === "user" ? "🗣" : l.role === "agent" ? "🤖" : "⚙️"} ${l.text}</div>`).join("")}`);
+        } catch (err) {
+          msg("error", `解密失敗：${(err as Error).message}`);
+        }
+      });
+    } catch (err) {
+      card.innerHTML = `<div class="step">⚠️ 加密存證失敗：${(err as Error).message}（付款不受影響）</div>`;
+    }
+  }
+
   // 麥克風圓圈：僅在「權限尚未授予」或「已暫停」時需要點一下
   need("mic-circle").addEventListener("click", () => {
     if (recorder.isRecording) { recorder.stop(); return; } // 提前送出
@@ -377,6 +475,7 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
   $("end-chat")?.addEventListener("click", (e) => {
     e.preventDefault();
     pendingParsed = null;
+    regretAbort?.();
     pauseLoop("已結束對話——點一下麥克風重新開始");
     if (recorder.isRecording) recorder.stop();
     try { speechSynthesis.cancel(); } catch { /* 無合成器 */ }
@@ -411,9 +510,13 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
     }
   });
 
-  // ---- 啟動：依授權狀態決定畫面；權限已授予就自動開始聆聽 ----
-  const state = await refreshStatus();
-  if (state === "ready") {
+  // ---- 啟動 ----
+  async function enterVoicePanel(): Promise<void> {
+    const state = await refreshStatus();
+    if (state !== "ready") {
+      showAuthorize();
+      return;
+    }
     showVoice();
     let granted = false;
     try {
@@ -421,14 +524,37 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
       granted = perm.state === "granted";
     } catch { /* 不支援查詢的瀏覽器：等使用者點一下 */ }
     if (granted && recorder.isSupported) {
-      void speak("歡迎回來！請說你要點什麼。");
+      void speak("請說你要點什麼。");
       void loop();
     } else if (recorder.isSupported) {
       setListening(false, "點一下麥克風開始（只有第一次需要）");
     } else {
       setListening(false, "此環境無法錄音——請用下方打字備援");
     }
+  }
+
+  const overlay = $("voice-overlay");
+  const openBtn = $("open-voice");
+  if (overlay && openBtn) {
+    // foodpanda 式：首頁常駐菜單，按「嘴付下單」才開語音面板
+    openBtn.addEventListener("click", () => {
+      overlay.classList.remove("hidden");
+      document.body.classList.add("no-scroll");
+      void enterVoicePanel();
+    });
+    $("close-voice")?.addEventListener("click", () => {
+      overlay.classList.add("hidden");
+      document.body.classList.remove("no-scroll");
+      pendingParsed = null;
+      regretAbort?.();
+      pauseLoop("已暫停");
+      if (recorder.isRecording) recorder.stop();
+      try { speechSynthesis.cancel(); } catch { /* 無合成器 */ }
+    });
+    // 已授權用戶：把額度先撈起來顯示在首頁 chip
+    void refreshStatus();
   } else {
-    showAuthorize();
+    // 傳統版（voice-app）：開頁直接進語音流程
+    await enterVoicePanel();
   }
 }

@@ -30,21 +30,26 @@ async function boot() {
   await enterStore(hub, merchantId);
 }
 
+const SHOP_EMOJI: Record<string, string> = { "happy-chicken": "🍗", goodtea: "🧋" };
+
 async function renderList(hub: HubClient) {
   show("list-view");
   try {
     const { merchants } = await hub.merchants();
     $("merchant-cards").innerHTML = (merchants as MerchantRow[]).map((m) => {
+      const emoji = SHOP_EMOJI[m.merchant_id] ?? "🍽️";
       if (m.integration === "native") {
         // 公版店面：留在本站進店（保留 ?hub= 覆寫參數）
         const params = new URLSearchParams(location.search);
         params.set("m", m.merchant_id);
         return `<a class="merchant-card native" href="?${params}">
+          <span class="memoji">${emoji}</span>
           <span class="mname">${m.name}</span>
           <span class="kind native">公版店面</span>
           <span class="go">進入點餐 →</span></a>`;
       }
       return `<a class="merchant-card adapter" href="${m.web_url}" target="_blank" rel="noreferrer">
+        <span class="memoji">${emoji}</span>
         <span class="mname">${m.name}</span>
         <span class="kind adapter">自家官網</span>
         <span class="go">前往官網 ↗</span></a>`;
@@ -54,13 +59,19 @@ async function renderList(hub: HubClient) {
   }
 }
 
+const ITEM_EMOJI: Record<string, string> = {
+  珍珠奶茶: "🧋", 奶茶: "🥤", 四季春青茶: "🍵", 檸檬紅茶: "🍋",
+  鹽酥雞: "🍗", 甜不辣: "🍢", 雞皮: "🍘", 魷魚鬚: "🦑", 地瓜薯條: "🍠", 米血: "🍡",
+};
+
 async function enterStore(hub: HubClient, merchantId: string) {
+  show("store-view");
   // 店名與菜單走協議取得
   try {
     const resp = await fetch(`${hub.baseUrl}/v1/merchants/${merchantId}/menu`);
     const body = await resp.json();
     if (!resp.ok) throw new Error(body?.detail?.message ?? `菜單取得失敗（${resp.status}）`);
-    $("page-title").textContent = `🧋 ${body.name}`;
+    $("page-title").textContent = body.name;
     $("page-tagline").textContent = "嘴付公版店面 · 用說的就能點";
     document.title = body.name;
     const health = await (await fetch(`${hub.baseUrl}/healthz`)).json().catch(() => ({}));
@@ -68,7 +79,15 @@ async function enterStore(hub: HubClient, merchantId: string) {
     const usdc = (twd: number) => unitsPerTwd > 0
       ? `<span class="usdc-note">≈ ${((twd * unitsPerTwd) / 1_000_000).toFixed(2)} USDC</span>` : "";
     $("store-menu").innerHTML = (body.menu.items as { name: string; base_price: number }[])
-      .map((item) => `<div class="menu-row"><span>${item.name}</span><span class="price">${item.base_price} 元起${usdc(item.base_price)}</span></div>`)
+      .map((item) => `
+        <div class="menu-card">
+          <div class="thumb">${ITEM_EMOJI[item.name] ?? "🥤"}</div>
+          <div class="info">
+            <div class="name">${item.name}</div>
+            <div class="mods">統一大杯</div>
+            <div class="pricerow"><span class="price">${item.base_price} 元起</span>${usdc(item.base_price)}</div>
+          </div>
+        </div>`)
       .join("");
   } catch (e) {
     $("msg").innerHTML = `<div class="error">${(e as Error).message}</div>`;
