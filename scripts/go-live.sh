@@ -16,6 +16,8 @@ export PATH="$HOME/.local/bin:$PATH"
 
 say() { printf '\n\033[1;35m== %s ==\033[0m\n' "$1"; }
 die() { printf '\n\033[1;31m❌ %s\033[0m\n' "$1"; exit 1; }
+# 任何一行失敗都明確報出行號與指令——不再無聲中斷、走不到印網址那步
+trap 'printf "\n\033[1;31m❌ go-live 在第 %s 行失敗：%s\n   請把這段訊息貼回給我們排查\033[0m\n" "${LINENO}" "${BASH_COMMAND}"' ERR
 
 # ---------- 0. 基本工具 ----------
 say "0/6 檢查基本工具"
@@ -91,7 +93,8 @@ git -C "$CONTRACTS_DIR" checkout -B main origin/main
 [ -d "$CONTRACTS_DIR/contracts/sui" ] || die "chui-contracts 的 main 分支沒有 contracts/sui——請回報"
 
 # 合約版本變了（例如新增 log_policy）就自動重佈署；沒變且已有 package 就跳過
-current_pkg=$(grep '^CHUI_PACKAGE_ID=' .env | cut -d= -f2-)
+# （grep 找不到該行時不可讓 set -e 無聲終止腳本——一律 || true）
+current_pkg=$(grep '^CHUI_PACKAGE_ID=' .env | cut -d= -f2- || true)
 current_rev=$(grep '^CHUI_CONTRACTS_REV=' .env | cut -d= -f2- || true)
 head_rev=$(git -C "$CONTRACTS_DIR" rev-parse HEAD)
 if [ -n "$current_pkg" ] && [ "$current_rev" = "$head_rev" ]; then
@@ -107,11 +110,15 @@ from pathlib import Path
 pkg, rev = sys.argv[1], sys.argv[2]
 p = Path('.env')
 t = p.read_text()
-t = re.sub(r'(?m)^CHUI_PACKAGE_ID=.*$', f'CHUI_PACKAGE_ID={pkg}', t)
-if re.search(r'(?m)^CHUI_CONTRACTS_REV=', t):
-    t = re.sub(r'(?m)^CHUI_CONTRACTS_REV=.*$', f'CHUI_CONTRACTS_REV={rev}', t)
-else:
-    t = t.rstrip('\n') + f'\nCHUI_CONTRACTS_REV={rev}\n'
+
+def upsert(text, key, value):
+    """該行存在就替換、不存在就補上——絕不無聲跳過。"""
+    if re.search(rf'(?m)^{key}=', text):
+        return re.sub(rf'(?m)^{key}=.*$', f'{key}={value}', text)
+    return text.rstrip('\n') + f'\n{key}={value}\n'
+
+t = upsert(t, 'CHUI_PACKAGE_ID', pkg)
+t = upsert(t, 'CHUI_CONTRACTS_REV', rev)
 p.write_text(t)
 print(f'✅ 已寫入 .env：CHUI_PACKAGE_ID={pkg}（rev {rev[:8]}）')
 EOF
@@ -120,7 +127,7 @@ fi
 
 # ---------- 3. STT key ----------
 say "3/6 語音辨識金鑰"
-stt=$(grep '^STT_API_KEY=' .env | cut -d= -f2-)
+stt=$(grep '^STT_API_KEY=' .env | cut -d= -f2- || true)
 if [ -z "$stt" ]; then
   printf "貼上 OpenAI API key（直接 Enter 跳過＝語音停用、只能打字）："
   read -r key
@@ -129,7 +136,11 @@ if [ -z "$stt" ]; then
 import re, sys
 from pathlib import Path
 p = Path('.env')
-t = re.sub(r'(?m)^STT_API_KEY=.*$', f'STT_API_KEY={sys.argv[1]}', p.read_text())
+t = p.read_text()
+if re.search(r'(?m)^STT_API_KEY=', t):
+    t = re.sub(r'(?m)^STT_API_KEY=.*$', f'STT_API_KEY={sys.argv[1]}', t)
+else:
+    t = t.rstrip('\n') + f'\nSTT_API_KEY={sys.argv[1]}\n'
 p.write_text(t)
 print('✅ 已寫入 STT_API_KEY')
 EOF
@@ -142,48 +153,6 @@ fi
 say "4/6 啟動後端整包"
 ./scripts/demo-up.sh
 
-# ---------- 5. cloudflared 隧道 ----------
-say "5/6 公開 Hub（cloudflared 隧道）"
-if ! command -v cloudflared >/dev/null; then
-  echo "安裝 cloudflared…"
-  case "$(uname -s)" in
-    Darwin) command -v brew >/dev/null && brew install cloudflared \
-            || die "請先裝 Homebrew 或手動安裝 cloudflared" ;;
-    Linux)  curl -sSL -o /tmp/cloudflared \
-              https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-linux-amd64 \
-            && chmod +x /tmp/cloudflared && sudo mv /tmp/cloudflared /usr/local/bin/cloudflared ;;
-    *) die "不支援的作業系統，請手動安裝 cloudflared" ;;
-  esac
-fi
-mkdir -p .demo-logs
-if [ -f .demo-logs/tunnel-url.txt ] && curl -s -m 5 "$(cat .demo-logs/tunnel-url.txt)/healthz" | grep -q '"ok"'; then
-  HUB_URL=$(cat .demo-logs/tunnel-url.txt)
-  echo "✅ 既有隧道仍存活：$HUB_URL"
-else
-  (cloudflared tunnel --url http://localhost:8700 > .demo-logs/tunnel.log 2>&1 &)
-  HUB_URL=""
-  for i in $(seq 1 30); do
-    HUB_URL=$(grep -oE 'https://[a-z0-9-]+\.trycloudflare\.com' .demo-logs/tunnel.log | head -1 || true)
-    [ -n "$HUB_URL" ] && break
-    sleep 1
-  done
-  [ -n "$HUB_URL" ] || die "隧道啟動失敗，看 .demo-logs/tunnel.log"
-  echo "$HUB_URL" > .demo-logs/tunnel-url.txt
-fi
-
-# ---------- 6. 最終網址 ----------
-say "6/6 完成！手機（Slush 內建瀏覽器）開這兩個網址"
-cat <<URLS | tee demo-urls.txt
-
-🍗 快樂鹽酥雞官網（手機A）：
-   https://chui-happy-chicken.pages.dev/?hub=$HUB_URL
-
-👄 嘴付公版入口（手機B，進去點「好喝奶茶店」）：
-   https://chui-portal.pages.dev/?hub=$HUB_URL
-
-🎛 協議封包面板（投影用）：
-   $HUB_URL/panel
-
-（?hub= 只需帶第一次，之後手機直接開原網址即可。
- 隧道網址每次重跑會變；重跑本腳本會自動沿用仍存活的隧道。）
-URLS
+# ---------- 5+6. 隧道＋最終網址（可獨立重跑：./scripts/urls.sh）----------
+say "5/6 公開 Hub（cloudflared 隧道）＋ 6/6 最終網址"
+./scripts/urls.sh
