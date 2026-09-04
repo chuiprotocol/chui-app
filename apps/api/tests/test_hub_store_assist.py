@@ -33,13 +33,18 @@ def test_order_store_memory_roundtrip(monkeypatch):
     assert store.get("ord_x")["status"] == "confirmed"
 
 
-def test_order_store_bad_uri_fails_fast(monkeypatch):
-    """設定了壞的 MONGODB_URI 必須「啟動就炸」，不可無聲退回記憶體。"""
+def test_order_store_bad_uri_falls_back_loudly(monkeypatch, capsys):
+    """壞的 MONGODB_URI →「大聲退回」記憶體：stderr 有明確錯誤、
+    backend 標示 atlas 連線失敗，但不擋主流程（錄影／demo 不停住）。"""
     monkeypatch.setenv("MONGODB_URI", "mongodb://127.0.0.1:1/?serverSelectionTimeoutMS=200")
     from chui_hub.store import OrderStore
 
-    with pytest.raises(Exception):
-        OrderStore()
+    store = OrderStore()
+    assert store.backend == "memory(atlas連線失敗)"
+    assert "MongoDB Atlas 連線失敗" in capsys.readouterr().err
+    order = {"order_id": "ord_f", "status": "quoted"}
+    store.save(order)
+    assert store.get("ord_f") == order  # 記憶體模式照常運作
 
 
 def test_assist_disabled_without_full_config(monkeypatch):

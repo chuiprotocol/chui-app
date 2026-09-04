@@ -38,12 +38,16 @@ python3 - "${URI}" <<'EOF'
 import re, sys
 from pathlib import Path
 uri = sys.argv[1]
+if "'" in uri:
+    raise SystemExit("連線字串含單引號，請先把密碼裡的 ' 換掉（Atlas 可重生密碼）")
+# 一律寫成單引號包裹：URI 裡的 & 會讓 shell source 直接炸掉
+line = f"MONGODB_URI='{uri}'"
 p = Path('.env')
 t = p.read_text()
 if re.search(r'(?m)^MONGODB_URI=', t):
-    t = re.sub(r'(?m)^MONGODB_URI=.*$', f'MONGODB_URI={uri}', t)
+    t = re.sub(r'(?m)^MONGODB_URI=.*$', line, t)
 else:
-    t = t.rstrip('\n') + f'\nMONGODB_URI={uri}\n'
+    t = t.rstrip('\n') + f'\n{line}\n'
 p.write_text(t)
 print('✅ 已寫入 .env：MONGODB_URI（帳密只在你機器，不進 git）')
 EOF

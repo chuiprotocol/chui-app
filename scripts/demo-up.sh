@@ -6,6 +6,31 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 if [ -f .env ]; then
+  # 先自動修補：值含 & ? 空白等特殊字元卻沒加引號（例：Atlas 連線字串
+  # 的 &w=majority）會讓 source 直接炸掉——一律補上單引號再載入。
+  python3 - <<'EOF'
+import re
+from pathlib import Path
+p = Path('.env')
+lines = p.read_text().splitlines()
+changed = False
+out = []
+for line in lines:
+    m = re.match(r"^([A-Za-z_][A-Za-z0-9_]*)=(.*)$", line)
+    if m:
+        key, val = m.group(1), m.group(2)
+        needs_quote = (
+            val and not (val.startswith("'") or val.startswith('"'))
+            and re.search(r"[&?<>|;()\s#]", val)
+        )
+        if needs_quote and "'" not in val:
+            line = f"{key}='{val}'"
+            changed = True
+    out.append(line)
+if changed:
+    p.write_text("\n".join(out) + "\n")
+    print("已自動修補 .env：特殊字元的值補上引號（避免啟動報錯）")
+EOF
   set -a; source .env; set +a
 else
   echo "⚠️ 找不到 .env（cp .env.example .env 後填入），先用預設值啟動。"
