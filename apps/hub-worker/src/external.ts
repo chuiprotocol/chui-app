@@ -48,7 +48,7 @@ export interface Env {
 // ---- STT：多供應商鏈 ----
 // 可用的供應商依「模型能力」排序逐一嘗試，前一家失敗自動遞補下一家；
 // 全部失敗才明確報錯（絕不假裝聽到）。預設排序理由（DECISIONS D30）：
-//   1. elevenlabs（Scribe v1）——公開多語 benchmark 的中文 WER 領先
+//   1. elevenlabs（Scribe v2，官方最新旗艦）——中文 WER 領先
 //   2. openai（whisper/gpt-4o-transcribe）——本專案實戰驗證過的主力
 //   3. gmi、4. amd——開源 whisper-large-v3 託管（OpenAI 相容端點）
 // 沒填 key 的供應商自動跳過；順序可用 STT_PROVIDERS 覆寫。
@@ -92,7 +92,7 @@ async function sttElevenLabs(key: string, model: string, audio: File): Promise<s
   const form = new FormData();
   form.set("file", audio, audio.name || "audio.webm");
   form.set("model_id", model);
-  form.set("language_code", "zho");
+  form.set("language_code", "cmn"); // Scribe 的中文語言碼（官方文件）
   const resp = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
     method: "POST",
     headers: { "xi-api-key": key },
@@ -113,9 +113,9 @@ function sttProviders(env: Env): SttProvider[] {
   const all: Record<string, SttProvider> = {
     elevenlabs: {
       // 模型可用 ELEVENLABS_STT_MODEL 覆寫（帳號有更新的 Scribe 版本時換上）
-      name: `elevenlabs(${env.ELEVENLABS_STT_MODEL ?? "scribe_v1"})`,
+      name: `elevenlabs(${env.ELEVENLABS_STT_MODEL ?? "scribe_v2"})`,
       configured: Boolean(env.ELEVENLABS_API_KEY),
-      run: (a) => sttElevenLabs(env.ELEVENLABS_API_KEY!, env.ELEVENLABS_STT_MODEL ?? "scribe_v1", a),
+      run: (a) => sttElevenLabs(env.ELEVENLABS_API_KEY!, env.ELEVENLABS_STT_MODEL ?? "scribe_v2", a),
     },
     // 同一把 OpenAI key 排兩節點：gpt-4o-transcribe（全尺寸，OpenAI 家
     // 最準的聽寫模型）優先，帳號不支援時自動遞補到 whisper-1
