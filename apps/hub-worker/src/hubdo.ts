@@ -96,15 +96,23 @@ export class ChuiHubDO implements DurableObject {
       seq INTEGER NOT NULL
     )`);
     // 自助入駐的店家（Slush 簽名證明收款地址所有權後寫入；
-    // 內建兩家 demo 店在 merchants.ts，查詢時合併）
-    this.sql.exec(`CREATE TABLE IF NOT EXISTS merchants(
+    // 內建兩家 demo 店在 merchants.ts，查詢時合併）。
+    // v2：唯一鍵＝(地址, 店名)——同一個錢包可以開多家店，
+    // 「同名重複註冊」才是更新自己的店（真機回報：舊版一地址一店，
+    // 開第二家會無聲覆蓋第一家的店名）
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS merchants_v2(
       merchant_id TEXT PRIMARY KEY,
-      payout_address TEXT UNIQUE NOT NULL,
+      payout_address TEXT NOT NULL,
       name TEXT NOT NULL,
       ticket_prefix TEXT NOT NULL,
       menu TEXT NOT NULL,
-      created_at INTEGER NOT NULL
+      created_at INTEGER NOT NULL,
+      UNIQUE(payout_address, name)
     )`);
+    // 既有部署的舊表資料搬進 v2（一次性、冪等；舊表可能不存在）
+    try {
+      this.sql.exec("INSERT OR IGNORE INTO merchants_v2 SELECT * FROM merchants");
+    } catch { /* 舊表不存在＝全新部署 */ }
   }
 
   // ---- 訂單儲存（SQLite） ----
@@ -213,14 +221,14 @@ export class ChuiHubDO implements DurableObject {
   }
 
   private allMerchants(): BuiltinMerchant[] {
-    const rows = this.sql.exec("SELECT * FROM merchants ORDER BY created_at").toArray();
+    const rows = this.sql.exec("SELECT * FROM merchants_v2 ORDER BY created_at").toArray();
     return [...MERCHANTS, ...rows.map((r) => this.rowToMerchant(r))];
   }
 
   private merchantById(id: string): BuiltinMerchant | undefined {
     const builtin = getMerchant(id);
     if (builtin) return builtin;
-    const row = this.sql.exec("SELECT * FROM merchants WHERE merchant_id = ?", id).toArray()[0];
+    const row = this.sql.exec("SELECT * FROM merchants_v2 WHERE merchant_id = ?", id).toArray()[0];
     return row ? this.rowToMerchant(row) : undefined;
   }
 
@@ -370,12 +378,17 @@ export class ChuiHubDO implements DurableObject {
         "簽名者與收款地址不符——請用「收款地址那顆錢包」簽名", 401);
     }
 
-    const merchantId = "m_" + address.slice(2, 12);
+    // id＝hash(地址‖店名)：同錢包同店名永遠同一家（重複註冊＝更新菜單），
+    // 換個店名＝光明正大開第二家店
+    const idHash = await crypto.subtle.digest(
+      "SHA-256", new TextEncoder().encode(`${address}:${name}`));
+    const merchantId = "m_" + [...new Uint8Array(idHash)].slice(0, 5)
+      .map((b) => b.toString(16).padStart(2, "0")).join("");
     this.sql.exec(
-      `INSERT INTO merchants(merchant_id, payout_address, name, ticket_prefix, menu, created_at)
+      `INSERT INTO merchants_v2(merchant_id, payout_address, name, ticket_prefix, menu, created_at)
        VALUES(?, ?, ?, ?, ?, ?)
-       ON CONFLICT(payout_address) DO UPDATE SET
-         name=excluded.name, ticket_prefix=excluded.ticket_prefix, menu=excluded.menu`,
+       ON CONFLICT(payout_address, name) DO UPDATE SET
+         ticket_prefix=excluded.ticket_prefix, menu=excluded.menu`,
       merchantId, address, name, prefix, JSON.stringify(body.menu),
       Math.floor(Date.now() / 1000),
     );
@@ -671,7 +684,11 @@ export class ChuiHubDO implements DurableObject {
     if (!this.merchantById(merchantId)) {
       throw new HttpError("NOT_FOUND", `registry 沒有商家 ${merchantId}`, 404);
     }
-    return json({ orders: this.listOrdersBy("merchant_id", merchantId).map((o) => this.orderRow(o)) });
+    // 看板是「要出餐的單」：報價後沒走到付款的（quoted）不顯示——
+    // 客人只是問價／棄單，店家不需要看到
+    const rows = this.listOrdersBy("merchant_id", merchantId)
+      .filter((o) => o.status !== "quoted");
+    return json({ orders: rows.map((o) => this.orderRow(o)) });
   }
 
   private getOrderResponse(orderId: string): Response {

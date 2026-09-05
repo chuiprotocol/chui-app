@@ -163,9 +163,10 @@ async function renderDash(hub: HubClient) {
       addr = await connectWalletAddress();
       const resp = await fetch(`${hub.baseUrl}/v1/merchants`);
       const merchants = ((await resp.json()).merchants ?? []) as MerchantRow[];
-      const mine = merchants.find(
+      // 一個錢包可以開多家店——全部列出來，一家就直接進
+      const mine = merchants.filter(
         (m) => (m.payout_address ?? "").toLowerCase() === addr.toLowerCase());
-      if (!mine) {
+      if (!mine.length) {
         $("dash-connect").innerHTML = `
           <div class="bigicon">🚫</div>
           <p class="bullet">此錢包 <code class="addr-full">${addr}</code> 非註冊的店家。</p>
@@ -173,9 +174,28 @@ async function renderDash(hub: HubClient) {
              若您還沒註冊，請私訊聯繫 <b>k66</b> 為您開通店家權限。</p>`;
         return;
       }
-      $("dash-connect").classList.add("hidden");
-      $("dash-summary").classList.remove("hidden");
-      await enterDash(hub, health, mine, addr);
+      const enter = async (m: MerchantRow) => {
+        $("dash-connect").classList.add("hidden");
+        $("dash-summary").classList.remove("hidden");
+        await enterDash(hub, health, m, addr);
+      };
+      if (mine.length === 1) {
+        await enter(mine[0]);
+        return;
+      }
+      $("dash-connect").innerHTML = `
+        <p class="bullet">這個錢包名下有 <b>${mine.length}</b> 家店——選一家進看板：</p>
+        <div id="dash-shop-list"></div>`;
+      const list = $("dash-shop-list");
+      for (const m of mine) {
+        const btn = document.createElement("button");
+        btn.type = "button";
+        btn.className = "primary";
+        btn.style.margin = "4px 0";
+        btn.textContent = `🏪 ${m.name}`;
+        btn.addEventListener("click", () => void enter(m));
+        list.appendChild(btn);
+      }
     } catch (e) {
       $("msg").innerHTML = `<div class="error">${(e as Error).message}</div>`;
     }
