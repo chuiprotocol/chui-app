@@ -452,6 +452,16 @@ def _order_row(order: dict) -> dict:
         "log_blob_id": order.get("log_blob_id", ""),
         "owner_address": order.get("owner_address", ""),
         "created_at": order.get("created_at", 0),
+        # 品項明細（看板逐行顯示：名稱＋規格＋數量＋小計）
+        "lines": [
+            {
+                "name": ln.get("name", ""),
+                "option_names": ln.get("option_names", []),
+                "qty": ln.get("qty", 1),
+                "line_total": ln.get("line_total", 0),
+            }
+            for ln in (order.get("lines") or [])
+        ],
     }
     if row["tx_digest"]:
         row["explorer_url"] = explorer_tx_url(row["tx_digest"])

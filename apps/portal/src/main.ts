@@ -46,11 +46,15 @@ async function boot() {
 
 // ---- 共用：訂單列渲染＋Seal 解密（鑰匙只在當事人錢包） ----
 
+interface OrderLine {
+  name: string; option_names: string[]; qty: number; line_total: number;
+}
 interface OrderRow {
   order_id: string; merchant_id: string; merchant_name: string;
   merchant_address: string; merchant_ref: string; total: number;
   amount_units: number; status: string; tx_digest: string;
   log_blob_id: string; owner_address: string; created_at: number;
+  lines: OrderLine[];
   explorer_url?: string;
 }
 
@@ -61,13 +65,23 @@ const STATUS_LABEL: Record<string, string> = {
 
 function orderCard(o: OrderRow): string {
   const ts = o.created_at ? new Date(o.created_at * 1000).toLocaleString("zh-TW") : "";
+  // 品項明細逐行：名稱（規格）× 數量　小計
+  const items = (o.lines ?? []).map((ln) => `
+      <li>
+        <span class="item-name">${ln.name}</span>
+        ${ln.option_names?.length ? `<span class="item-spec">（${ln.option_names.join("・")}）</span>` : ""}
+        <span class="item-qty">× ${ln.qty}</span>
+        <span class="item-sub">${ln.line_total} 元</span>
+      </li>`).join("");
   return `
     <div class="card order-row" data-order="${o.order_id}">
       <div class="order-head">
         <b>${o.merchant_name}</b>
         <span class="order-ref">${o.merchant_ref || o.order_id}</span>
       </div>
-      <div class="order-meta">${ts}｜${o.total} 元｜${(o.amount_units / 1_000_000).toFixed(2)} USDC｜${STATUS_LABEL[o.status] ?? o.status}</div>
+      <div class="order-meta">🕐 ${ts}｜${STATUS_LABEL[o.status] ?? o.status}</div>
+      ${items ? `<ul class="order-items">${items}</ul>` : ""}
+      <div class="order-meta">合計 ${o.total} 元｜${(o.amount_units / 1_000_000).toFixed(2)} USDC</div>
       <div class="order-links">
         ${o.explorer_url ? `<a class="txlink" href="${o.explorer_url}" target="_blank" rel="noreferrer">🔗 鏈上交易 ↗</a>` : ""}
         ${o.log_blob_id ? `<a class="txlink unseal" href="#" data-blob="${o.log_blob_id}">🔐 用錢包解密對話紀錄</a>` : `<span class="usdc-note">（無加密紀錄）</span>`}

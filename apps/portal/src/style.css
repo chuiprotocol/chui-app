@@ -284,3 +284,10 @@ button.primary:active { background: var(--chui-primary-press); }
 .livechip { color: var(--chui-ok); font-weight: 600; }
 .dashlinks { font-size: 0.85rem; }
 .dashlinks a { color: var(--chui-primary); font-weight: 700; }
+/* 看板品項明細逐行 */
+.order-items { list-style: none; margin: 6px 0; padding: 8px 10px; background: var(--chui-primary-soft); border-radius: 10px; }
+.order-items li { display: flex; gap: 6px; align-items: baseline; padding: 3px 0; font-size: 0.88rem; }
+.order-items .item-name { font-weight: 700; }
+.order-items .item-spec { color: var(--chui-ink-muted); font-size: 0.8rem; }
+.order-items .item-qty { font-weight: 700; }
+.order-items .item-sub { margin-left: auto; color: var(--chui-primary); font-weight: 700; }
