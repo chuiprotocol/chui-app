@@ -22,7 +22,7 @@ import { TapToTalkRecorder } from "./autovoice.js";
 import { runAutoOrder } from "./autoflow.js";
 import { signAndExecuteWithUserWallet, signPersonalMessageWithUserWallet } from "./pay.js";
 import { SealLogVault, type LogEntry } from "./sealog.js";
-import { confirmIntent, exitIntent } from "./intents.js";
+import { confirmIntent, exitIntent, isLikelyEcho } from "./intents.js";
 
 const USDC = 1_000_000n;
 // 單筆上限（內部測試放寬到 50 USDC；實際可花上限永遠＝Vault 餘額本身）。
@@ -112,7 +112,11 @@ interface SpeakOptions {
   interruptible?: boolean;
 }
 
+// Agent 最近講過的句子——自聽回音過濾的比對基準
+let lastSpokenText = "";
+
 function speak(text: string, options: SpeakOptions = {}): Promise<{ interrupted: boolean }> {
+  lastSpokenText = text;
   return new Promise((resolve) => {
     let interrupted = false;
     const monitor = options.interruptible ? new BargeInMonitor() : null;
@@ -193,7 +197,8 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
     div.className = `bubble ${kind}`;
     div.innerHTML = html;
     transcript.appendChild(div);
-    transcript.scrollTop = transcript.scrollHeight;
+    // 面板的捲動容器是 .sheet 而非 transcript——scrollIntoView 會捲對層
+    div.scrollIntoView({ block: "end", behavior: "smooth" });
     logLine(kind, div.textContent ?? "");
   }
   function progressCard(html: string): HTMLElement {
@@ -201,7 +206,7 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
     div.className = "progress-card";
     div.innerHTML = html;
     transcript.appendChild(div);
-    transcript.scrollTop = transcript.scrollHeight;
+    div.scrollIntoView({ block: "end", behavior: "smooth" });
     return div;
   }
 
@@ -246,6 +251,30 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
   const showVoice = () => { need("voice-screen").classList.remove("hidden"); need("authorize-screen").classList.add("hidden"); };
 
   async function refreshStatus(): Promise<"ready" | "unauthorized" | "unreachable"> {
+    // 合約升級偵測：瀏覽器存的授權若屬於舊版合約，新合約收付會
+    // TypeMismatch（真機踩過）——擋在入口，給「領回舊資金」的出路
+    const binding = session.currentBinding;
+    if (binding && packageId && binding.packageId !== packageId) {
+      need("quota-chip").textContent = "";
+      $("balance-row")?.classList.add("hidden");
+      need("agent-status").innerHTML =
+        `<div class="error">⚠️ 協議合約已升級：這個瀏覽器裡的授權屬於「舊版合約」的 Vault，` +
+        `無法繼續使用。請先領回舊 Vault 的餘額，再重新授權。</div>` +
+        `<button id="old-vault-exit" class="withdraw-btn" type="button">⏏ 領回舊 Vault 資金（Slush 簽一筆）</button>`;
+      $("old-vault-exit")?.addEventListener("click", async () => {
+        try {
+          msg("info", "請在 Slush 確認「撤銷＋領回舊 Vault 全部資金」交易…");
+          const tx = session.buildExitTransaction(moduleName, usdcCoinType);
+          await signAndExecuteWithUserWallet(tx, network);
+          await session.clearBinding();
+          msg("ok", "✅ 舊 Vault 資金已回到你的錢包。現在請重新授權。");
+          await refreshStatus();
+        } catch (err) {
+          msg("error", `領回沒有完成：${(err as Error).message}`);
+        }
+      });
+      return "unauthorized";
+    }
     try {
       const status = await session.status();
       if (status.authorized && status.capActive && status.remainingUnits > 0n) {
@@ -413,6 +442,9 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
           }
         }
       }
+      if ("audio" in input && isLikelyEcho(said, lastSpokenText)) {
+        return; // 錄到的是 Agent 自己的聲音——丟棄，繼續聽真人說話
+      }
       if (exitIntent(said)) {
         await farewell(said);
         return;
@@ -465,6 +497,9 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
         : await hub.parseAudio(input.audio, merchantId);
     } catch (err) {
       if (err instanceof ClarificationNeeded) {
+        if ("audio" in input && isLikelyEcho(err.sttText, lastSpokenText)) {
+          return; // Agent 自己的聲音被錄回來——不當成聽不懂
+        }
         if (exitIntent(err.sttText)) {
           await farewell(err.sttText);
           return;
@@ -494,6 +529,9 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
     // 「取消下單」曾被封閉詞彙引擎硬配成「地瓜薯條」高信心成功——
     // 引擎只認識菜單，所以前端必須先看 STT 原文是不是指令再接受報價。
     const saidRaw = parsed.intent.stt_text || "";
+    if ("audio" in input && isLikelyEcho(saidRaw, lastSpokenText)) {
+      return; // Agent 自己的聲音被錄回來——不接受這筆報價
+    }
     if (exitIntent(saidRaw)) {
       await farewell(saidRaw);
       return;

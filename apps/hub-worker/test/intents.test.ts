@@ -38,3 +38,25 @@ describe("confirmIntent（確認／取消）", () => {
       expect(confirmIntent(s)).toBe("other");
     });
 });
+
+describe("isLikelyEcho（自聽回音過濾）", () => {
+  it("整句錄回去（同音誤辨）→ 是回音", async () => {
+    const { isLikelyEcho } = await import("../../../packages/chui-web/src/intents.js");
+    expect(isLikelyEcho(
+      "熱餅沒有成功,詳細原因顯示在畫面上。",
+      "這筆沒有成功，詳細原因顯示在畫面上",
+    )).toBe(true);
+  });
+  it("只錄到後半段 → 是回音", async () => {
+    const { isLikelyEcho } = await import("../../../packages/chui-web/src/intents.js");
+    expect(isLikelyEcho(
+      "請說確認下單或取消",
+      "奶茶，總共 22 元，要幫你下單付款嗎？請說確認下單，或取消",
+    )).toBe(true);
+  });
+  it("真人點餐／確認 → 不是回音", async () => {
+    const { isLikelyEcho } = await import("../../../packages/chui-web/src/intents.js");
+    expect(isLikelyEcho("一杯珍珠奶茶半糖去冰", "請說你要點什麼。")).toBe(false);
+    expect(isLikelyEcho("確認下單", "奶茶，總共 22 元，要幫你下單付款嗎？請說確認下單，或取消")).toBe(false);
+  });
+});

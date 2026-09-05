@@ -40,3 +40,35 @@ export function exitIntent(raw: string): boolean {
   const text = normalize(raw);
   return text.length > 0 && EXIT_WORDS.some((w) => text.includes(w));
 }
+
+function levenshtein(a: string, b: string): number {
+  const n = a.length, m = b.length;
+  let prev = Array.from({ length: m + 1 }, (_, j) => j);
+  for (let i = 1; i <= n; i++) {
+    const cur = [i, ...new Array<number>(m).fill(0)];
+    for (let j = 1; j <= m; j++) {
+      cur[j] = Math.min(prev[j] + 1, cur[j - 1] + 1,
+        prev[j - 1] + (a[i - 1] === b[j - 1] ? 0 : 1));
+    }
+    prev = cur;
+  }
+  return prev[m];
+}
+
+/** 自聽回音過濾：STT 回文若與「Agent 剛講過的句子」高度相似，
+ * 就是揚聲器的聲音被麥克風錄回去了（desktop 尤其常見——
+ * 「這筆沒有成功」被聽成「熱餅沒有成功」再被當成用戶輸入），
+ * 這種輸入要直接丟棄、不能進點餐流程。 */
+export function isLikelyEcho(said: string, lastAgentText: string): boolean {
+  const a = normalize(said);
+  const b = normalize(lastAgentText);
+  if (!a || !b) return false;
+  // 完整相似（整句錄回去）
+  if (levenshtein(a, b) / Math.max(a.length, b.length) < 0.35) return true;
+  // 尾段相似（TTS 只有後半被錄到）：用同長度的結尾比
+  if (a.length >= 6 && b.length > a.length) {
+    const tail = b.slice(b.length - a.length);
+    if (levenshtein(a, tail) / a.length < 0.35) return true;
+  }
+  return false;
+}

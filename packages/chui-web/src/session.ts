@@ -94,6 +94,12 @@ export class ChuiAgentSession {
     await idbDelete(BINDING_STORAGE);
   }
 
+  /** 只清 vault 綁定、保留 agent key（合約升級後領回舊資金→重新授權用）。 */
+  async clearBinding(): Promise<void> {
+    await idbDelete(BINDING_STORAGE);
+    this.binding = null;
+  }
+
   /**
    * 建立「唯一一次」授權交易（交給用戶的 Slush 簽）：
    * 存 usdcUnits 進新 Vault、設單筆上限、發 cap 給 agent、撥 gas 給 agent。
@@ -261,6 +267,13 @@ export class ChuiAgentSession {
   async payAuto(checkout: CheckoutParams): Promise<string> {
     if (!checkout.package_id) throw new Error("結帳參數缺少 package_id（合約尚未部署？）");
     if (!this.binding) throw new Error("尚未授權：請先完成一次性授權（放錢進你的 Vault）");
+    // 舊 Vault 打新合約會在 resolve 階段炸 TypeMismatch（真機踩過）——
+    // 這裡先擋下來，給人看得懂的原因與出路
+    if (this.binding.packageId !== checkout.package_id) {
+      throw new Error(
+        "你的授權屬於「舊版合約」的 Vault，無法用於目前的合約——" +
+        "請先用畫面上的「領回舊 Vault 資金」拿回餘額，再重新授權");
+    }
 
     const status = await this.status();
     if (!status.capActive) {
