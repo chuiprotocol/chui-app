@@ -1,0 +1,308 @@
+{
+  "menu_version": "2026-09-04.3",
+  "currency": "TWD",
+  "items": [
+    {
+      "id": "bubble-milk-tea",
+      "name": "珍珠奶茶",
+      "base_price": 65,
+      "synonyms": [
+        "珍奶",
+        "波霸奶茶",
+        "真珠奶茶",
+        "珍珠內茶"
+      ],
+      "options": [
+        {
+          "id": "sugar",
+          "name": "甜度",
+          "required": true,
+          "default": "FULL",
+          "choices": [
+            {
+              "id": "FULL",
+              "name": "正常糖",
+              "synonyms": [
+                "全糖"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "HALF",
+              "name": "半糖",
+              "synonyms": [
+                "半塘",
+                "一半糖",
+                "半甜"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "LOW",
+              "name": "微糖",
+              "synonyms": [
+                "微甜"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "NONE",
+              "name": "無糖",
+              "synonyms": [
+                "不要糖",
+                "去糖"
+              ],
+              "price_delta": 0
+            }
+          ]
+        },
+        {
+          "id": "ice",
+          "name": "冰塊",
+          "required": true,
+          "default": "NORMAL",
+          "choices": [
+            {
+              "id": "NORMAL",
+              "name": "正常冰",
+              "synonyms": [
+                "正常"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "LESS",
+              "name": "少冰",
+              "synonyms": [
+                "小冰",
+                "少bing"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "FREE",
+              "name": "去冰",
+              "synonyms": [
+                "去病",
+                "不要冰",
+                "免冰"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "HOT",
+              "name": "熱",
+              "synonyms": [
+                "熱的",
+                "燒的"
+              ],
+              "price_delta": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "milk-tea",
+      "name": "奶茶",
+      "base_price": 22,
+      "synonyms": [
+        "內茶",
+        "拿茶",
+        "奶查"
+      ],
+      "options": [
+        {
+          "id": "sugar",
+          "name": "甜度",
+          "required": true,
+          "default": "FULL",
+          "choices": [
+            {
+              "id": "FULL",
+              "name": "正常糖",
+              "synonyms": [
+                "全糖"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "HALF",
+              "name": "半糖",
+              "synonyms": [
+                "半甜"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "NONE",
+              "name": "無糖",
+              "synonyms": [
+                "不要糖"
+              ],
+              "price_delta": 0
+            }
+          ]
+        },
+        {
+          "id": "ice",
+          "name": "冰塊",
+          "required": true,
+          "default": "NORMAL",
+          "choices": [
+            {
+              "id": "NORMAL",
+              "name": "正常冰",
+              "synonyms": [],
+              "price_delta": 0
+            },
+            {
+              "id": "LESS",
+              "name": "少冰",
+              "synonyms": [
+                "小冰",
+                "少bing"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "FREE",
+              "name": "去冰",
+              "synonyms": [
+                "不要冰"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "HOT",
+              "name": "熱",
+              "synonyms": [
+                "熱的"
+              ],
+              "price_delta": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "green-tea",
+      "name": "四季春青茶",
+      "base_price": 18,
+      "synonyms": [
+        "青茶",
+        "四季春",
+        "清茶"
+      ],
+      "options": [
+        {
+          "id": "sugar",
+          "name": "甜度",
+          "required": true,
+          "default": "HALF",
+          "choices": [
+            {
+              "id": "FULL",
+              "name": "正常糖",
+              "synonyms": [
+                "全糖"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "HALF",
+              "name": "半糖",
+              "synonyms": [
+                "半甜"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "NONE",
+              "name": "無糖",
+              "synonyms": [
+                "不要糖"
+              ],
+              "price_delta": 0
+            }
+          ]
+        },
+        {
+          "id": "ice",
+          "name": "冰塊",
+          "required": true,
+          "default": "NORMAL",
+          "choices": [
+            {
+              "id": "NORMAL",
+              "name": "正常冰",
+              "synonyms": [],
+              "price_delta": 0
+            },
+            {
+              "id": "LESS",
+              "name": "少冰",
+              "synonyms": [
+                "小冰",
+                "少bing"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "FREE",
+              "name": "去冰",
+              "synonyms": [
+                "不要冰"
+              ],
+              "price_delta": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "lemon-black-tea",
+      "name": "檸檬紅茶",
+      "base_price": 22,
+      "synonyms": [
+        "檸紅",
+        "檸檬洪茶",
+        "寧檬紅茶"
+      ],
+      "options": [
+        {
+          "id": "sugar",
+          "name": "甜度",
+          "required": true,
+          "default": "HALF",
+          "choices": [
+            {
+              "id": "FULL",
+              "name": "正常糖",
+              "synonyms": [
+                "全糖"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "HALF",
+              "name": "半糖",
+              "synonyms": [
+                "半甜"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "NONE",
+              "name": "無糖",
+              "synonyms": [
+                "不要糖"
+              ],
+              "price_delta": 0
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

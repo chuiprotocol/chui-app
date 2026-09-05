@@ -381,3 +381,26 @@
 - **記憶體單快取警告**：訂單若未接 MongoDB Atlas，雲端重啟＝訂單
   記憶消失（單號流水已持久化於商家端不受影響）——上雲後應盡快完成
   NEXT-STEPS 的 Atlas 接線。
+
+## D29. 上雲改定案：Cloudflare 免費 Worker（用戶指示，取代 D28 的 Fly.io）
+- **背景**：用戶明示「用 cloudflare（後端上雲）免費 worker，不要用
+  fly.io」。Workers 跑不動 Python——把 Hub 核心整個移植成 TypeScript
+  （apps/hub-worker/）：重排序引擎（pypinyin→pinyin-pro；DP／混淆表
+  ／字首縮寫／數量量詞規則 1:1 移植）、報價／覆誦、STT 轉發、Atlas
+  Oracle／LLM 備援、鏈上 gRPC 驗證（@mysten/sui fetch 基底，Worker
+  直接用，不再需要 Node 子行程）。
+- **持久化**：Durable Object（SQLite，免費層可用）存訂單＋取餐單號
+  流水＋SSE 匯流排——「單號永不重複」在雲上仍成立（重啟實測 0003
+  續號）。MongoDB Atlas 角色由 DO 取代（VM 備援模式仍可接）。
+- **商家端**：雲端版兩家店協議端點為內建實作（happy-chicken 菜單＝
+  adapter 翻譯輸出的快照；接單＝DO 發號）；legacy＋adapter 整合示範
+  保留於本機版。如實揭露於 SETUP-CLOUD。
+- **部署**：與兩個前端同模式（儀表板 Git 整合、push 即部署、免費、
+  免綁卡）；hub.chuiprotocol.com 改綁 Worker custom domain，前端零改動。
+- **品質防線**：test_rerank.py 全部案例＋55 筆評估集 90% 門檻移植成
+  vitest（9/9 過）；wrangler dev 端到端實測 parse／澄清／confirm 流水
+  ／settlement 誠實 pending／看板明細／SSE／panel。已知踩雷記錄：
+  pinyin-pro 與 @mysten/sui 都在模組頂層做 Workers 禁止的全域操作
+  （setTimeout／隨機值）→ 一律改 handler 內動態 import。
+- **代價**：Python 版與 TS 版引擎需雙軌維護（CI 兩邊測試都跑）；
+  fly.toml／deploy-fly.sh 已刪。

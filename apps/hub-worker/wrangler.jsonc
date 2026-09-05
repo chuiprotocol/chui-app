@@ -1,0 +1,30 @@
+// Chui Hub 雲端版（Cloudflare Worker 免費層）。
+// 部署：Cloudflare 儀表板 Git 整合（push 自動部署），或 npx wrangler deploy。
+// Secrets（STT_API_KEY 等）在儀表板 Settings → Variables and Secrets 設定，
+// 絕不寫在這個檔案裡。
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "chui-hub",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-08-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  // 封包面板頁以文字打包進 Worker
+  "rules": [{ "type": "Text", "globs": ["**/*.html"], "fallthrough": true }],
+  // 訂單／取餐單號流水／SSE 匯流排都在這顆 Durable Object（SQLite 持久化，
+  // 免費層可用）——取餐單號跨重啟不歸零，「永不重複」約束在雲上仍成立
+  "durable_objects": {
+    "bindings": [{ "name": "HUB_DO", "class_name": "ChuiHubDO" }]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["ChuiHubDO"] }
+  ],
+  "vars": {
+    "SUI_NETWORK": "testnet",
+    // 內部測試匯率（正式演示可調回 32000）；Atlas Oracle 設定後蓋過它
+    "USDC_UNITS_PER_TWD": "1538",
+    "CHUI_USDC_COIN_TYPE": "0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC"
+    // CHUI_PACKAGE_ID／STT_API_KEY／ATLAS_ORACLE_API_KEY／LLM_API_KEY…
+    // 一律走儀表板 Secrets
+  }
+}

@@ -13,17 +13,18 @@
       模式（加密腿即時、台幣腿 ATLAS_TWD_PER_USD 設定值，預設 31.5；
       見 DECISIONS D26 與 commit 7ea0b17）。
 
-## 上雲（用戶指示：不要再 localhost）
-- [ ] **跑一次 `./scripts/deploy-fly.sh`**（在 Mac 上、專案根目錄）：
-      後端整包上 Fly.io，之後 Mac 可關機。前提＝`FLY_API_TOKEN`
-      放環境變數或 .env（token 絕不進 git）。
-- [ ] **Cloudflare DNS 一次性切換**：hub 那筆 CNAME 從隧道
-      （…cfargotunnel.com）改指 `chui-protocol-hub.fly.dev`、
-      Proxy 切「DNS only」（灰雲）；驗證
-      `curl https://hub.chuiprotocol.com/healthz`。切完前端零改動。
-- 備援路徑：任何 Ubuntu VM 一樣能上（`./scripts/deploy-gmi.sh <IP>`，
-      Hetzner/DO 最小機約 US$4–6/月）；Named Tunnel
+## 上雲（用戶指示：Cloudflare 免費 Worker，不用 Fly.io）
+- [ ] **儀表板建第三個 app `chui-hub`**（與兩個前端同模式的 Git 整合，
+      Deploy command：`npx wrangler deploy --config
+      apps/hub-worker/wrangler.jsonc`）——詳細步驟見 SETUP-CLOUD §6。
+- [ ] **填 Variables**：CHUI_PACKAGE_ID（Text）＋STT_API_KEY（Secret）。
+- [ ] **綁網域**：先刪 DNS 裡 hub 的舊隧道 CNAME，再到 Worker 的
+      Domains & Routes 加 custom domain `hub.chuiprotocol.com`；
+      驗證 healthz 回 `runtime: cloudflare-worker`。前端零改動。
+- 備援路徑：任何 Ubuntu VM 一樣能上整包 Python 版
+      （`./scripts/deploy-gmi.sh <IP>`）；Named Tunnel
       （scripts/setup-tunnel.sh）降級為本機開發用。
+      Fly.io 方案已依用戶指示移除（token 記得撤銷，見下）。
 
 ## 等外部條件
 - [ ] **更正**：AMD 與 GMI 提供的是「LLM token API」不是 VM——

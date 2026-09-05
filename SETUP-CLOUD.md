@@ -105,19 +105,50 @@ HUB_URL=https://xxxx.trycloudflare.com ./scripts/deploy-pages.sh
 | 付款失敗訊息含 abort | 看 explorer：`2`=授權已撤銷、`3`=超過單筆上限、`4`=額度不足（chui::vault abort codes） |
 | 現場想換 Hub 網址不重部署 | 網址加 `?hub=https://新網址` 即可覆寫 |
 
-## 6. 後端上雲（正式版：不再 localhost，Mac 可關機）
+## 6. 後端上雲（正式版：Cloudflare 免費 Worker，不再 localhost）
 
-```bash
-export FLY_API_TOKEN=你的token   # 或寫一行進 .env（.env 已 gitignore）
-cd ~/chui-app && git pull && ./scripts/deploy-fly.sh
-```
+後端整包已移植成 **Cloudflare Worker**（`apps/hub-worker/`，免費層即可）：
+重排序引擎、報價、接單單號、鏈上驗證、SSE 看板全在 Worker＋Durable
+Object（SQLite 持久化——單號跨重啟不歸零、訂單不消失）。部署方式與
+兩個前端相同：**儀表板點幾下 Git 整合，之後每次 push 自動部署**。
 
-腳本會自動：裝 flyctl（缺才裝）→ 建 App → 把 `.env` 上傳為 Fly
-secrets（金鑰不烤進映像檔）→ 建置部署 → 綁 `hub.chuiprotocol.com`
-→ 印出最後一步（到 Cloudflare 把 hub 的 CNAME 從隧道改指
-`chui-protocol-hub.fly.dev`、Proxy 切 DNS only）。切完 DNS 後前端
-零改動，兩支手機直接開 pages.dev 網址即可。
+### 6a. 建 Worker（一次性，約 3 分鐘）
 
-- 之後改完程式重新上雲：重跑同一支腳本（同網址原地更新）。
-- 備援：任何 Ubuntu VM 也能上——`./scripts/deploy-gmi.sh <IP>`。
-- 本機隧道（§2／setup-tunnel.sh）降級為開發用。
+https://dash.cloudflare.com → Workers & Pages → **Create application →
+Import a repository** → 選 `chuiprotocol/chui-app`，欄位照抄：
+
+| 欄位 | 值 |
+|---|---|
+| Project name | `chui-hub` |
+| Build command | （留空） |
+| Deploy command | `npx wrangler deploy --config apps/hub-worker/wrangler.jsonc` |
+
+按 **Deploy**。完成後得到 `https://chui-hub.<你的子網域>.workers.dev`。
+
+### 6b. 填參數（Settings → Variables and Secrets）
+
+| 名稱 | 型別 | 值 |
+|---|---|---|
+| `CHUI_PACKAGE_ID` | Text | 跟你 `.env` 裡同一個 package id |
+| `STT_API_KEY` | **Secret** | OpenAI key（語音辨識用） |
+
+（可選：`ATLAS_ORACLE_API_KEY`／`ATLAS_FEED_ID`／`LLM_API_KEY` 等，
+拿到 key 後照 `.env.example` 同名填入。）填完按 Deploy 重新部署生效。
+
+### 6c. 綁固定網域（30 秒）
+
+1. dash.cloudflare.com → chuiprotocol.com → DNS → Records：
+   **刪掉** `hub` 那筆指向 `…cfargotunnel.com` 的舊隧道 CNAME。
+2. 回到 chui-hub Worker → Settings → **Domains & Routes → Add →
+   Custom domain** → 輸入 `hub.chuiprotocol.com` → Add。
+3. 驗證：`curl https://hub.chuiprotocol.com/healthz` 應回 `"ok": true`
+   且 `"runtime": "cloudflare-worker"`。
+
+前端**零改動**（內建備援網址就是 hub.chuiprotocol.com），兩支手機
+直接開 pages.dev 網址即可；你的電腦從此可以關機。
+
+- 之後改完程式：push 即自動重新部署（三個 app 一致）。
+- 誠實揭露：雲端 Worker 版的兩家商家「協議端點」為內建實作（菜單
+  靜態化＋DO 發單號）；legacy＋adapter 的整合示範仍在本機版
+  （`demo-up.sh`）。訂單儲存改用 Durable Object SQLite，MongoDB
+  Atlas 之後想接再接（VM 部署模式 `deploy-gmi.sh` 仍支援）。

@@ -55,3 +55,7 @@ jobs:
           pnpm --filter @chui/merchant-a build
           pnpm --filter @chui/voice-app build
           pnpm --filter @chui/portal build
+      - name: 雲端 Hub（Worker）型別檢查＋重排序對齊測試
+        run: |
+          pnpm --filter @chui/hub-worker build
+          pnpm --filter @chui/hub-worker test

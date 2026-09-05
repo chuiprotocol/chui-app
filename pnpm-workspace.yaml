@@ -7,3 +7,4 @@ packages:
   - apps/merchant-a
   - apps/voice-app
   - apps/portal
+  - apps/hub-worker
