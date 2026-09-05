@@ -60,3 +60,25 @@ describe("isLikelyEcho（自聽回音過濾）", () => {
     expect(isLikelyEcho("確認下單", "奶茶，總共 22 元，要幫你下單付款嗎？請說確認下單，或取消")).toBe(false);
   });
 });
+
+describe("簡體 STT 輸出＋「不要＋規格」修正（真機回報的兩大問題）", () => {
+  it("簡體「确认下单」→ yes（Scribe 輸出簡體也要聽得懂）", async () => {
+    const { confirmIntent, exitIntent } = await import("../../../packages/chui-web/src/intents.js");
+    expect(confirmIntent("确认下单")).toBe("yes");
+    expect(confirmIntent("确认")).toBe("yes");
+    expect(exitIntent("结束对话")).toBe(true);
+  });
+  it("「不要辣」「不要蒜」→ other（是點餐規格，不是取消！）", async () => {
+    const { confirmIntent } = await import("../../../packages/chui-web/src/intents.js");
+    expect(confirmIntent("不要辣")).toBe("other");
+    expect(confirmIntent("不要蒜")).toBe("other");
+    expect(confirmIntent("鹽酥雞不要辣")).toBe("other");
+    expect(confirmIntent("不用加蛋")).toBe("other");
+  });
+  it("整句「不要」／「不要了」→ no（真的拒絕仍要聽得懂）", async () => {
+    const { confirmIntent } = await import("../../../packages/chui-web/src/intents.js");
+    expect(confirmIntent("不要")).toBe("no");
+    expect(confirmIntent("不要了")).toBe("no");
+    expect(confirmIntent("不用了")).toBe("no");
+  });
+});

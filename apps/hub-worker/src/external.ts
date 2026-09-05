@@ -20,6 +20,7 @@ export interface Env {
   STT_API_MODEL?: string;
   STT_PROVIDERS?: string;
   ELEVENLABS_API_KEY?: string;
+  ELEVENLABS_STT_MODEL?: string;
   GMI_API_KEY?: string;
   GMI_STT_BASE_URL?: string;
   GMI_STT_MODEL?: string;
@@ -87,10 +88,10 @@ async function sttOpenAiCompatible(
 }
 
 /** ElevenLabs Scribe（獨立 API 形狀：xi-api-key＋model_id）。 */
-async function sttElevenLabs(key: string, audio: File): Promise<string> {
+async function sttElevenLabs(key: string, model: string, audio: File): Promise<string> {
   const form = new FormData();
   form.set("file", audio, audio.name || "audio.webm");
-  form.set("model_id", "scribe_v1");
+  form.set("model_id", model);
   form.set("language_code", "zho");
   const resp = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
     method: "POST",
@@ -111,9 +112,10 @@ interface SttProvider {
 function sttProviders(env: Env): SttProvider[] {
   const all: Record<string, SttProvider> = {
     elevenlabs: {
-      name: "elevenlabs(scribe_v1)",
+      // 模型可用 ELEVENLABS_STT_MODEL 覆寫（帳號有更新的 Scribe 版本時換上）
+      name: `elevenlabs(${env.ELEVENLABS_STT_MODEL ?? "scribe_v1"})`,
       configured: Boolean(env.ELEVENLABS_API_KEY),
-      run: (a) => sttElevenLabs(env.ELEVENLABS_API_KEY!, a),
+      run: (a) => sttElevenLabs(env.ELEVENLABS_API_KEY!, env.ELEVENLABS_STT_MODEL ?? "scribe_v1", a),
     },
     // 同一把 OpenAI key 排兩節點：gpt-4o-transcribe（全尺寸，OpenAI 家
     // 最準的聽寫模型）優先，帳號不支援時自動遞補到 whisper-1
