@@ -24,8 +24,9 @@
   ],
   "vars": {
     "SUI_NETWORK": "testnet",
-    // 內部測試匯率（正式演示可調回 32000）；Atlas Oracle 設定後蓋過它
-    "USDC_UNITS_PER_TWD": "1538",
+    // 真實靜態匯率：1 USD≈31.5 TWD → 1 元≈0.03175 USDC（65 元≈2.06 USDC）。
+    // Atlas Oracle 接上後改用即時簽章報價蓋過此值
+    "USDC_UNITS_PER_TWD": "31750",
     "CHUI_USDC_COIN_TYPE": "0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC"
     // CHUI_PACKAGE_ID／STT_API_KEY／ATLAS_ORACLE_API_KEY／LLM_API_KEY…
     // 一律走儀表板 Secrets
