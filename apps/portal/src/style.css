@@ -307,3 +307,10 @@ button.primary:active { background: var(--chui-primary-press); }
 .mi-del { border: 1px solid var(--chui-line); background: var(--chui-surface-card); border-radius: 8px; cursor: pointer; color: var(--chui-ink-muted); }
 #open-form .primary { width: 100%; margin-top: 12px; }
 #open-form #add-item { margin-top: 6px; }
+/* 開店表單：品項行改兩層（名稱價格＋客製化） */
+.menu-row { display: block; border: 1px solid var(--chui-line); border-radius: 10px; padding: 8px; margin: 8px 0; }
+.menu-row-main { display: grid; grid-template-columns: 1.6fr 0.7fr auto; gap: 6px; }
+.menu-row-opts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; font-size: 0.85rem; }
+.menu-row-opts .opt-label { font-weight: 700; color: var(--chui-ink-muted); }
+.menu-row-opts label { display: inline-flex; align-items: center; gap: 3px; font-weight: 600; }
+.menu-row-opts .mi-extra { flex: 1 1 100%; }

@@ -325,8 +325,10 @@ export class ChuiHubDO implements DurableObject {
     if (!name || [...name].length > 20) {
       throw new HttpError("VALIDATION_FAILED", "店名必填、最長 20 字", 422);
     }
-    if (!/^[A-Z]{2,4}$/.test(prefix)) {
-      throw new HttpError("VALIDATION_FAILED", "取餐單號前綴需為 2–4 個大寫英文字母（例：TEA）", 422);
+    // 前綴只取 2 字母就夠：店主錢包地址唯一（一錢包一店），
+    // 取餐單號僅需店內唯一（日期＋流水已保證），前綴純粹是叫號辨識用
+    if (!/^[A-Z]{2}$/.test(prefix)) {
+      throw new HttpError("VALIDATION_FAILED", "取餐單號前綴需為 2 個大寫英文字母（例：TF）", 422);
     }
     if (!/^0x[0-9a-f]{64}$/.test(address)) {
       throw new HttpError("VALIDATION_FAILED", "收款地址格式不正確（需為 0x 開頭的 Sui 地址）", 422);

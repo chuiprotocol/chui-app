@@ -233,17 +233,56 @@ async function enterDash(hub: HubClient, health: Record<string, unknown>,
 
 // ---- 開店頁（?open=1）：店家用自己的 Slush 錢包自助入駐 ----
 
+// 預設的「客製化-選擇」組（勾了就整組掛到該品項；語音直接說得出來）
+const PRESET_OPTIONS: Record<string, { name: string; def: string;
+  choices: Array<{ id: string; name: string; synonyms: string[] }> }> = {
+  spice: {
+    name: "辣度", def: "NONE",
+    choices: [
+      { id: "NONE", name: "不辣", synonyms: ["免辣"] },
+      { id: "MILD", name: "小辣", synonyms: ["微辣"] },
+      { id: "MED", name: "中辣", synonyms: [] },
+      { id: "HOT", name: "大辣", synonyms: ["特辣", "重辣"] },
+    ],
+  },
+  ice: {
+    name: "冰塊", def: "NORMAL",
+    choices: [
+      { id: "FREE", name: "去冰", synonyms: ["完全去冰"] },
+      { id: "MICRO", name: "微冰", synonyms: [] },
+      { id: "LESS", name: "少冰", synonyms: ["小冰"] },
+      { id: "NORMAL", name: "正常冰", synonyms: ["全冰"] },
+    ],
+  },
+  sugar: {
+    name: "糖度", def: "FULL",
+    choices: [
+      { id: "NONE", name: "無糖", synonyms: ["不要糖"] },
+      { id: "HALF", name: "半糖", synonyms: [] },
+      { id: "FULL", name: "正常糖", synonyms: ["全糖"] },
+    ],
+  },
+};
+
 function renderOpenShop(hub: HubClient) {
   show("open-view");
   const rows = $("menu-rows");
-  const addRow = (name = "", price = "", syn = "") => {
+  const addRow = () => {
     const div = document.createElement("div");
     div.className = "menu-row";
     div.innerHTML = `
-      <input class="mi-name" placeholder="品項名（例：豆花）" value="${name}" required />
-      <input class="mi-price" type="number" min="1" step="1" placeholder="價格(元)" value="${price}" required />
-      <input class="mi-syn" placeholder="同義詞，逗號分隔（選填）" value="${syn}" />
-      <button type="button" class="mi-del" aria-label="刪除品項">✕</button>`;
+      <div class="menu-row-main">
+        <input class="mi-name" placeholder="品項名（例：豆花）" required />
+        <input class="mi-price" type="number" min="1" step="1" placeholder="價格(元)" required />
+        <button type="button" class="mi-del" aria-label="刪除品項">✕</button>
+      </div>
+      <div class="menu-row-opts">
+        <span class="opt-label">客製化-選擇</span>
+        <label><input type="checkbox" class="mi-opt" value="spice" />辣度</label>
+        <label><input type="checkbox" class="mi-opt" value="ice" />冰塊</label>
+        <label><input type="checkbox" class="mi-opt" value="sugar" />糖度</label>
+        <input class="mi-extra" placeholder="客製化-特殊：加蒜, 菜多, 不要洋蔥（逗號分隔，選填）" />
+      </div>`;
     div.querySelector(".mi-del")!.addEventListener("click", () => div.remove());
     rows.appendChild(div);
   };
@@ -259,12 +298,32 @@ function renderOpenShop(hub: HubClient) {
       const items = [...rows.querySelectorAll(".menu-row")].map((row, i) => {
         const itemName = (row.querySelector(".mi-name") as HTMLInputElement).value.trim();
         const price = parseInt((row.querySelector(".mi-price") as HTMLInputElement).value, 10);
-        const synonyms = (row.querySelector(".mi-syn") as HTMLInputElement).value
-          .split(/[,，]/).map((s) => s.trim()).filter(Boolean);
         if (!itemName || !Number.isInteger(price) || price <= 0) {
           throw new Error(`第 ${i + 1} 個品項的名稱或價格不完整`);
         }
-        return { id: `item-${i + 1}`, name: itemName, base_price: price, synonyms };
+        // 客製化-選擇：勾選的預設組整組掛上（必填＋預設值，沒明講就靜默套用）
+        const options = [...row.querySelectorAll<HTMLInputElement>(".mi-opt:checked")]
+          .map((cb) => {
+            const preset = PRESET_OPTIONS[cb.value];
+            return {
+              id: cb.value, name: preset.name, required: true, default: preset.def,
+              choices: preset.choices.map((c) => ({ ...c, price_delta: 0 })),
+            };
+          });
+        // 客製化-特殊：每個詞一個開關選項（語音說出該詞＝要；預設不加價）
+        const extras = (row.querySelector(".mi-extra") as HTMLInputElement).value
+          .split(/[,，]/).map((s) => s.trim()).filter(Boolean);
+        extras.forEach((word, k) => {
+          options.push({
+            id: `extra-${k + 1}`, name: word, required: false, default: "NO",
+            choices: [
+              // 「照常」不會被語音誤觸；覆誦只唸明講的選項所以也不會被唸出
+              { id: "NO", name: word.startsWith("不") ? "照常" : `不${word}`, synonyms: [], price_delta: 0 },
+              { id: "YES", name: word, synonyms: [], price_delta: 0 },
+            ],
+          });
+        });
+        return { id: `item-${i + 1}`, name: itemName, base_price: price, synonyms: [], options };
       });
       if (!items.length) throw new Error("至少要有一個品項");
 
