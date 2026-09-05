@@ -14,6 +14,7 @@
       見 DECISIONS D26 與 commit 7ea0b17）。
 
 ## 上雲（用戶指示：Cloudflare 免費 Worker，不用 Fly.io；已授權代設定）
+- [x] chui-hub 已連上 Git 整合（push 即自動部署，與兩個前端一致）。
 - [ ] **用戶建一把 API token**（Edit Cloudflare Workers 模板＋
       Zone/DNS/Edit，見 SETUP-CLOUD §6）→ 在 Mac 跑
       `export CLOUDFLARE_API_TOKEN=…` ＋ `./scripts/setup-worker.sh`
