@@ -1,4 +1,4 @@
-<p align="center"><img src="branding/chui-banner.svg" alt="Chui Protocol 嘴付協議 — 開口就買單，嘴付真簡單" width="880" /></p>
+<p align="center"><img src="branding/chui-banner.svg?v=2" alt="Chui Protocol 嘴付協議 — 開口就買單，嘴付真簡單" width="880" /></p>
 
 <h3 align="center">開口就買單，嘴付真簡單——語音點餐的鏈上支付授權層</h3>
 
