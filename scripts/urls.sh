@@ -27,7 +27,28 @@ fi
 
 mkdir -p .demo-logs
 HUB_URL=""
-if [ -f .demo-logs/tunnel-url.txt ]; then
+
+# 優先：固定 Named Tunnel（跑過 ./scripts/setup-tunnel.sh 就有設定檔）
+if [ -f .cloudflared-chui.yml ]; then
+  FIXED_HOST=$(grep 'hostname:' .cloudflared-chui.yml | head -1 | awk '{print $3}')
+  FIXED_URL="https://${FIXED_HOST}"
+  if ! curl -s -m 5 "${FIXED_URL}/healthz" | grep -q '"ok"'; then
+    echo "啟動固定隧道（${FIXED_HOST}）…"
+    (cloudflared tunnel --config .cloudflared-chui.yml run > .demo-logs/tunnel.log 2>&1 &)
+    for i in $(seq 1 30); do
+      curl -s -m 5 "${FIXED_URL}/healthz" | grep -q '"ok"' && break
+      sleep 2
+    done
+  fi
+  if curl -s -m 5 "${FIXED_URL}/healthz" | grep -q '"ok"'; then
+    HUB_URL="${FIXED_URL}"
+    echo "✅ 固定隧道存活：${HUB_URL}（永久網址）"
+  else
+    echo "⚠️ 固定隧道起不來（看 .demo-logs/tunnel.log），退回免費快速隧道…"
+  fi
+fi
+
+if [ -z "${HUB_URL}" ] && [ -f .demo-logs/tunnel-url.txt ]; then
   candidate=$(cat .demo-logs/tunnel-url.txt)
   if curl -s -m 5 "${candidate}/healthz" | grep -q '"ok"'; then
     HUB_URL="${candidate}"
