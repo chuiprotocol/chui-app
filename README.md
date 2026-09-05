@@ -112,6 +112,21 @@ flowchart TB
   Seal key server 發鑰前會 dry-run 鏈上 `log_policy::seal_approve`——
   **只有用戶錢包與店家能解密，嘴付平台（Hub）無權看**。
 
+## 贊助商／外部資源整合狀態（核對表）
+
+| 資源 | 在嘴付的角色 | 模型／設定 | 狀態 |
+|---|---|---|---|
+| **ElevenLabs** | 語音辨識主力（STT 鏈第 1 位） | Scribe v2（`cmn`；簡→繁正規化兜底） | ✅ 已上線 |
+| **GMI Cloud** | LLM 重述備援（聽不懂時重述成菜單詞彙再解析；不碰金流） | GLM-4.7-Flash（免費層） | ✅ 已上線 |
+| **Atlas Oracle** | 台幣→USDC 即時匯率（簽章報價、30 秒快取、鎖進訂單） | USDC/USD feed＋`ATLAS_TWD_PER_USD` | 🔜 程式就緒，待 API key（docs.atlasoracle.io 註冊） |
+| **AMD** | LLM 備援第二槽（OpenAI 相容） | 待賽方發 key 後選型 | ⏳ 等額度發放 |
+| **EastRouter** | LLM 備援（與 GMI 同插槽，`EASTROUTER_*` 相容變數） | — | ⏳ 等 key |
+| OpenAI（自備） | STT 遞補（第 2、3 位） | gpt-4o-transcribe → whisper-1 | ✅ 已上線 |
+| Sui Testnet | 結算鏈（自寫 vault 合約、gRPC 驗證） | — | ✅ |
+| Mysten Seal＋Walrus | 對話紀錄端對端加密存證（平台無鑰） | threshold-1 IBE＋3+3 節點輪替 | ✅ |
+
+驗證方式：`curl https://hub.chuiprotocol.com/healthz`——看 `stt_chain`／`llm_assist`／`fx_source` 三個欄位的即時狀態。
+
 ## 外部服務整合
 
 | 服務 | 用途 | 沒設定時 | healthz 揭露 |
