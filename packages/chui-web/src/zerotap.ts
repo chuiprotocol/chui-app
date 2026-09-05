@@ -42,16 +42,43 @@ const need = (id: string): HTMLElement => {
   return el;
 };
 
+// iOS（Slush 內建瀏覽器＝WKWebView）的 TTS 兩大坑：
+// 1) speechSynthesis 必須先在「使用者手勢的呼叫堆疊內」講過一次才會出聲
+//    ——unlockTts() 掛在所有按鈕上，用音量 0 的空白句解鎖。
+// 2) cancel() 之後同一個 tick 立刻 speak() 會被無聲吞掉——隔一拍再講，
+//    並補 resume()（iOS 偶發卡在 paused 狀態）。
+let ttsUnlocked = false;
+function unlockTts(): void {
+  if (ttsUnlocked) return;
+  try {
+    const u = new SpeechSynthesisUtterance(" ");
+    u.volume = 0;
+    speechSynthesis.speak(u);
+    speechSynthesis.getVoices(); // 順便觸發 iOS 載入語音清單
+    ttsUnlocked = true;
+  } catch { /* 無合成器 */ }
+}
+
 function speak(text: string): Promise<void> {
   return new Promise((resolve) => {
     try {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = "zh-TW";
+      utterance.volume = 1;
+      const voices = speechSynthesis.getVoices();
+      const zh = voices.find((v) => v.lang?.toLowerCase().startsWith("zh-tw"))
+        ?? voices.find((v) => v.lang?.toLowerCase().startsWith("zh"));
+      if (zh) utterance.voice = zh;
       utterance.onend = () => resolve();
       utterance.onerror = () => resolve();
-      speechSynthesis.cancel();
-      speechSynthesis.speak(utterance);
-      setTimeout(resolve, Math.max(3000, text.length * 350)); // 合成器沒回呼時的保險
+      try { speechSynthesis.cancel(); } catch { /* 無合成器 */ }
+      setTimeout(() => {
+        try {
+          speechSynthesis.speak(utterance);
+          speechSynthesis.resume();
+        } catch { resolve(); }
+      }, 90);
+      setTimeout(resolve, Math.max(3500, text.length * 350)); // 合成器沒回呼時的保險
     } catch {
       resolve();
     }
@@ -124,11 +151,15 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
   // Seal 存證（設定不齊時 sealVault 為 null，存證失敗會誠實顯示、不擋付款流程）
   let sealVault: SealLogVault | null = null;
   try {
+    const asList = (plural: unknown, single: unknown): string[] => {
+      if (Array.isArray(plural) && plural.length) return plural.map(String);
+      return single ? [String(single)] : [];
+    };
     sealVault = new SealLogVault(session.grpcClient, {
       packageId,
       keyServerIds: (health.seal_key_servers as string[] | undefined) ?? [],
-      walrusPublisher: String(health.walrus_publisher ?? ""),
-      walrusAggregator: String(health.walrus_aggregator ?? ""),
+      walrusPublishers: asList(health.walrus_publishers, health.walrus_publisher),
+      walrusAggregators: asList(health.walrus_aggregators, health.walrus_aggregator),
     });
   } catch { /* 沒設定就不做存證 */ }
 
@@ -160,6 +191,7 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
   // ---- 🅐 一次性授權／後續加值（同一顆按鈕，依狀態自動選路）----
   need("topup-form").addEventListener("submit", async (e) => {
     e.preventDefault();
+    unlockTts();
     const input = need("topup-usdc") as HTMLInputElement;
     const usdcValue = Number(input.value || "1");
     try {
@@ -470,6 +502,7 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
 
   // 麥克風圓圈：僅在「權限尚未授予」或「已暫停」時需要點一下
   need("mic-circle").addEventListener("click", () => {
+    unlockTts();
     if (recorder.isRecording) { recorder.stop(); return; } // 提前送出
     consecutiveErrors = 0;
     consecutiveMisses = 0;
@@ -490,6 +523,7 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
   // 打字備援（麥克風不可用／沙箱測試用）
   need("text-form").addEventListener("submit", async (e) => {
     e.preventDefault();
+    unlockTts();
     const input = need("text-input") as HTMLInputElement;
     if (!input.value.trim()) return;
     consecutiveErrors = 0;
@@ -555,6 +589,7 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
     };
     // foodpanda 式：首頁常駐菜單，按「嘴付下單」才開語音面板
     openBtn.addEventListener("click", () => {
+      unlockTts();
       overlay.classList.remove("hidden");
       document.body.classList.add("no-scroll");
       void enterVoicePanel();

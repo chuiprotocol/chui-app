@@ -53,10 +53,22 @@ SEAL_KEY_SERVERS = [
         "0xf5d14a81a982144ae441cd7d64b09027f116a468bd36e7eca494f750591623c8",
     ).split(",") if s.strip()
 ]
-WALRUS_PUBLISHER = os.environ.get(
-    "WALRUS_PUBLISHER", "https://publisher.walrus-testnet.walrus.space")
-WALRUS_AGGREGATOR = os.environ.get(
-    "WALRUS_AGGREGATOR", "https://aggregator.walrus-testnet.walrus.space")
+# 公共 testnet Walrus 節點偶爾陣亡——發「清單」給前端依序輪替
+WALRUS_PUBLISHERS = [p for p in os.environ.get(
+    "WALRUS_PUBLISHERS",
+    "https://publisher.walrus-testnet.walrus.space,"
+    "https://wal-publisher-testnet.staketab.org,"
+    "https://walrus-testnet-publisher.nodes.guru",
+).split(",") if p.strip()]
+WALRUS_AGGREGATORS = [a for a in os.environ.get(
+    "WALRUS_AGGREGATORS",
+    "https://aggregator.walrus-testnet.walrus.space,"
+    "https://wal-aggregator-testnet.staketab.org,"
+    "https://walrus-testnet-aggregator.nodes.guru",
+).split(",") if a.strip()]
+# 舊欄位名（單數）保留給尚未更新的前端
+WALRUS_PUBLISHER = WALRUS_PUBLISHERS[0]
+WALRUS_AGGREGATOR = WALRUS_AGGREGATORS[0]
 
 app = FastAPI(title="Chui Hub", description="嘴付協議中樞", version="0.2.0")
 app.add_middleware(
@@ -102,6 +114,8 @@ async def healthz():
         "seal_key_servers": SEAL_KEY_SERVERS,
         "walrus_publisher": WALRUS_PUBLISHER,
         "walrus_aggregator": WALRUS_AGGREGATOR,
+        "walrus_publishers": WALRUS_PUBLISHERS,
+        "walrus_aggregators": WALRUS_AGGREGATORS,
         "order_store": store.backend,
         "llm_assist": "eastrouter" if assist.enabled() else "off",
         "merchants": [m.merchant_id for m in registry.all()],
