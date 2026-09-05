@@ -258,3 +258,59 @@ button.primary:active { background: var(--chui-primary-press); }
   .overlay { align-items: center; }
   .sheet { border-radius: 22px; max-height: 88vh; }
 }
+
+/* 永遠浮在最上層的關閉鍵：對話再長也關得掉（按下即停止錄音） */
+.overlay-close {
+  position: fixed; top: max(10px, env(safe-area-inset-top)); right: 14px; z-index: 70;
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 1px solid var(--chui-line); cursor: pointer;
+  background: var(--chui-surface-card); color: var(--chui-ink);
+  font-size: 1.1rem; font-weight: 700; box-shadow: var(--shadow);
+}
+.overlay-close:active { opacity: 0.75; }
+
+/* ---- 歷史頁／店家看板 ---- */
+.order-list { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.order-row { padding: 14px 16px; }
+.order-head { display: flex; justify-content: space-between; align-items: baseline; }
+.order-ref { font-weight: 800; color: var(--chui-primary); }
+.order-meta { font-size: 0.78rem; color: var(--chui-ink-muted); margin: 4px 0 8px; }
+.order-links { display: flex; gap: 14px; flex-wrap: wrap; align-items: baseline; }
+.order-log { margin-top: 10px; border-top: 1px dashed var(--chui-line); padding-top: 8px; font-size: 0.82rem; }
+.order-log .logline { margin: 3px 0; }
+.order-log .error { color: var(--chui-fail); }
+.order-log .info { color: var(--chui-pending); }
+.order-log .ok { color: var(--chui-ok); font-weight: 700; }
+.livechip { color: var(--chui-ok); font-weight: 600; }
+.dashlinks { font-size: 0.85rem; }
+.dashlinks a { color: var(--chui-primary); font-weight: 700; }
+/* 看板品項明細逐行 */
+.order-items { list-style: none; margin: 6px 0; padding: 8px 10px; background: var(--chui-primary-soft); border-radius: 10px; }
+.order-items li { display: flex; gap: 6px; align-items: baseline; padding: 3px 0; font-size: 0.88rem; }
+.order-items .item-name { font-weight: 700; }
+.order-items .item-spec { color: var(--chui-ink-muted); font-size: 0.8rem; }
+.order-items .item-qty { font-weight: 700; }
+.order-items .item-sub { margin-left: auto; color: var(--chui-primary); font-weight: 700; }
+/* 店家後台：未註冊錢包訊息裡的完整地址（長字串安全換行） */
+.addr-full { word-break: break-all; font-size: 0.78rem; }
+/* Vault 餘額列＋一鍵領回（用戶隨時可撤回所有資金） */
+.balance-row { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin: 8px 0; padding: 8px 12px; background: var(--chui-primary-soft); border-radius: 10px; font-weight: 700; }
+.withdraw-btn { border: 1.5px solid var(--chui-primary); background: transparent; color: var(--chui-primary);
+  border-radius: 8px; padding: 6px 10px; font-weight: 700; cursor: pointer; font-size: 0.85rem; }
+.withdraw-btn:active { background: var(--chui-primary); color: #fff; }
+/* 開店表單 */
+#open-form label { display: block; font-weight: 700; margin: 10px 0 4px; }
+#open-form input { width: 100%; box-sizing: border-box; padding: 9px 10px; border: 1.5px solid var(--chui-line); border-radius: 8px; font-size: 0.95rem; margin-top: 4px; }
+.menu-row { display: grid; grid-template-columns: 1.2fr 0.6fr 1.2fr auto; gap: 6px; margin: 6px 0; }
+.menu-row input { margin: 0; }
+.mi-del { border: 1px solid var(--chui-line); background: var(--chui-surface-card); border-radius: 8px; cursor: pointer; color: var(--chui-ink-muted); }
+#open-form .primary { width: 100%; margin-top: 12px; }
+#open-form #add-item { margin-top: 6px; }
+/* 開店表單：品項行改兩層（名稱價格＋客製化） */
+.menu-row { display: block; border: 1px solid var(--chui-line); border-radius: 10px; padding: 8px; margin: 8px 0; }
+.menu-row-main { display: grid; grid-template-columns: 1.6fr 0.7fr auto; gap: 6px; }
+.menu-row-opts { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-top: 6px; font-size: 0.85rem; }
+.menu-row-opts .opt-label { font-weight: 700; color: var(--chui-ink-muted); }
+.menu-row-opts label { display: inline-flex; align-items: center; gap: 3px; font-weight: 600; }
+.menu-row-opts .mi-extra { flex: 1 1 100%; }

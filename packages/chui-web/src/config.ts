@@ -8,13 +8,18 @@
  *    不會卡在舊網址上一直 Failed to fetch。
  * 3. 建置期環境變數 VITE_HUB_URL（Cloudflare Pages 部署走這個）
  * 4. 同站的 /app-config.json（本地 node server 模式）
- * 5. http://localhost:8700（本地開發）
+ * 5. 正式固定網址 https://hub.chuiprotocol.com（Named Tunnel；活著才用）
+ *    ——手機直接開 pages.dev 就能用，不需要帶 ?hub=
+ * 6. http://localhost:8700（本地開發）
  */
 
 import { idbGet, idbSet, idbDelete } from "./idb.js";
 
 const HUB_STORAGE = "chui.hub-url";
 const PROBE_TIMEOUT_MS = 6000;
+// 正式固定網址（Cloudflare Named Tunnel → 用戶 Mac 上的 Hub）。
+// 只在「探測活著」時採用，掛了照樣往下層 fallback——不會卡死任何流程。
+const PUBLIC_HUB_URL = "https://hub.chuiprotocol.com";
 
 export interface AppRuntimeConfig {
   hubUrl: string;
@@ -80,5 +85,8 @@ export async function resolveRuntimeConfig(): Promise<AppRuntimeConfig> {
       if (cfg.hub_url) return { hubUrl: cfg.hub_url, merchantId: cfg.merchant_id ?? envMerchant };
     }
   } catch { /* 靜態部署沒有這個端點，走預設 */ }
+  if (await hubAlive(PUBLIC_HUB_URL)) {
+    return { hubUrl: PUBLIC_HUB_URL, merchantId: envMerchant };
+  }
   return { hubUrl: "http://localhost:8700", merchantId: envMerchant };
 }

@@ -1,0 +1,261 @@
+{
+  "menu_version": "builtin-1",
+  "currency": "TWD",
+  "items": [
+    {
+      "id": "fried-chicken",
+      "name": "鹽酥雞",
+      "base_price": 32,
+      "synonyms": [
+        "鹹酥雞",
+        "鹽穌雞",
+        "嚴酥雞",
+        "鹽酥機",
+        "iâm-soo-ke"
+      ],
+      "options": [
+        {
+          "id": "spicy",
+          "name": "辣度",
+          "required": false,
+          "default": "NO",
+          "choices": [
+            {
+              "id": "NO",
+              "name": "不辣",
+              "synonyms": [
+                "原味"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "YES",
+              "name": "加辣",
+              "synonyms": [
+                "要辣",
+                "辣的",
+                "小辣",
+                "加拉"
+              ],
+              "price_delta": 0
+            }
+          ]
+        },
+        {
+          "id": "garlic",
+          "name": "加蒜",
+          "required": false,
+          "default": "NO",
+          "choices": [
+            {
+              "id": "NO",
+              "name": "不加蒜",
+              "synonyms": [],
+              "price_delta": 0
+            },
+            {
+              "id": "YES",
+              "name": "加蒜",
+              "synonyms": [
+                "要蒜",
+                "加蒜頭",
+                "加算"
+              ],
+              "price_delta": 5
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "tempura",
+      "name": "甜不辣",
+      "base_price": 20,
+      "synonyms": [
+        "甜不辣拉",
+        "天不辣",
+        "tinn-put-la̍h"
+      ],
+      "options": [
+        {
+          "id": "spicy",
+          "name": "辣度",
+          "required": false,
+          "default": "NO",
+          "choices": [
+            {
+              "id": "NO",
+              "name": "不辣",
+              "synonyms": [
+                "原味"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "YES",
+              "name": "加辣",
+              "synonyms": [
+                "要辣",
+                "辣的",
+                "小辣",
+                "加拉"
+              ],
+              "price_delta": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "chicken-skin",
+      "name": "雞皮",
+      "base_price": 18,
+      "synonyms": [
+        "機皮",
+        "雞屁"
+      ],
+      "options": [
+        {
+          "id": "spicy",
+          "name": "辣度",
+          "required": false,
+          "default": "NO",
+          "choices": [
+            {
+              "id": "NO",
+              "name": "不辣",
+              "synonyms": [
+                "原味"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "YES",
+              "name": "加辣",
+              "synonyms": [
+                "要辣",
+                "辣的",
+                "小辣",
+                "加拉"
+              ],
+              "price_delta": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "squid",
+      "name": "魷魚鬚",
+      "base_price": 40,
+      "synonyms": [
+        "油魚鬚",
+        "尤魚鬚",
+        "魷魚須"
+      ],
+      "options": [
+        {
+          "id": "spicy",
+          "name": "辣度",
+          "required": false,
+          "default": "NO",
+          "choices": [
+            {
+              "id": "NO",
+              "name": "不辣",
+              "synonyms": [
+                "原味"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "YES",
+              "name": "加辣",
+              "synonyms": [
+                "要辣",
+                "辣的",
+                "小辣",
+                "加拉"
+              ],
+              "price_delta": 0
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "sweet-potato-fries",
+      "name": "地瓜薯條",
+      "base_price": 22,
+      "synonyms": [
+        "地瓜條",
+        "薯條",
+        "地瓜"
+      ],
+      "options": []
+    },
+    {
+      "id": "rice-blood",
+      "name": "米血",
+      "base_price": 15,
+      "synonyms": [
+        "米血糕",
+        "豬血糕",
+        "米雪"
+      ],
+      "options": [
+        {
+          "id": "spicy",
+          "name": "辣度",
+          "required": false,
+          "default": "NO",
+          "choices": [
+            {
+              "id": "NO",
+              "name": "不辣",
+              "synonyms": [
+                "原味"
+              ],
+              "price_delta": 0
+            },
+            {
+              "id": "YES",
+              "name": "加辣",
+              "synonyms": [
+                "要辣",
+                "辣的",
+                "小辣",
+                "加拉"
+              ],
+              "price_delta": 0
+            }
+          ]
+        },
+        {
+          "id": "garlic",
+          "name": "加蒜",
+          "required": false,
+          "default": "NO",
+          "choices": [
+            {
+              "id": "NO",
+              "name": "不加蒜",
+              "synonyms": [],
+              "price_delta": 0
+            },
+            {
+              "id": "YES",
+              "name": "加蒜",
+              "synonyms": [
+                "要蒜",
+                "加蒜頭",
+                "加算"
+              ],
+              "price_delta": 5
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

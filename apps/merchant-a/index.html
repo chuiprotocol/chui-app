@@ -42,6 +42,7 @@
 
   <!-- 語音面板（overlay bottom sheet） -->
   <div id="voice-overlay" class="overlay hidden">
+    <button id="overlay-close" class="overlay-close" type="button" aria-label="關閉點餐面板">✕</button>
     <div class="sheet">
       <div class="sheet-head">
         <span>🎙 嘴付點餐 · Chui Agent</span>
@@ -58,7 +59,7 @@
           <p class="bullet">🛑 隨時可撤銷、剩餘金額隨時領回；已授權再按＝加值累計</p>
           <div id="agent-status"></div>
           <form id="topup-form">
-            <input id="topup-usdc" type="number" value="1" min="0.3" step="0.1" />
+            <input id="topup-usdc" type="number" value="3" min="0.3" step="0.1" />
             <button type="submit" class="primary">用 Slush 錢包授權</button>
           </form>
           <p class="fineprint">Sui Testnet・授權後點餐全程零按鍵</p>
@@ -71,6 +72,10 @@
           <div id="mic-circle" class="mic">🎙️</div>
           <div id="listen-status" class="listening">準備中⋯</div>
           <button id="end-chat" class="endchat" type="button">⏹ 結束對話</button>
+        </div>
+                <div id="balance-row" class="balance-row hidden">
+          <span id="balance-amount">💰 —</span>
+          <button id="withdraw-all" type="button" class="withdraw-btn">⏏ 一鍵領回全部</button>
         </div>
         <div id="transcript" class="transcript"></div>
         <details class="fallback">

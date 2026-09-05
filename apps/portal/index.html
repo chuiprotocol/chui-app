@@ -33,6 +33,63 @@
       <div class="section-title">接上協議的商家</div>
       <div id="merchant-cards" class="merchant-cards">載入中…</div>
       <p class="fineprint">標「公版店面」的店由嘴付代管網站；「自家官網」請前往其網址（同樣支援嘴付語音結帳）。</p>
+      <p class="fineprint">
+        <a href="?history=1">🧾 我的訂單（鏈上紀錄，用你的錢包解密）</a>
+      </p>
+    </main>
+  </section>
+
+  <!-- 用戶歷史（?history=1）：鏈上訂單＋Seal 解密（鑰匙只在用戶錢包） -->
+  <section id="history-view" class="hidden">
+    <main>
+      <div class="section-title">🧾 我的訂單 <small>owner 由鏈上 SettlementEvent 認定</small></div>
+      <div class="card center" id="history-connect">
+        <p class="bullet">用「當初付款的那個」Slush 錢包連線，列出屬於你的訂單；
+          每筆對話紀錄都要該錢包簽名向 Seal 取鑰才能解密——換一顆錢包就打不開。</p>
+        <button id="history-connect-btn" class="primary" type="button">連接 Slush 錢包查詢</button>
+      </div>
+      <div id="history-list" class="order-list"></div>
+      <p class="fineprint"><a href="./">← 回商家列表</a></p>
+    </main>
+  </section>
+
+  <!-- 店家後台（?dash=1）：錢包即身分——連錢包自動進自家看板 -->
+  <section id="dash-view" class="hidden">
+    <main>
+      <div class="section-title">🏪 <span id="dash-title">店家後台</span>
+        <small id="dash-live" class="livechip"></small></div>
+      <div class="card center" id="dash-connect">
+        <p class="bullet">用「店家收款錢包」連線——嘴付以錢包地址辨識店家身分，
+          自動進入你自己的接單看板（看不到別家的）。</p>
+        <button id="dash-connect-btn" class="primary" type="button">連接店家錢包進入後台</button>
+      </div>
+      <div class="card hidden" id="dash-summary"></div>
+      <div id="dash-list" class="order-list"></div>
+      <p class="fineprint">訂單商業資料為店家可見之明文；對話紀錄需以「店家收款錢包」簽名解密（消費者與平台之外唯一的另一把鑰匙）。</p>
+      <p class="fineprint"><a href="./">← 回商家列表</a></p>
+    </main>
+  </section>
+
+  <!-- 開店（?open=1）：店家用自己的 Slush 錢包自助入駐——平台不代管私鑰 -->
+  <section id="open-view" class="hidden">
+    <main>
+      <div class="section-title">🏪 我要開店 <small>錢包即店家身分</small></div>
+      <div class="card" id="open-form-card">
+        <p class="bullet">用「你自己的」Slush 錢包簽一則訊息證明收款地址是你的，
+          就能上架到嘴付入口開始收單——收款直達你的錢包，平台不經手、不代管私鑰。</p>
+        <form id="open-form">
+          <label>店名<input id="shop-name" maxlength="20" placeholder="例：好吃豆花店" required /></label>
+          <label>取餐單號前綴（2 個英文字母）
+            <input id="shop-prefix" maxlength="2" placeholder="例：TF" required
+                   pattern="[A-Za-z]{2}" /></label>
+          <div class="section-title">菜單品項</div>
+          <div id="menu-rows"></div>
+          <button type="button" id="add-item" class="withdraw-btn">＋ 加一個品項</button>
+          <button type="submit" class="primary">用 Slush 錢包簽名開店</button>
+        </form>
+      </div>
+      <div id="open-result"></div>
+      <p class="fineprint"><a href="./">← 回商家列表</a></p>
     </main>
   </section>
 
@@ -53,6 +110,7 @@
 
   <!-- 語音面板（overlay bottom sheet） -->
   <div id="voice-overlay" class="overlay hidden">
+    <button id="overlay-close" class="overlay-close" type="button" aria-label="關閉點餐面板">✕</button>
     <div class="sheet">
       <div class="sheet-head">
         <span>🎙 嘴付點餐 · Chui Agent</span>
@@ -68,7 +126,7 @@
           <p class="bullet">🛑 隨時可撤銷、剩餘金額隨時領回；已授權再按＝加值累計</p>
           <div id="agent-status"></div>
           <form id="topup-form">
-            <input id="topup-usdc" type="number" value="1" min="0.3" step="0.1" />
+            <input id="topup-usdc" type="number" value="3" min="0.3" step="0.1" />
             <button type="submit" class="primary">用 Slush 錢包授權</button>
           </form>
           <p class="fineprint">Sui Testnet・授權後點餐全程零按鍵</p>
@@ -80,6 +138,10 @@
           <div id="mic-circle" class="mic">🎙️</div>
           <div id="listen-status" class="listening">準備中⋯</div>
           <button id="end-chat" class="endchat" type="button">⏹ 結束對話</button>
+        </div>
+                <div id="balance-row" class="balance-row hidden">
+          <span id="balance-amount">💰 —</span>
+          <button id="withdraw-all" type="button" class="withdraw-btn">⏏ 一鍵領回全部</button>
         </div>
         <div id="transcript" class="transcript"></div>
         <details class="fallback">

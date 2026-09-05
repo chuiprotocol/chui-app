@@ -1,0 +1,22 @@
+{
+  "name": "@chui/hub-worker",
+  "private": true,
+  "type": "module",
+  "description": "Chui Hub 雲端版：Cloudflare Worker＋Durable Object（免費層）",
+  "scripts": {
+    "dev": "wrangler dev --config wrangler.jsonc",
+    "deploy": "wrangler deploy --config wrangler.jsonc",
+    "build": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@mysten/sui": "^2.26.2",
+    "pinyin-pro": "^3.26.0"
+  },
+  "devDependencies": {
+    "@cloudflare/workers-types": "^4.20250823.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0",
+    "wrangler": "^4.33.0"
+  }
+}

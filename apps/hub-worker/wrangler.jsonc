@@ -1,0 +1,34 @@
+// Chui Hub 雲端版（Cloudflare Worker 免費層）。
+// 部署：Cloudflare 儀表板 Git 整合（push 自動部署），或 npx wrangler deploy。
+// Secrets（STT_API_KEY 等）在儀表板 Settings → Variables and Secrets 設定，
+// 絕不寫在這個檔案裡。
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "chui-hub",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-08-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  // 封包面板頁以文字打包進 Worker
+  "rules": [{ "type": "Text", "globs": ["**/*.html"], "fallthrough": true }],
+  // 固定網址：部署時自動綁 custom domain（域名在同一個 Cloudflare 帳號）。
+  // 前提＝DNS 裡 hub 的舊隧道 CNAME 已移除（scripts/setup-worker.sh 會代勞）
+  "routes": [{ "pattern": "hub.chuiprotocol.com", "custom_domain": true }],
+  // 訂單／取餐單號流水／SSE 匯流排都在這顆 Durable Object（SQLite 持久化，
+  // 免費層可用）——取餐單號跨重啟不歸零，「永不重複」約束在雲上仍成立
+  "durable_objects": {
+    "bindings": [{ "name": "HUB_DO", "class_name": "ChuiHubDO" }]
+  },
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["ChuiHubDO"] }
+  ],
+  "vars": {
+    "SUI_NETWORK": "testnet",
+    // 真實靜態匯率：1 USD≈31.5 TWD → 1 元≈0.03175 USDC（65 元≈2.06 USDC）。
+    // Atlas Oracle 接上後改用即時簽章報價蓋過此值
+    "USDC_UNITS_PER_TWD": "31750",
+    "CHUI_USDC_COIN_TYPE": "0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC"
+    // CHUI_PACKAGE_ID／STT_API_KEY／ATLAS_ORACLE_API_KEY／LLM_API_KEY…
+    // 一律走儀表板 Secrets
+  }
+}

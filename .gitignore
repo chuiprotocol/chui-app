@@ -10,3 +10,6 @@ tts_cache/
 .demo-logs/
 merchant-data.json
 .ticket-seq*.json
+.cloudflared-chui.yml
+.dev.vars
+.wrangler/

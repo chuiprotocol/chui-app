@@ -1,4 +1,4 @@
-/** Chui Agent——x402「預授權代付」模式的 Sui 自製實作（vault + cap 版）。
+/** Chui Agent——「預授權額度內代付」的 Sui 自製實作（vault + cap 版）。
  *
  * 與熱錢包模式的關鍵差異：**agent 不持有本金**。
  * 用戶唯一一次用 Slush 簽 `chui::vault::create_and_authorize`：
@@ -92,6 +92,12 @@ export class ChuiAgentSession {
   static async reset(): Promise<void> {
     await idbDelete(KEY_STORAGE);
     await idbDelete(BINDING_STORAGE);
+  }
+
+  /** 只清 vault 綁定、保留 agent key（合約升級後領回舊資金→重新授權用）。 */
+  async clearBinding(): Promise<void> {
+    await idbDelete(BINDING_STORAGE);
+    this.binding = null;
   }
 
   /**
@@ -261,6 +267,13 @@ export class ChuiAgentSession {
   async payAuto(checkout: CheckoutParams): Promise<string> {
     if (!checkout.package_id) throw new Error("結帳參數缺少 package_id（合約尚未部署？）");
     if (!this.binding) throw new Error("尚未授權：請先完成一次性授權（放錢進你的 Vault）");
+    // 舊 Vault 打新合約會在 resolve 階段炸 TypeMismatch（真機踩過）——
+    // 這裡先擋下來，給人看得懂的原因與出路
+    if (this.binding.packageId !== checkout.package_id) {
+      throw new Error(
+        "你的授權屬於「舊版合約」的 Vault，無法用於目前的合約——" +
+        "請先用畫面上的「領回舊 Vault 資金」拿回餘額，再重新授權");
+    }
 
     const status = await this.status();
     if (!status.capActive) {
@@ -311,6 +324,24 @@ export class ChuiAgentSession {
     const tx = new Transaction();
     tx.moveCall({
       target: `${this.binding.packageId}::${moduleName}::revoke_caps`,
+      typeArguments: [usdcCoinType],
+      arguments: [tx.object(this.binding.vaultId)],
+    });
+    return tx;
+  }
+
+  /** 一鍵離場交易（由用戶的 Slush 簽）：撤銷所有授權＋領回全部 USDC，
+   * 同一筆交易完成——按下去的瞬間 Agent 就再也動不了任何一毛錢。 */
+  buildExitTransaction(moduleName: string, usdcCoinType: string): Transaction {
+    if (!this.binding) throw new Error("尚未授權，沒有可領回的 Vault");
+    const tx = new Transaction();
+    tx.moveCall({
+      target: `${this.binding.packageId}::${moduleName}::revoke_caps`,
+      typeArguments: [usdcCoinType],
+      arguments: [tx.object(this.binding.vaultId)],
+    });
+    tx.moveCall({
+      target: `${this.binding.packageId}::${moduleName}::withdraw`,
       typeArguments: [usdcCoinType],
       arguments: [tx.object(this.binding.vaultId)],
     });

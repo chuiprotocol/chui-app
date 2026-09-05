@@ -19,9 +19,10 @@ export interface SealogConfig {
   packageId: string;
   /** Seal key server 物件 id（testnet 公開伺服器，由 Hub /healthz 提供） */
   keyServerIds: string[];
-  /** Walrus publisher／aggregator base URL（由 Hub /healthz 提供） */
-  walrusPublisher: string;
-  walrusAggregator: string;
+  /** Walrus publisher／aggregator base URL（由 Hub /healthz 提供；
+   *  陣列＝依序輪替，公共 testnet 節點偶爾陣亡，多備援才穩） */
+  walrusPublishers: string[];
+  walrusAggregators: string[];
 }
 
 export interface LogEntry {
@@ -52,6 +53,27 @@ export function buildLogIdHex(ownerAddr: string, merchantAddr: string): string {
   return toHex(id);
 }
 
+/** 從 Hub /healthz 回應組出 SealLogVault（設定不齊回 null）。 */
+export function sealogFromHealth(
+  suiClient: SuiGrpcClient,
+  health: Record<string, unknown>,
+): SealLogVault | null {
+  const asList = (plural: unknown, single: unknown): string[] => {
+    if (Array.isArray(plural) && plural.length) return plural.map(String);
+    return single ? [String(single)] : [];
+  };
+  try {
+    return new SealLogVault(suiClient, {
+      packageId: String(health.package_id ?? ""),
+      keyServerIds: (health.seal_key_servers as string[] | undefined) ?? [],
+      walrusPublishers: asList(health.walrus_publishers, health.walrus_publisher),
+      walrusAggregators: asList(health.walrus_aggregators, health.walrus_aggregator),
+    });
+  } catch {
+    return null;
+  }
+}
+
 export class SealLogVault {
   private sealClient: SealClient;
 
@@ -61,6 +83,9 @@ export class SealLogVault {
   ) {
     if (!config.packageId) throw new Error("缺少 package_id，無法建立加密存證");
     if (!config.keyServerIds.length) throw new Error("Hub 未提供 Seal key server 設定");
+    if (!config.walrusPublishers.length || !config.walrusAggregators.length) {
+      throw new Error("Hub 未提供 Walrus 節點設定");
+    }
     this.sealClient = new SealClient({
       suiClient: suiClient as never,
       serverConfigs: config.keyServerIds.map((objectId) => ({ objectId, weight: 1 })),
@@ -85,25 +110,45 @@ export class SealLogVault {
       meta,
       entries,
     }));
-    const { encryptedObject } = await this.sealClient.encrypt({
-      threshold: 1,
-      packageId: this.config.packageId,
-      id: idHex,
-      data: plaintext,
-    });
-    // 密文上 Walrus（5 個 epoch；testnet 公開 publisher 免費額度內）
-    const resp = await fetch(`${this.config.walrusPublisher}/v1/blobs?epochs=5`, {
-      method: "PUT",
-      body: new Uint8Array(encryptedObject) as unknown as BodyInit,
-    });
-    if (!resp.ok) {
-      throw new Error(`Walrus 上傳失敗（${resp.status}）：${(await resp.text()).slice(0, 120)}`);
+    let encryptedObject: Uint8Array;
+    try {
+      ({ encryptedObject } = await this.sealClient.encrypt({
+        threshold: 1,
+        packageId: this.config.packageId,
+        id: idHex,
+        data: plaintext,
+      }));
+    } catch (e) {
+      throw new Error(`Seal 加密失敗（key server 連線或政策問題）：${(e as Error).message}`);
     }
-    const body = await resp.json();
-    const blobId: string | undefined =
-      body?.newlyCreated?.blobObject?.blobId ?? body?.alreadyCertified?.blobId;
-    if (!blobId) throw new Error("Walrus 回應缺少 blobId——請回報這筆存證失敗");
-    return { blobId, blobUrl: `${this.config.walrusAggregator}/v1/blobs/${blobId}`, idHex };
+    // 密文上 Walrus（5 個 epoch；公共 testnet publisher 偶爾陣亡→依序輪替）
+    let lastError = "";
+    for (const publisher of this.config.walrusPublishers) {
+      try {
+        const resp = await fetch(`${publisher}/v1/blobs?epochs=5`, {
+          method: "PUT",
+          body: new Uint8Array(encryptedObject) as unknown as BodyInit,
+        });
+        if (!resp.ok) {
+          lastError = `${publisher} 回 ${resp.status}`;
+          continue;
+        }
+        const body = await resp.json();
+        const blobId: string | undefined =
+          body?.newlyCreated?.blobObject?.blobId ?? body?.alreadyCertified?.blobId;
+        if (!blobId) { lastError = `${publisher} 回應缺少 blobId`; continue; }
+        return {
+          blobId,
+          blobUrl: `${this.config.walrusAggregators[0]}/v1/blobs/${blobId}`,
+          idHex,
+        };
+      } catch (e) {
+        lastError = `${publisher}：${(e as Error).message}`;
+      }
+    }
+    throw new Error(
+      `Walrus 上傳失敗（試了 ${this.config.walrusPublishers.length} 個 publisher，` +
+      `最後錯誤：${lastError}）`);
   }
 
   /**
@@ -116,9 +161,19 @@ export class SealLogVault {
     requesterAddr: string,
     signPersonalMessage: (message: Uint8Array) => Promise<string>,
   ): Promise<{ owner: string; merchant: string; entries: LogEntry[]; meta: Record<string, unknown> }> {
-    const resp = await fetch(`${this.config.walrusAggregator}/v1/blobs/${blobId}`);
-    if (!resp.ok) throw new Error(`Walrus 下載失敗（${resp.status}）`);
-    const ciphertext = new Uint8Array(await resp.arrayBuffer());
+    let ciphertext: Uint8Array | null = null;
+    let lastError = "";
+    for (const aggregator of this.config.walrusAggregators) {
+      try {
+        const resp = await fetch(`${aggregator}/v1/blobs/${blobId}`);
+        if (!resp.ok) { lastError = `${aggregator} 回 ${resp.status}`; continue; }
+        ciphertext = new Uint8Array(await resp.arrayBuffer());
+        break;
+      } catch (e) {
+        lastError = `${aggregator}：${(e as Error).message}`;
+      }
+    }
+    if (ciphertext === null) throw new Error(`Walrus 下載失敗：${lastError}`);
     // 密文自帶身分 id——不用外部記錄
     const parsed = EncryptedObject.parse(ciphertext);
     const idHex = parsed.id;

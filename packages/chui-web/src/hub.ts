@@ -17,6 +17,8 @@ export interface ParseResponse {
   intent: { items: unknown[]; confidence: number; stt_text: string };
   quote: { lines: QuoteLine[]; total: number; currency: "TWD" };
   readback: { text: string };
+  /** 這筆訂單鎖定的匯率（顯示 ≈USDC 一律用它；舊版 Hub 沒有此欄位） */
+  fx?: { units_per_twd: number; source: string };
 }
 
 export interface CheckoutParams {

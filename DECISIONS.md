@@ -293,3 +293,156 @@
      聲波）＋兩顆商家 logo 重繪，並記錄於本條目以示誠實。
 - **代價**：voice-app（舊入口）僅換 icon 未整套改版；商家站不再有
   各自主色（識別交給 logo 與 hero 插畫），符合「品牌色不越界」規則。
+
+## D25. 贊助資源整合：GMI Cloud 上雲、Atlas 訂單持久化、EastRouter LLM 備援
+
+- **情境**：手機打不到 localhost；黑客松贊助資源（GMI Cloud／MongoDB
+  Atlas／EastRouter）能用就用、限免費額度。Fly.io 方案棄用（殘留檔已刪）。
+- **決定**：
+  1. GMI 上雲（主流前後端分離）：後端整包單容器（既有 Dockerfile）＋
+     Caddy 自動 HTTPS（<IP>.sslip.io，免買網域）via docker-compose；
+     scripts/deploy-gmi.sh 一鍵 SSH 部署（裝 Docker→rsync 程式碼與
+     .env→compose up→等憑證與 healthz→印固定網址）。手機 ?hub= 帶一次
+     固定網址即可，永不再變。
+  2. Atlas 持久化：新增 OrderStore——MONGODB_URI 有設走 Atlas（訂單
+     整份 upsert、啟動即 ping 驗證，壞設定直接失敗絕不無聲退回）；
+     沒設退回記憶體（本地原行為）。healthz 誠實揭露 order_store。
+  3. EastRouter 備援：封閉詞彙解析信心不足時，把 STT 原文交給
+     EastRouter（OpenAI 相容 API）重述成「只含菜單詞彙」的標準句再
+     解析一次。安全邊界：LLM 只做重述——重述句仍要過封閉詞彙解析、
+     口頭確認、5 秒防呆倒數；三個 env 齊才啟用（不猜端點）；失敗一律
+     走原澄清流程。healthz 揭露 llm_assist。
+- **代價／誠實聲明**：沙箱無法連 GMI／Atlas／EastRouter——單元測試
+  只覆蓋退回行為與純函式（36 pytest 全綠、本地 Hub 冒煙 healthz＝
+  memory/off、點餐 API 正常）；三條線上路徑須部署後以 healthz 與
+  真機流程驗證。pymongo 為同步驅動，在 async handler 內呼叫（訂單
+  寫入極小，demo 可接受；正式版應換 motor）。
+
+## D26. Atlas Oracle 即時匯率（贊助商整合＝Atlas Oracle，非 MongoDB Atlas）
+
+- **情境**：賽方的「Atlas」是 Atlas Oracle（價格預言機，Pull API 回帶
+  簽章報價）——與已接的 MongoDB Atlas（訂單持久化）只是撞名，兩者並存。
+- **決定**：菜單台幣→鏈上 USDC 的匯率改為可插拔：設定
+  ATLAS_ORACLE_API_KEY＋ATLAS_FEED_ID 即用 Atlas Oracle 即時報價
+  （30 秒快取；ATLAS_FEED_MEANING 支援 TWD_USD／USD_TWD 兩種 feed
+  語意；ATLAS_RATE_MULTIPLIER 供內部測試把真實匯率縮小省測試幣），
+  匯率在「報價當下」鎖進訂單（整數運算），fx 來源與 units 一併落單。
+  沒設定或呼叫失敗一律退回 .env 固定匯率——healthz 的 fx_source 如實
+  顯示 atlas-oracle／static-env，面板同步發 fx.rate 事件。
+- **代價／誠實聲明**：oracle 回應的 ECDSA 簽章目前保留原文供稽核但
+  「未做鏈下驗章」（需 keccak/secp256k1 相依，列正式版 TODO）；
+  沙箱無法連 atlasoracle.io——單元測試覆蓋換算（TWD_USD/USD_TWD/
+  縮放/非法值）、回應解析與停用路徑（40 pytest 全綠），線上路徑
+  待金鑰發放後以 healthz fx_source=atlas-oracle 驗證。USD≈USDC 的
+  近似（未疊第二條 USDC/USD feed）也如實記錄。
+
+## D27. 語音對話品質五修＋三個新頁（用戶訂單史／店家即時看板／店家流水）
+
+- **語音**：
+  1. 「忽大忽小聲」根因＝speak() 用估時保險提早放行，麥克風在 Agent
+     還沒講完就打開，iOS 進錄音工作階段即壓低播放——改為輪詢
+     speechSynthesis.speaking「確定講完」＋250ms 音訊路由歸位緩衝
+     才開麥；歡迎語也改 await 完才開始聆聽（開頭無聲／搶拍同因）。
+  2. 確認詞聽力：請用戶說「確認下單」（長句誤辨率低）＋同音容錯
+     詞表（雀認／確任／缺人…）＋含「確」即肯定（否定詞先擋）。
+  3. 結單後主動問「還要再點餐嗎？想離開就說結束對話」；聽到離場
+     語意即道別「收到，關閉程式…」並走與 ✕ 相同的關閉流程。
+- **三新頁（portal）**：
+  1. ?history=1 用戶訂單史：owner 由鏈上 SettlementEvent 回填（非
+     前端自報），連 Slush 列出該錢包的訂單；每筆 log 解密都要該
+     錢包對 Seal session key 簽名——換一顆錢包 key server 就不發鑰。
+  2. ?dash=<merchant_id> 店家即時看板：訂單商業資料（品項／金額／
+     單號／鏈上交易）為店家可見明文；訂 Hub SSE，用戶 5 秒反悔期
+     結束送單即刻出現；摘要含已收 USDC 總額。
+  3. 同頁即店家流水史；log 解密需「店家收款錢包」簽名（消費者與
+     平台之外唯一的另一把鑰匙）——身分係從密文自帶 id 推導，新店
+     進駐自動隔離，無「發鑰匙發錯店」的環節。
+- **Hub**：verify 回傳事件 owner；OrderStore.list_by；
+  /v1/logs?owner=、/v1/merchants/{id}/orders、POST /v1/orders/{id}/logref
+  （只存 blob id，平台拿到也解不開）。
+- **代價**：歷史歸戶依賴鏈上驗證成功（pending 的單不出現在用戶史）；
+  店家看板以 URL 直達（demo 未做店家登入）。
+
+## D28. 上雲定案：Fly.io 跑後端整包（不再 localhost，Mac 可關機）
+- **背景**：用戶明示「不要再 localhost 請部署至雲」。贊助商資源盤點
+  後無一可host後端（AMD／GMI＝LLM token API、Atlas＝資料庫/預言機、
+  EastRouter＝LLM 路由），而用戶手上已有 Fly.io token——它是唯一
+  「現在就能動」的雲。Named Tunnel 仍需 Mac 開機，不符合新要求。
+- **決策**：fly.toml＋scripts/deploy-fly.sh 一鍵部署（單機
+  shared-cpu-1x/1GB、常駐不休眠保 SSE 與語音低延遲）；`fly secrets
+  import` 注入 .env，新增 .dockerignore 確保 .env 與金鑰絕不烤進
+  映像檔、token 只走環境變數不落 git（先前被拒絕的正是「token 進
+  git」，本作法迴避之）。網域 hub.chuiprotocol.com 由用戶在
+  Cloudflare 把 CNAME 從隧道改指 <app>.fly.dev（DNS only）——前端
+  PUBLIC_HUB_URL 不變，零改動。
+- **備援**：deploy-gmi.sh 通用 Ubuntu VM 路徑保留；setup-tunnel.sh
+  降級為本機開發。**代價**：Fly 最小機約 US$5–7/月（用戶自付）；
+  沙箱無外網，deploy-fly.sh 首跑由用戶在 Mac 執行驗證。
+- **記憶體單快取警告**：訂單若未接 MongoDB Atlas，雲端重啟＝訂單
+  記憶消失（單號流水已持久化於商家端不受影響）——上雲後應盡快完成
+  NEXT-STEPS 的 Atlas 接線。
+
+## D29. 上雲改定案：Cloudflare 免費 Worker（用戶指示，取代 D28 的 Fly.io）
+- **背景**：用戶明示「用 cloudflare（後端上雲）免費 worker，不要用
+  fly.io」。Workers 跑不動 Python——把 Hub 核心整個移植成 TypeScript
+  （apps/hub-worker/）：重排序引擎（pypinyin→pinyin-pro；DP／混淆表
+  ／字首縮寫／數量量詞規則 1:1 移植）、報價／覆誦、STT 轉發、Atlas
+  Oracle／LLM 備援、鏈上 gRPC 驗證（@mysten/sui fetch 基底，Worker
+  直接用，不再需要 Node 子行程）。
+- **持久化**：Durable Object（SQLite，免費層可用）存訂單＋取餐單號
+  流水＋SSE 匯流排——「單號永不重複」在雲上仍成立（重啟實測 0003
+  續號）。MongoDB Atlas 角色由 DO 取代（VM 備援模式仍可接）。
+- **商家端**：雲端版兩家店協議端點為內建實作（happy-chicken 菜單＝
+  adapter 翻譯輸出的快照；接單＝DO 發號）；legacy＋adapter 整合示範
+  保留於本機版。如實揭露於 SETUP-CLOUD。
+- **部署**：與兩個前端同模式（儀表板 Git 整合、push 即部署、免費、
+  免綁卡）；hub.chuiprotocol.com 改綁 Worker custom domain，前端零改動。
+- **品質防線**：test_rerank.py 全部案例＋55 筆評估集 90% 門檻移植成
+  vitest（9/9 過）；wrangler dev 端到端實測 parse／澄清／confirm 流水
+  ／settlement 誠實 pending／看板明細／SSE／panel。已知踩雷記錄：
+  pinyin-pro 與 @mysten/sui 都在模組頂層做 Workers 禁止的全域操作
+  （setTimeout／隨機值）→ 一律改 handler 內動態 import。
+- **代價**：Python 版與 TS 版引擎需雙軌維護（CI 兩邊測試都跑）；
+  fly.toml／deploy-fly.sh 已刪。
+
+## D30. 語音三修：指令詞優先、barge-in 插話、四家 STT 供應商鏈
+- **根因確認**：「結束對話」被封閉詞彙引擎以 0.625 信心誤配成
+  「地瓜薯條」（音節 DP 亂對）、「取消下單」被反問成點餐——引擎只認
+  識菜單，指令詞不歸它管。**修法＝指令詞永遠優先於菜單比對**：前端
+  拿到 STT 原文（成功報價與澄清兩條路徑都一樣）先過 intents 判讀
+  （抽成 packages/chui-web/src/intents.ts，26 個回歸案例），是
+  取消／離場就直接執行，不接受引擎報價；STT prompt 也把「確認下單、
+  取消、結束對話」寫進去引導 Whisper 輸出正確指令詞。
+- **barge-in**：TTS 播放中以 BargeInMonitor 同步開麥（AEC＋噪音抑制、
+  RMS 門檻 0.05 且需連續 300ms 防自我打斷），偵測到人聲即 cancel TTS
+  立刻放行收音。只開在覆誦確認句／澄清問句／付款完成句；歡迎語與
+  道別不開（iOS 開麥會 duck 播放音量，保護開場錄影）。⚠️ AEC 對
+  speechSynthesis 的消音效果需真機驗證，門檻可再調。
+- **STT 供應商鏈**（Worker 版）：elevenlabs(Scribe v1) → openai →
+  gmi → amd 依序遞補，排序依公開多語 benchmark 中文 WER（Scribe 領
+  先）＋本專案實戰紀錄；沒 key 自動跳過、全敗才明確報錯。GMI/AMD
+  沿用「不猜端點」原則：base url＋key＋model 三項齊全才啟用
+  （OpenAI 相容 /audio/transcriptions）。順序可用 STT_PROVIDERS 覆寫；
+  healthz 揭露 stt_chain。Python 本機版僅同步 prompt（鏈為雲端版功能）。
+- **一鍵領回**：session.buildExitTransaction＝revoke_caps＋withdraw
+  同一筆交易（合約皆 owner-only、withdraw 領全部回 owner）；語音面板
+  餘額列旁常駐「⏏ 一鍵領回全部」。
+
+## D31. 店家自助入駐：錢包即店家身分，平台不再代管任何私鑰
+- **背景**：demo 兩家店的收款錢包由我們終端機生成、私鑰在平台手上
+  ——形同代管，違背協議精神（用戶指出並要求改正）。
+- **決策**：開店＝店家用自己的 Slush 錢包簽個人訊息
+  `chui-open-shop:v1:<address>:<name>` 證明收款地址所有權 →
+  POST /v1/merchants/register（Worker 端 verifyPersonalMessageSignature
+  驗簽、簽名者必須等於收款地址）→ 寫入 DO SQLite merchants 表。
+  同地址重複註冊＝更新自己的店（upsert）；地址唯一＝一錢包一店。
+- **效果**：動態店家與內建 demo 店合併進 registry——菜單即時建
+  重排序引擎（同義詞照常生效）、公版店面 ?m=<id> 直接可點、
+  取餐單號流水獨立（前綴自訂）、「錢包即身分」後台自動適用、
+  收款直達店家地址平台不經手。開店頁 ?open=1（品項名/價格/同義詞，
+  v1 不含選項組）。
+- **驗證**：端到端（壞簽名 401／開店／清單合併／新店語音點餐同義詞
+  命中／TOFU-0905-0001 發號／收款地址=店家錢包／upsert）＋UI 截圖。
+- **代價與誠實揭露**：入駐店僅公版店面模式；菜單 v1 不支援選項組；
+  內建兩家 demo 店的舊錢包保留供演示 adapter 故事，正式環境應由
+  店家自行入駐取代。
