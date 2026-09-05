@@ -88,7 +88,7 @@ Chui 的回答：**封閉詞彙重排序**解決（1），**多層冪等防線**
 ```mermaid
 flowchart TB
     subgraph phone["消費者手機（瀏覽器＋Slush 錢包）"]
-        UI["商家官網／嘴付公版入口<br/>（Cloudflare Pages，foodpanda 式菜單＋🎙 嘴付下單鍵）"]
+        UI["商家官網／嘴付公版入口<br/>（Cloudflare Pages，常駐菜單＋🎙 嘴付下單鍵）"]
         AGENT["Chui Agent（頁面內）<br/>session key，只持 AgentCap＋gas"]
         REGRET["🛑 防呆倒數 5 秒<br/>口頭確認後、扣款前<br/>可一鍵「反悔棄單」"]
         SEAL["Seal 加密器（瀏覽器內）<br/>對話 log → IBE 密文"]
@@ -182,8 +182,8 @@ apps/hub-worker        協議中樞（Cloudflare Worker＋Durable Object）：
                        鏈上驗證、店家註冊、SSE 面板    ← 後端本體
 apps/portal            嘴付公版入口（選店/點餐/開店/後台/歷史）
 apps/merchant-a        快樂鹽酥雞：自家官網前端＋legacy 系統＋協議 adapter
-                       （backend/ 與 adapter/ 是「既有系統怎麼接入協議」的參考實作）
-apps/storefront-template  公版店面參考實作（config 開店的本機版）
+                       （backend/ 與 adapter/ 示範「既有系統不改一行舊碼接入協議」）
+apps/storefront-template  公版店面範例（config 開店的本機版）
 apps/voice-app         跨店語音入口（說一句話自動路由到對的店家）
 packages/chui-web      三個前端共用的核心庫：語音循環（VAD/barge-in/TTS）、
                        Agent session（vault 授權/自動結算）、Seal 加密存證、意圖判讀

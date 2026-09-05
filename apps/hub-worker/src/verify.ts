@@ -1,5 +1,4 @@
-/** 鏈上結算驗證（TypeScript 移植版，對齊 apps/hub/chui_hub/verify.py＋
- * apps/api/chain-service/src/txevents.js）。
+/** 鏈上結算驗證。
  *
  * 查交易的 SettlementEvent，digest／amount／merchant 三者皆符才標記已結算。
  * 查詢走官方 gRPC（testnet 公共節點 JSON-RPC 已停用）——@mysten/sui 的

@@ -1,7 +1,7 @@
-/** 外部服務（TypeScript 移植版）：
- * - STT：OpenAI 相容 Whisper API 轉發（apps/api/chui_api/stt/whisper_api.py）
- * - Atlas Oracle 即時匯率（apps/hub/chui_hub/oracle.py）
- * - 通用 LLM 重述備援（apps/hub/chui_hub/assist.py）
+/** 外部服務：
+ * - STT：多供應商鏈（ElevenLabs／OpenAI 相容端點）
+ * - Atlas Oracle 即時匯率
+ * - 通用 LLM 重述備援
  * 行為約定不變：備援失敗一律靜默退回，絕不擋點餐主流程；
  * LLM 只做重述、永遠碰不到金流決策。
  */

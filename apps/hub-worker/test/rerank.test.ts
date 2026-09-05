@@ -1,6 +1,5 @@
-/** 重排序引擎 TS 移植版的對齊測試：
- * 案例與品質門檻完全複製 apps/api/tests/test_rerank.py——
- * Python 版與 Worker 版必須守住同一套行為。 */
+/** 重排序引擎的行為測試：關鍵案例＋55 筆評估集品質門檻
+ *（訂單正確率 ≥90%、應澄清樣本 0 無聲錯——README 數字的守門員）。 */
 
 import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
@@ -26,7 +25,7 @@ beforeAll(async () => {
   engine = new RerankEngine(MENU);
 });
 
-describe("關鍵行為（同 test_rerank.py）", () => {
+describe("關鍵行為", () => {
   it("縮寫可還原：中冰奶 → 中杯冰奶茶", () => {
     const r = engine.parse(["中冰奶"]);
     expect(r.ok).toBe(true);
@@ -92,7 +91,7 @@ describe("評估資料集品質門檻（README 數字的守門員）", () => {
   });
 });
 
-// ---- 真機實測回歸（好喝奶茶店情境，同 test_rerank.py）----
+// ---- 真機實測回歸（好喝奶茶店情境）----
 
 const TEA_MENU: Menu = {
   items: [

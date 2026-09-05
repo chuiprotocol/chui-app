@@ -1,4 +1,4 @@
-/** 菜單報價與覆誦（TypeScript 移植版，行為對齊 apps/api/chui_api/menu.py）。全部整數運算。 */
+/** 菜單報價與覆誦。全部整數運算（金額絕不走浮點）。 */
 
 import type { Menu, MenuItem, ParsedItem } from "./rerank.js";
 

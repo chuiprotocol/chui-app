@@ -1,4 +1,4 @@
-/** 訂單 digest（TypeScript 移植版，對齊 apps/api/chui_api/crypto.py）。
+/** 訂單 digest。
  *
  * 上鏈內容只有 SHA-256(canonical_json ‖ salt)，salt 為每筆訂單全新的
  * 32 bytes CSPRNG 隨機值。digest 只需「同一個 Hub 產生與驗證」自我一致——

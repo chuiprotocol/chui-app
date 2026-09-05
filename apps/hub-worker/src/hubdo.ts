@@ -1,6 +1,6 @@
-/** ChuiHubDO：雲端 Hub 的心臟（Durable Object，SQLite 持久化）。
+/** ChuiHubDO：Hub 的心臟（Durable Object，SQLite 持久化）。
  *
- * 一顆 DO 承擔三件事（對齊本機版的 store.py＋bus.py＋main.py 業務邏輯）：
+ * 一顆 DO 承擔三件事：
  * 1. 訂單儲存——SQLite 表，跨重啟持久化（取代 MongoDB Atlas 的角色）
  * 2. 取餐單號流水——日期前綴＋持久化流水號，永不重複（FC-0905-0001）
  * 3. 封包匯流排——面板／店家看板的 SSE 即時流
@@ -23,7 +23,7 @@ import panelHtml from "./panel.html";
 const USDC_COIN_TYPE_DEFAULT =
   "0xa1ec7fc00a6f40db9693ad1415d0c193ad3906494428cf252621037bd7117e29::usdc::USDC";
 
-// Seal／Walrus 預設值＝Mysten 官方 testnet 公開節點（同本機版 main.py）
+// Seal／Walrus 預設值＝Mysten 官方 testnet 公開節點
 const SEAL_KEY_SERVERS_DEFAULT =
   "0x73d05d62c18d9374e3ea529e8e0ed6161da1a141a94d3f76ae3fe4e99356db75," +
   "0xf5d14a81a982144ae441cd7d64b09027f116a468bd36e7eca494f750591623c8";
@@ -107,7 +107,7 @@ export class ChuiHubDO implements DurableObject {
     )`);
   }
 
-  // ---- 訂單儲存（SQLite；等價本機版 OrderStore） ----
+  // ---- 訂單儲存（SQLite） ----
 
   private saveOrder(order: Order): void {
     this.sql.exec(
@@ -152,7 +152,7 @@ export class ChuiHubDO implements DurableObject {
     return `${merchant.ticket_prefix}-${today}-${String(seq).padStart(4, "0")}`;
   }
 
-  // ---- 封包匯流排（SSE；等價本機版 PacketBus） ----
+  // ---- 封包匯流排（SSE） ----
 
   private emit(from: string, to: string, kind: string, summary: string,
                payload: Record<string, unknown> = {}): void {

@@ -1,12 +1,12 @@
-/** 華語語音距離（TypeScript 移植版，行為對齊 apps/api/chui_api/rerank/phonetics.py）。
+/** 華語語音距離。
  *
  * 把文字轉成逐字拼音序列，再以「聲母／韻母混淆表」計算音節距離。
  * 混淆表收錄台灣華語常見不分的音：ㄓㄗ、ㄔㄘ、ㄕㄙ、ㄋㄌ、ㄈㄏ、
  * 前後鼻音（in/ing、en/eng、an/ang）等，這正是 STT 誤辨識的主要來源。
  *
- * 拼音來源改用 pinyin-pro（純 JS，可跑在 Cloudflare Worker）；與 Python 版
- * pypinyin 的多音字取音可能有個別差異——但詞彙表與輸入文字走同一函式，
- * 引擎內部自我一致，評估集品質門檻（vitest）守住行為。
+ * 拼音由 pinyin-pro 提供（純 JS，可跑在 Cloudflare Worker）；多音字取音
+ * 以「詞彙表與輸入文字走同一函式」保證引擎內部自我一致，
+ * 評估集品質門檻（vitest）守住整體行為。
  */
 
 // pinyin-pro 在模組頂層呼叫 setTimeout（Workers 全域禁用）——

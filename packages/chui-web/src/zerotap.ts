@@ -1,6 +1,6 @@
 /** 純語音循環 UI（三個前端共用）。
  *
- * 流程（foodpanda 式改版後）：
+ * 流程：
  * 首頁常駐菜單，頂部「🎙 嘴付下單」按鈕開啟語音面板（overlay）。
  * 🅐 首次：授權 N USDC 給點餐 Agent（Slush 簽唯一一筆；已有 Vault 則走
  *    deposit 加值累計）。
@@ -804,7 +804,7 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
       clearMsg();
     };
     closePanelRef = closePanel; // 語音說「結束對話」也走同一個關閉流程
-    // foodpanda 式：首頁常駐菜單，按「嘴付下單」才開語音面板
+    // 首頁常駐菜單，按「嘴付下單」才開語音面板
     openBtn.addEventListener("click", () => {
       unlockTts();
       overlay.classList.remove("hidden");
