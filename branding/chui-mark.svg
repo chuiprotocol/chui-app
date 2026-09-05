@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none"
      role="img" aria-labelledby="chui-mark-title">
   <title id="chui-mark-title">Chui Protocol 嘴付協議</title>
-  <!-- Chui Protocol mark ── 單色深藍（--chui-ink #101A2E）。
+  <!-- Chui Protocol mark ── 單色深藍（chui-ink #101A2E，見 chui-tokens.css）。
        一個字符講完整個協議：對話框＝開口，框裡的 ¥＝就付了，右側聲波＝語音。
        手繪語彙（anthropic-art）：圓不正、線條粗細不均、圓頭端點、刻意不對稱。
        mark 家族（mark / mark-inverse / app-icon / lockup）共用這組座標。 -->
