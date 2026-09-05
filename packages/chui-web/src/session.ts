@@ -1,4 +1,4 @@
-/** Chui Agent——x402「預授權代付」模式的 Sui 自製實作（vault + cap 版）。
+/** Chui Agent——「預授權額度內代付」的 Sui 自製實作（vault + cap 版）。
  *
  * 與熱錢包模式的關鍵差異：**agent 不持有本金**。
  * 用戶唯一一次用 Slush 簽 `chui::vault::create_and_authorize`：

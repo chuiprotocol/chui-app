@@ -1,9 +1,6 @@
 # 待辦與未驗證事項（隨時更新）
 
 ## 未驗證
-- [ ] **MongoDB Atlas 接線尚未驗證**：用戶已建 Cluster0，但還沒跑
-      `./scripts/setup-atlas.sh '<連線字串>'`；驗證標準＝腳本印出
-      「✅ 訂單現在存 MongoDB Atlas」且 healthz `order_store: mongodb-atlas`。
 - [ ] **Atlas Oracle 尚未取得 API key**：之後帶用戶到 atlasoracle.io
       註冊（文件寫註冊後自動發 key），把 key 與 USDC/USD feed 的 id
       填進 .env（ATLAS_ORACLE_API_KEY／ATLAS_FEED_ID／
@@ -22,10 +19,7 @@
       驗證標準＝healthz 回 `runtime: cloudflare-worker`。前端零改動。
       （沙箱連不到 Cloudflare API，故由腳本在用戶機器代跑；token
       只走環境變數，用完可撤銷。）
-- 備援路徑：任何 Ubuntu VM 一樣能上整包 Python 版
-      （`./scripts/deploy-gmi.sh <IP>`）；Named Tunnel
-      （scripts/setup-tunnel.sh）降級為本機開發用。
-      Fly.io 方案已依用戶指示移除（token 記得撤銷，見下）。
+- （Python 本機版與 VM 備援腳本已於收尾清理移除——正式與開發都走 Worker。）
 
 ## 已接上的贊助資源
 - [x] **GMI Cloud**：LLM 重述備援已上線（GLM-4.7-Flash，免費層；
@@ -39,5 +33,5 @@
       LLM_MODEL（＋LLM_PROVIDER 標名），healthz `llm_assist` 顯示之。
       scripts/deploy-gmi.sh 保留為「任何 Ubuntu VM」通用部署腳本備用。
 - [ ] demo 結束後：撤銷對話中出現過的金鑰（OpenAI key、Fly token、
-      Cloudflare API token cfut_kvWW…——Worker 部署完成後即可撤，
+      Cloudflare API token——Worker 部署完成後即可撤，
       日常更新走 git push／重建新 token）。

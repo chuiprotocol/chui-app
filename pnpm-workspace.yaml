@@ -1,8 +1,5 @@
 packages:
   - packages/*
-  - apps/console
-  - apps/reference-merchant
-  - apps/api/chain-service
   - apps/storefront-template
   - apps/merchant-a
   - apps/voice-app

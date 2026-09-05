@@ -1,23 +1,49 @@
 <p align="center"><img src="branding/chui-lockup.svg" alt="Chui Protocol 嘴付協議" width="430" /></p>
 
-# Chui Protocol（嘴付協議）—— 應用層
+<h3 align="center">說了就算，付了就走——語音點餐的鏈上支付授權層</h3>
 
-> 用一句話點餐，用一筆鏈上交易付款。
-> Chui 是 agentic commerce 的**支付授權層**：消費者一次性授權（Mandate），
-> 之後由語音 agent 在授權額度內代為結算——不用助記詞、不用付 gas、
-> 鏈上看不到你買了什麼。
+<p align="center">
+  <a href="https://github.com/chuiprotocol/chui-app/actions"><img src="https://img.shields.io/github/actions/workflow/status/chuiprotocol/chui-app/ci.yml?label=CI" alt="CI" /></a>
+  <img src="https://img.shields.io/badge/chain-Sui%20Testnet-4DA2FF" alt="Sui Testnet" />
+  <img src="https://img.shields.io/badge/runtime-Cloudflare%20Workers-F38020" alt="Cloudflare Workers" />
+  <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT" />
+</p>
 
-**Chui 是基礎設施**：終端使用者永遠不會看到這個名字，他們只會看到
-店家的網站聽懂了「中冰奶」，然後測試幣從自己的錢包進了店家的錢包。
-
-> **🎬 Demo（最新）**：兩家異質商家（自家系統經 adapter 接入的「快樂鹽酥雞」
-> ＋公版店面開的「好喝奶茶店」）＋語音入口 App＋即時封包面板，
-> Slush 錢包 USDC on Sui Testnet 結帳。
-> 協議規格見 **[PROTOCOL.md](PROTOCOL.md)**、演示腳本見 **[DEMO.md](DEMO.md)**、
-> 一鍵啟動 `./scripts/demo-up.sh`。合約在 chui-contracts 的
-> `contracts/sui/`（`./deploy.sh` 一鍵部署）。
+<p align="center">
+  <a href="https://chuiprotocol.com"><b>🌐 Live Demo</b></a> ·
+  <a href="#-兩分鐘看懂嘴付">🎬 影片</a> ·
+  <a href="PROTOCOL.md">📜 協議規格</a> ·
+  <a href="DECISIONS.md">🧭 決策紀錄</a> ·
+  <a href="https://github.com/chuiprotocol/chui-contracts">⛓ Move 合約</a>
+</p>
 
 ---
+
+**嘴付（Chui）** 讓你對著店家網頁「用說的」點餐：一次性授權 USDC 額度給頁面裡的
+點餐 Agent 之後，開口 → Agent 覆誦 → 口頭確認 → 5 秒防呆倒數 → 鏈上自動扣款、
+店家看板即時跳單——全程零按鍵。錢在**你自己的鏈上 Vault**、對話紀錄**端對端加密**
+（平台無鑰）、店家**用錢包自助開店**（平台不代管任何私鑰）。
+
+## 🎬 兩分鐘看懂嘴付
+
+<!-- 錄好影片後把下面的 VIDEO_ID 換掉即可（GitHub README 不能內嵌播放器，
+     主流做法＝可點擊的 YouTube 縮圖）：
+<p align="center">
+  <a href="https://youtu.be/VIDEO_ID">
+    <img src="https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg" width="640" alt="嘴付 2 分鐘 Demo" />
+  </a>
+</p>
+-->
+> 🚧 影片錄製中——先看 Live Demo：
+
+| 網址 | 內容 |
+|---|---|
+| **[chuiprotocol.com](https://chuiprotocol.com)** | 嘴付公版入口：選店語音點餐／我要開店／店家後台／我的訂單 |
+| **[happy-chicken.chuiprotocol.com](https://happy-chicken.chuiprotocol.com)** | 快樂鹽酥雞「自家官網」——只串嘴付協議 API 的整合示範 |
+| **[hub.chuiprotocol.com/healthz](https://hub.chuiprotocol.com/healthz)** | 協議中樞（Cloudflare Worker）即時狀態 |
+| **[hub.chuiprotocol.com/panel](https://hub.chuiprotocol.com/panel)** | 協議封包即時面板（demo 投影用） |
+
+> 需要 [Slush 錢包](https://slush.app)（Sui Testnet）＋測試用 USDC（[Circle Faucet](https://faucet.circle.com) 免費領）。
 
 ## 問題陳述
 
@@ -32,13 +58,13 @@
    上限多少、怎麼撤銷」，而且答案要可驗證，不能只是資料庫裡的一列。
 
 Chui 的回答：**封閉詞彙重排序**解決（1），**多層冪等防線**解決（2），
-**鏈上 Mandate（Sui shared object）**解決（3）。
+**鏈上 Vault＋AgentCap（自寫 Sui 合約）**解決（3）。
 
 ## STT 準確率（本專案最重要的數字）
 
 評估資料集：55 筆標註的口語訂單（52 筆可解析＋3 筆必須澄清），
 涵蓋乾淨句、STT 誤辨字、縮寫、台語詞、多品項組合。
-執行 `cd apps/api && python eval/run_eval.py` 可重現：
+執行 `pnpm --filter @chui/hub-worker test` 可重現（評估集是 CI 的品質門檻，跌破 90% 直接紅燈）：
 
 | 指標 | 原始 STT（精確比對基線） | 封閉詞彙重排序後 |
 |---|---|---|
@@ -112,6 +138,71 @@ flowchart TB
   Seal key server 發鑰前會 dry-run 鏈上 `log_policy::seal_approve`——
   **只有用戶錢包與店家能解密，嘴付平台（Hub）無權看**。
 
+## 為什麼這樣設計（維護者必讀）
+
+架構上每個「奇怪的地方」都有原因，完整記錄在 [DECISIONS.md](DECISIONS.md)（31 條）。最重要的幾條：
+
+- **封閉詞彙重排序，不是問 LLM**（D2）：支付情境下，STT 錯字必須被「確定性演算法」
+  救回或明確拒絕——LLM 只在信心不足時做「重述」備援，永遠碰不到金流決策。
+- **指令詞永遠優先於菜單比對**（D30）：引擎只認識菜單，曾把「結束對話」硬配成
+  「地瓜薯條」（0.62 信心）——所以前端拿到 STT 原文先過 `intents.ts` 判讀。
+  意圖判讀前先做**簡→繁正規化**：上游 STT 可能輸出簡體（「确认下单」）。
+- **一顆 Durable Object 就是整個後端狀態**（D29）：訂單、取餐單號流水、SSE 匯流排
+  全在單一 SQLite DO——actor 模型天然無競態，取餐單號「日期＋持久化流水」永不重複。
+- **錢包即身分**（D31）：店家開店＝Slush 簽名證明收款地址所有權；後台登入＝連錢包
+  比對收款地址；用戶訂單歸戶＝鏈上 SettlementEvent 的 owner。平台不代管任何私鑰。
+- **誠實失敗哲學**（貫穿全案）：STT 掛了就說掛了、鏈上查不到就 pending、外部服務
+  全部「可插拔、失敗誠實退回」——絕不假成功、絕不無聲猜測。
+- **Workers 的坑**（D29）：`pinyin-pro` 與 `@mysten/sui` 都在模組頂層做 Workers
+  禁止的全域操作（setTimeout／隨機值）→ 一律 handler 內動態 `import()`。
+
+## 快速上手（開發）
+
+```bash
+# 前置：Node 22+、pnpm 10+
+pnpm install
+
+# 後端（Cloudflare Worker，本地模擬）
+pnpm --filter @chui/hub-worker dev        # http://localhost:8787
+
+# 前端（另一個 terminal；?hub= 指向本地後端）
+pnpm --filter @chui/portal dev            # http://localhost:5173/?hub=http://localhost:8787
+
+# 測試（重排序對齊＋評估集門檻＋意圖判讀回歸，41 案例）
+pnpm --filter @chui/hub-worker test
+```
+
+合約開發見 [chui-contracts](https://github.com/chuiprotocol/chui-contracts)（`sui move test` 17 案例、`./deploy.sh` 一鍵部署）。
+
+## Repo 結構
+
+```
+apps/hub-worker        協議中樞（Cloudflare Worker＋Durable Object）：
+                       STT 供應商鏈、封閉詞彙重排序、報價、接單發號、
+                       鏈上驗證、店家註冊、SSE 面板    ← 後端本體
+apps/portal            嘴付公版入口（選店/點餐/開店/後台/歷史）
+apps/merchant-a        快樂鹽酥雞：自家官網前端＋legacy 系統＋協議 adapter
+                       （backend/ 與 adapter/ 是「既有系統怎麼接入協議」的參考實作）
+apps/storefront-template  公版店面參考實作（config 開店的本機版）
+apps/voice-app         跨店語音入口（說一句話自動路由到對的店家）
+packages/chui-web      三個前端共用的核心庫：語音循環（VAD/barge-in/TTS）、
+                       Agent session（vault 授權/自動結算）、Seal 加密存證、意圖判讀
+eval/dataset.jsonl     55 筆標註口語訂單（CI 品質門檻）
+examples/happy-pig     評估用範例菜單（縮寫/台語/同義詞齊全）
+branding/              品牌系統（tokens.css＋SVG）
+scripts/               部署自動化（Cloudflare Worker/Pages/網域，皆冪等可重跑）
+```
+
+## 測試、CI/CD 與分支策略
+
+- **CI**（GitHub Actions）：每次 push 跑「共用庫型別檢查＋Worker 建置＋41 個測試
+  （含 55 筆評估集 ≥90% 門檻、指令詞/回音/簡繁回歸）＋四個前端建置」。
+- **CD**（Cloudflare Git 整合）：push 到主分支即自動部署 `chui-hub`（Worker）、
+  `chui-portal` 與 `chui-happy-chicken`（Pages）——無手動步驟。
+- **分支**：`main` 為唯一長期分支（護 CI 綠）；功能用短命 feature branch 進 PR。
+- 合約另居 [chui-contracts](https://github.com/chuiprotocol/chui-contracts)：
+  17 個 Move 測試、發佈腳本冪等。
+
 ## 贊助商／外部資源整合狀態（核對表）
 
 | 資源 | 在嘴付的角色 | 模型／設定 | 狀態 |
@@ -135,123 +226,50 @@ merchant_id 由地址衍生），取餐單號只需要「店內唯一」——�
 持久化流水號已保證這點——前綴純粹是現場叫號時的辨識用，不承擔任何
 唯一性責任，短一點反而好唸好記。
 
-## 外部服務整合
+## 外部服務整合（全部可插拔、失敗誠實退回）
 
-| 服務 | 用途 | 沒設定時 | healthz 揭露 |
+| 服務 | 用途 | 沒設定／掛掉時 | healthz 揭露 |
 |---|---|---|---|
-| **Atlas Oracle**（`atlasoracle.io`，價格預言機） | 菜單台幣 → 鏈上 USDC 的**即時匯率**：Pull API 簽章報價（30 秒快取），匯率在報價當下鎖進訂單、整數運算；`ATLAS_RATE_MULTIPLIER` 供內部測試縮小匯率省測試幣 | 退回 `.env` 的 `USDC_UNITS_PER_TWD` 固定匯率 | `fx_source: atlas-oracle / static-env` |
-| **MongoDB Atlas**（資料庫雲，與上者只是撞名） | **訂單持久化**：訂單／取餐單號／付款與鏈上驗證狀態存雲端資料庫——Hub 重啟不掉單，冪等檢查升級成真資料庫層；`./scripts/setup-atlas.sh '<連線字串>'` 一鍵接線 | 退回行程記憶體（重啟清空） | `order_store: mongodb-atlas / memory` |
-| EastRouter（LLM 聚合 API） | 語音解析信心不足時把原文**重述成菜單詞彙標準句**再解析；LLM 只做重述，扣款仍要口頭確認＋5 秒防呆倒數 | 直接走澄清流程 | `llm_assist: eastrouter / off` |
-| Seal ＋ Walrus（Mysten） | 點餐對話 log **端對端加密存證**：瀏覽器內加密、密文上 Walrus，只有用戶錢包與店家可解（見架構圖⑥） | 不做存證（不影響付款） | `seal_key_servers` 等欄位 |
+| ElevenLabs／OpenAI／GMI／AMD | **STT 供應商鏈**：依中文能力排序逐一遞補 | 全敗才報錯並引導打字輸入 | `stt_chain` |
+| GMI Cloud（GLM-4.7-Flash） | 信心不足時把口語**重述成菜單詞彙**再解析；LLM 永不碰金流 | 直接走澄清流程 | `llm_assist` |
+| Atlas Oracle | 台幣→USDC **即時簽章匯率**（30 秒快取、報價當下鎖進訂單） | 退回靜態匯率 | `fx_source` |
+| Seal＋Walrus（Mysten） | 對話 log **端對端加密存證**：瀏覽器內加密，只有用戶錢包與店家可解 | 不做存證（不影響付款） | `seal_key_servers` 等 |
+| Durable Object SQLite | 訂單／單號流水／商家註冊**持久化**（Cloudflare 免費層） | —（核心元件） | `order_store` |
 
-以上全部「可插拔、失敗誠實退回」：任何一個外部服務掛掉都不會擋住點餐主流程。
+## 冪等性（同一筆訂單重複觸發只扣一次）
 
-## 冪等性（同一筆訂單 confirm N 次只扣一次）
+語音介面必然重複觸發（連按、重送、retry）。防線：
 
-1. 已結算 → 直接回同一張收據（HTTP 200）。
-2. 結算中 → 409 `SETTLEMENT_IN_PROGRESS`，SDK 指數退避重試後拿到同一張收據。
-3. 資料庫原子狀態轉移（`quoted/failed → settling`）保證單一執行者。
-4. `settlements.order_id` UNIQUE 約束為最後防線。
-5. chain-service 以訂單 digest 去重：API 在「已上鏈、未落庫」的窗口崩潰後
-   重試，也不會第二次上鏈。
-6. 另有 nonce + timestamp 防重放（±300 秒、nonce 一次性）。
-
-單元測試涵蓋序列與 5 執行緒並發情境（`apps/api/tests/test_idempotency.py`）。
-
-## 與其他 agentic commerce 方案的比較
-
-（查證日期 2026-08-26；快速演變中的領域，數字會過時）
-
-| | **Chui** | Coinbase x402 | Google AP2 | Visa Intelligent Commerce |
-|---|---|---|---|---|
-| 一句話 | 語音點餐的鏈上授權支付層 | HTTP 402 穩定幣微支付協議 | 支付方式中立的 agent 授權協議（mandate 鏈） | 卡網路的 agent 代付平台（AI-Ready Cards） |
-| 授權模型 | 鏈上 Mandate shared object（單筆/總額上限、單一交易撤銷） | 每筆請求錢包簽名 | 密碼學簽署的 Intent/Cart/Payment Mandate | Token 綁定 agent 身分＋spend controls |
-| 上鏈 | 是（Sui；只上 salted digest） | 是（Base、Solana 為主） | 核心否；x402 擴充可上鏈 | 否 |
-| 託管 | 資金在消費者的 Mandate 物件；營運方可觸發限額內結算（見信任假設） | 非託管＋facilitator 結算 | 不託管資金，走既有軌道 | 託管（四方卡組織） |
-| 成熟度 | 原型（Testnet） | 協議成熟、真實交易量仍極低（2026-03 報導約 $28K/日，含測試流量） | v0.2，已捐 FIDO Alliance 標準化，試點中 | 試點邁向規模化，Connect 預計 2026 稍後 GA |
-| 語音/嘈雜輸入 | **核心設計**（封閉詞彙重排序＋強制澄清） | 範圍外 | 範圍外（假設 agent 已知意圖） | 範圍外 |
-
-差異化：x402 解決「機器對機器怎麼付」，AP2 解決「授權證據鏈長怎樣」，
-Visa 解決「怎麼讓既有卡網路接受 agent」。Chui 解決的是它們都沒碰的最前面
-一哩：**從嘈雜的人類語音到可安全執行的支付意圖**，然後用最小的鏈上足跡
-（一個 digest）完成可驗證結算。
+1. 已驗證的訂單重複回報 settlement → 直接回同一張收據。
+2. 訂單一旦綁定 tx digest，回報不同 digest 一律拒絕覆寫。
+3. Durable Object 單執行緒 actor：狀態轉移（quoted→confirmed→settled）無競態。
+4. 鏈上為最終事實：digest／金額／店家三符才標 `settled_verified`，查不到一律
+   誠實 pending——Hub 絕不憑空標記已付款。
 
 ## 信任假設（誠實版）
 
-本系統**尚未達成完全非託管／零知識**。你需要信任 Chui 營運方的部分：
+本系統**尚未達成對營運方的零信任**。你需要信任的部分：
 
-1. **解析時看得到明細**：STT 與重排序在伺服器端執行，營運方在 parse
-   當下技術上看得到訂單內容（雖然不落地儲存明文）。加密保護的是
-   「落地儲存」與「鏈上隱私」，不是「對營運方的隱私」。
-2. **結算觸發權**：chain-service 的 operator key 可在 Mandate 限額內發起
-   結算。合約限額（單筆上限、總額、撤銷）是鏈上強制的，但「該不該扣
-   這一筆」的判斷在鏈下。惡意營運方可以在限額內發起消費者未確認的
-   結算——上限與撤銷就是消費者的損害控制。
-3. **gas 贊助者**：營運方可拒絕贊助（服務中斷風險），但不能因此動用
-   消費者資金。
-4. **zkLogin salt 保管**：salt 由營運方以 HMAC 決定性導出。營運方遺失
-   master secret＝所有 zkLogin 地址無法重建；營運方作惡＋拿到使用者
-   JWT 才能重建地址（仍無法簽名，簽名需 ephemeral key）。
-5. **明細金鑰遺失風險**：order_key 只在 parse 回應出現一次，由消費者端
-   （LIFF/後台 IndexedDB）保存。換手機＝舊收據無法解密（digest 仍可驗證
-   存在性）。
+1. **解析時看得到明細**：STT 與重排序在 Hub（Worker）執行，營運方在 parse 當下
+   技術上看得到訂單內容。加密保護的是「儲存」與「鏈上隱私」，不是對營運方的隱私。
+2. **查詢端點未做存取控制**（demo 範圍）：`/v1/logs?owner=` 與店家看板 API
+   知道地址就能查訂單摘要（品項、金額、單號）。對話「內容」仍受 Seal 保護
+   （取鑰需錢包簽名＋鏈上 `seal_approve` 放行），但訂單 metadata 是公開的。
+   正式版應加簽名驗證——與開店註冊同一套機制，已列入 roadmap。
+3. **內建兩家 demo 店的收款錢包**由開發者生成（testnet、僅供演示 adapter 整合
+   故事）；正式店家一律走自助入駐，平台不碰私鑰。
 
-消費者**不需要**信任的部分：限額與撤銷的執行（鏈上合約強制）、
-收據真實性（`scripts/verify.ts` 可離線驗證 digest ↔ 明細對應）、
-資金保管（在 Mandate 物件，不在 Chui 的帳戶）。
+消費者**不需要**信任的部分：限額與撤銷的執行（鏈上合約強制、單方可撤＋一鍵全領回）、
+資金保管（在用戶自己的 Vault shared object）、對話紀錄的隱私（Seal 端對端，
+平台拿到密文也解不開）、訂單歸戶真實性（以鏈上 SettlementEvent 為準）。
 
-## 快速上手
+## 已知限制
 
-```bash
-# 0. 前置：Node 22+、pnpm 10+、Python 3.11+
-cp .env.example .env          # 逐項填入（見 SETUP.md）
-pnpm install
-pip install -r apps/api/requirements.txt
+- 自助入駐店家目前只支援公版店面模式；菜單 v1 不含價差選項（甜度冰塊可設、加價客製待做）。
+- 「薯餅**兩個**」這類數量後置的口語當 1 份（數量前置或對得上規格選項才生效）。
+- barge-in（插話打斷）在 iOS 依賴系統回音消除，效果因裝置而異。
+- Sui Testnet only：程式碼層封鎖 mainnet（`SUI_NETWORK=mainnet` 直接 raise）。
 
-# 1. 啟動鏈上服務（terminal 1）
-cd apps/api/chain-service && node --env-file=../../../.env src/index.js
+## License
 
-# 2. 啟動 API（terminal 2）
-cd apps/api && python -m uvicorn chui_api.main:app --port 8787 --env-file ../../.env
-
-# 3. 預先合成 TTS 快取（建議；離線覆誦靠它）
-python scripts/prebuild-tts.py --menu examples/happy-pig/menu.json
-
-# 4. 後台（terminal 3）
-pnpm --filter @chui/console dev        # http://localhost:5173
-
-# 5. 參考店家 LINE bot（terminal 4；需 LINE 憑證，見 SETUP.md）
-pnpm --filter @chui/reference-merchant start
-
-# 測試
-cd apps/api && python -m pytest tests/ -q && python eval/run_eval.py
-pnpm --filter @chui/sdk test
-```
-
-店家介接只需要 SDK：見 `packages/sdk/README.md`（五分鐘介接）。
-手機實測腳本：見 `TESTING.md`。
-
-## Repo 結構
-
-```
-packages/sdk               店家 SDK（@chui/sdk）：parse/confirm/webhook/verify
-apps/api                   FastAPI：菜單、重排序、TTS 降級、冪等結算、webhook
-apps/api/chain-service     Node sidecar：sponsored tx、結算去重（@mysten/sui v2）
-apps/console               店家＋消費者後台（撤銷按鈕在這）
-apps/reference-merchant    快樂豬 LINE bot + LIFF（只用 @chui/sdk）
-examples/happy-pig         範例菜單（含選項、同義詞、台語詞）
-apps/api/eval              重排序評估 harness 與 55 筆標註資料集
-scripts/prebuild-tts.py    TTS 快取預合成
-scripts/verify.ts          收據 digest 離線驗證
-```
-
-## 重要限制（也寫在 DECISIONS.md）
-
-- **chui-contracts repo 目前是空的**：拿不到 package ID、shared object ID
-  與 Move 介面。本 repo 以「假定介面」實作 chain-service（全部可設定），
-  未設定 `CHUI_PACKAGE_ID` 時所有鏈上操作明確回 `CHAIN_NOT_CONFIGURED`，
-  絕不偽造結算。合約 repo 補上後，只需核對 `.env` 的 module/function/
-  abort code 對映即可接上。
-- 「薯餅**兩個**」這類「數量在品項後」的口語目前不回填數量（會當 1 份）；
-  「品項後的數字」只在對得上規格選項（「鍋貼十顆」）時生效。
-- Rate limit 與 TTS 快取為單機實作；多實例部署需外部化（Redis／共享儲存）。
+[MIT](LICENSE)

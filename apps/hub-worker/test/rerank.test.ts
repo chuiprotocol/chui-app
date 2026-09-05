@@ -14,7 +14,7 @@ const HERE = dirname(fileURLToPath(import.meta.url));
 const REPO = join(HERE, "..", "..", "..");
 const MENU = JSON.parse(
   readFileSync(join(REPO, "examples", "happy-pig", "menu.json"), "utf8")) as Menu;
-const DATASET = readFileSync(join(REPO, "apps", "api", "eval", "dataset.jsonl"), "utf8")
+const DATASET = readFileSync(join(REPO, "eval", "dataset.jsonl"), "utf8")
   .split("\n").filter((l) => l.trim()).map((l) => JSON.parse(l)) as Array<{
     stt: string;
     gold: { items?: Array<{ item: string; qty: number; options: Record<string, string> }>; clarify?: boolean };
