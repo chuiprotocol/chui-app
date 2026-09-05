@@ -71,10 +71,10 @@ cat <<URLS | tee demo-urls.txt
 ✅ 後端已上 GMI Cloud，網址「固定不變」：
 
 🍗 快樂鹽酥雞官網（手機A）：
-   https://chui-happy-chicken.pages.dev/?hub=${HUB_URL}
+   https://happy-chicken.chuiprotocol.com/?hub=${HUB_URL}
 
 👄 嘴付公版入口（手機B）：
-   https://chui-portal.pages.dev/?hub=${HUB_URL}
+   https://chuiprotocol.com/?hub=${HUB_URL}
 
 🎛 協議封包面板：
    ${HUB_URL}/panel

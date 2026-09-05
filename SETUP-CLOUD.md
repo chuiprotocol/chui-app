@@ -73,24 +73,24 @@ HUB_URL=https://xxxx.trycloudflare.com ./scripts/deploy-pages.sh
 ```
 
 > 💡 **隧道網址換了不用重部署**：手機開
-> `https://chui-portal.pages.dev/?hub=https://新網址` 帶一次，
+> `https://chuiprotocol.com/?hub=https://新網址` 帶一次，
 > 網站會記住（IndexedDB），之後直接開原網址即可。
 
 完成後得到兩個網址：
 
 | 網址 | 內容 |
 |---|---|
-| `https://chui-happy-chicken.pages.dev` | 🍗 快樂鹽酥雞**自家官網**——菜單/語音/結帳全部只串 Hub 協議 API |
-| `https://chui-portal.pages.dev` | 👄 嘴付**公版入口**——列出商家，點「好喝奶茶店」進店點餐 |
+| `https://happy-chicken.chuiprotocol.com` | 🍗 快樂鹽酥雞**自家官網**——菜單/語音/結帳全部只串 Hub 協議 API |
+| `https://chuiprotocol.com` | 👄 嘴付**公版入口**——列出商家，點「好喝奶茶店」進店點餐 |
 
 （Pages 專案名若被別人佔用，改 `scripts/deploy-pages.sh` 裡的 project 名稱即可。）
 
 ## 4. 手機實測
 
-1. 手機A：Slush 內建瀏覽器開 `https://chui-happy-chicken.pages.dev`
+1. 手機A：Slush 內建瀏覽器開 `https://happy-chicken.chuiprotocol.com`
    → 授權 3 USDC（唯一一次簽名）→ 點🎙️說「我要一份鹽酥雞加辣」
    → 聽覆誦 → 自動付款 → 收據＋explorer。
-2. 手機B：開 `https://chui-portal.pages.dev` → 點「好喝奶茶店」
+2. 手機B：開 `https://chuiprotocol.com` → 點「好喝奶茶店」
    → 授權 → 說「一杯珍珠奶茶半糖去冰」→ 自動付款完成。
 3. 大螢幕開 `HUB_URL/panel` 看封包流。
 
@@ -162,7 +162,18 @@ Import a repository** → 選 `chuiprotocol/chui-app`，欄位照抄：
    且 `"runtime": "cloudflare-worker"`。
 
 前端**零改動**（內建備援網址就是 hub.chuiprotocol.com），兩支手機
-直接開 pages.dev 網址即可；你的電腦從此可以關機。
+直接開正式網址即可；你的電腦從此可以關機。
+
+### 6d. 前端綁自有網域（一鍵）
+
+```bash
+export CLOUDFLARE_API_TOKEN=同一把token   # token 需再加一列 Account/Cloudflare Pages/Edit
+./scripts/setup-frontend-domains.sh
+```
+
+完成後：入口＝ https://chuiprotocol.com（含 www）、
+鹽酥雞官網＝ https://happy-chicken.chuiprotocol.com；
+舊的 *.pages.dev 網址仍然有效。
 
 - 之後改完程式：push 即自動重新部署（三個 app 一致）。
 - 誠實揭露：雲端 Worker 版的兩家商家「協議端點」為內建實作（菜單

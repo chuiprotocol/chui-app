@@ -83,10 +83,10 @@ say "手機（Slush 內建瀏覽器）開這兩個網址"
 cat <<URLS | tee demo-urls.txt
 
 🍗 快樂鹽酥雞官網（手機A）：
-   https://chui-happy-chicken.pages.dev/?hub=${HUB_URL}
+   https://happy-chicken.chuiprotocol.com/?hub=${HUB_URL}
 
 👄 嘴付公版入口（手機B，進去點「好喝奶茶店」）：
-   https://chui-portal.pages.dev/?hub=${HUB_URL}
+   https://chuiprotocol.com/?hub=${HUB_URL}
 
 🎛 協議封包面板（投影用）：
    ${HUB_URL}/panel

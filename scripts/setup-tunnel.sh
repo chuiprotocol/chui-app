@@ -78,8 +78,8 @@ cat <<DONE
 ✅ 固定網址架好了（永遠不變）：${HUB_URL}
 
 📱 手機從此「直接開」這兩個網址即可（不用再帶 ?hub=）：
-   https://chui-happy-chicken.pages.dev
-   https://chui-portal.pages.dev
+   https://happy-chicken.chuiprotocol.com
+   https://chuiprotocol.com
 
 🎛 封包面板：${HUB_URL}/panel
 

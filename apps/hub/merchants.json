@@ -7,7 +7,7 @@
       "integration": "adapter",
       "chui_endpoint": "http://127.0.0.1:9101",
       "payout_address": "0x302a6ceb986888f1463fa60d51ec31c5e52638a73ec4631f38e6eb3af9ea44c6",
-      "web_url": "https://chui-happy-chicken.pages.dev"
+      "web_url": "https://happy-chicken.chuiprotocol.com"
     },
     {
       "merchant_id": "goodtea",
@@ -15,7 +15,7 @@
       "integration": "native",
       "chui_endpoint": "http://127.0.0.1:9201",
       "payout_address": "0x134f4889339f351792f07799eead4e84e6daacc2bd718441aadcc916cd5dbd81",
-      "web_url": "https://chui-portal.pages.dev/?m=goodtea"
+      "web_url": "https://chuiprotocol.com/?m=goodtea"
     }
   ]
 }

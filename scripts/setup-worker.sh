@@ -78,6 +78,7 @@ put_secret() {
 }
 put_secret CHUI_PACKAGE_ID
 put_secret STT_API_KEY
+put_secret ELEVENLABS_API_KEY
 # 有拿到 key 才會存在於 .env；沒有就自動跳過（healthz 會誠實顯示 off／static）
 put_secret ATLAS_ORACLE_API_KEY
 put_secret ATLAS_FEED_ID
@@ -97,8 +98,8 @@ if curl -s -m 5 "${HUB_URL}/healthz" | grep -q '"cloudflare-worker"'; then
 ✅ 雲端 Hub 上線，固定網址：${HUB_URL}（你的電腦從此可以關機）
 
 兩支手機「零設定」直接開：
-  🍗 手機A https://chui-happy-chicken.pages.dev
-  👄 手機B https://chui-portal.pages.dev
+  🍗 手機A https://happy-chicken.chuiprotocol.com
+  👄 手機B https://chuiprotocol.com
   🎛 封包面板 ${HUB_URL}/panel
 
 之後改完程式重新上雲：重跑本腳本（或到儀表板把 repo 連上 Git 整合，

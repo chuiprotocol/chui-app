@@ -77,8 +77,8 @@ if ok_now; then
   cat <<DONE
 
 ✅ 修好了，固定網址：${HUB_URL}（Mac 可以關機）
-  🍗 手機A https://chui-happy-chicken.pages.dev
-  👄 手機B https://chui-portal.pages.dev
+  🍗 手機A https://happy-chicken.chuiprotocol.com
+  👄 手機B https://chuiprotocol.com
   🎛 封包面板 ${HUB_URL}/panel
 DONE
 else

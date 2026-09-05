@@ -115,6 +115,15 @@ function sttProviders(env: Env): SttProvider[] {
       configured: Boolean(env.ELEVENLABS_API_KEY),
       run: (a) => sttElevenLabs(env.ELEVENLABS_API_KEY!, a),
     },
+    // 同一把 OpenAI key 排兩節點：4o-mini-transcribe 更快更準（中文），
+    // 帳號不支援該模型時自動遞補到 whisper-1
+    openai4o: {
+      name: "openai(gpt-4o-mini-transcribe)",
+      configured: Boolean(env.STT_API_KEY),
+      run: (a) => sttOpenAiCompatible(
+        env.STT_API_BASE ?? "https://api.openai.com/v1",
+        env.STT_API_KEY!, "gpt-4o-mini-transcribe", a),
+    },
     openai: {
       name: `openai(${env.STT_API_MODEL ?? "whisper-1"})`,
       configured: Boolean(env.STT_API_KEY),
@@ -134,7 +143,7 @@ function sttProviders(env: Env): SttProvider[] {
       run: (a) => sttOpenAiCompatible(env.AMD_STT_BASE_URL!, env.AMD_API_KEY!, env.AMD_STT_MODEL!, a),
     },
   };
-  const order = (env.STT_PROVIDERS ?? "elevenlabs,openai,gmi,amd")
+  const order = (env.STT_PROVIDERS ?? "elevenlabs,openai4o,openai,gmi,amd")
     .split(",").map((s) => s.trim()).filter((s) => s in all);
   return order.map((name) => all[name]);
 }

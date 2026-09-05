@@ -68,13 +68,21 @@ function unlockTts(): void {
  * 換來「隨時可以插話」；歡迎語等不開放插話的句子不受影響。 */
 class BargeInMonitor {
   private stream: MediaStream | null = null;
+  private ownsStream = false;
   private ctx: AudioContext | null = null;
   private timer = 0;
 
-  async start(onBarge: () => void): Promise<void> {
-    this.stream = await navigator.mediaDevices.getUserMedia({
-      audio: { echoCancellation: true, noiseSuppression: true },
-    });
+  async start(onBarge: () => void, sharedStream?: MediaStream | null): Promise<void> {
+    // 錄音器的常駐麥克風能共用就共用——iOS 上重複 getUserMedia 會互踩
+    if (sharedStream) {
+      this.stream = sharedStream;
+      this.ownsStream = false;
+    } else {
+      this.stream = await navigator.mediaDevices.getUserMedia({
+        audio: { echoCancellation: true, noiseSuppression: true },
+      });
+      this.ownsStream = true;
+    }
     this.ctx = new AudioContext();
     const analyser = this.ctx.createAnalyser();
     analyser.fftSize = 2048;
@@ -100,7 +108,7 @@ class BargeInMonitor {
 
   stop(): void {
     clearTimeout(this.timer);
-    this.stream?.getTracks().forEach((t) => t.stop());
+    if (this.ownsStream) this.stream?.getTracks().forEach((t) => t.stop());
     this.ctx?.close().catch(() => undefined);
     this.stream = null;
     this.ctx = null;
@@ -110,6 +118,8 @@ class BargeInMonitor {
 interface SpeakOptions {
   /** 允許用戶開口打斷（barge-in）；打斷時立刻停止 TTS 並回傳 interrupted */
   interruptible?: boolean;
+  /** 共用的常駐麥克風串流（避免與錄音器重複開麥） */
+  micStream?: MediaStream | null;
 }
 
 // Agent 最近講過的句子——自聽回音過濾的比對基準
@@ -171,7 +181,7 @@ function speak(text: string, options: SpeakOptions = {}): Promise<{ interrupted:
         interrupted = true;
         try { speechSynthesis.cancel(); } catch { /* 無合成器 */ }
         finish();
-      }).catch(() => monitor.stop());
+      }, options.micStream).catch(() => monitor.stop());
     } catch {
       monitor?.stop();
       resolve({ interrupted });
@@ -481,7 +491,7 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
       }
       consecutiveMisses += 1;
       bubble("agent", "🤔 沒聽清楚——請說「確認下單」我就付款，說「取消」就放棄這筆。");
-      await speak("沒聽清楚，請說確認下單，或取消", { interruptible: true });
+      await speak("沒聽清楚，請說確認下單，或取消", { interruptible: true, micStream: recorder.liveStream });
       return;
     }
     await parseAndPropose(input);
@@ -517,7 +527,7 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
         clearMsg();
         if (err.sttText) bubble("user", err.sttText);
         bubble("agent", `🤔 ${err.question}`);
-        await speak(err.question, { interruptible: true });
+        await speak(err.question, { interruptible: true, micStream: recorder.liveStream });
       } else {
         consecutiveErrors += 1;
         msg("error", (err as Error).message);
@@ -558,7 +568,7 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
     bubble("agent", `${routed}${question}${usdcNote ? `（${usdcNote}）` : ""}——請說「確認下單」或「取消」🎙️`);
     pendingParsed = parsed;
     // 請用戶說「確認下單」四個字：句子長一點，STT 對短句的誤辨率高很多
-    await speak(`${question}，要幫你下單付款嗎？請說確認下單，或取消`, { interruptible: true });
+    await speak(`${question}，要幫你下單付款嗎？請說確認下單，或取消`, { interruptible: true, micStream: recorder.liveStream });
   }
 
   /**
@@ -622,7 +632,7 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
         await refreshStatus().catch(() => undefined);
         await speak(
           `付款完成，取餐單號 ${merchantRef.split("-").pop()}，總共 ${p.quote.total} 元。` +
-          "請問還要再點餐嗎？想離開就說結束對話", { interruptible: true });
+          "請問還要再點餐嗎？想離開就說結束對話", { interruptible: true, micStream: recorder.liveStream });
         void sealAndUploadLog(p.order_id, merchantRef, checkout);
       },
       onError: async (err) => {
@@ -697,7 +707,7 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
     pendingParsed = null;
     regretAbort?.();
     pauseLoop("已結束對話——點一下麥克風重新開始");
-    if (recorder.isRecording) recorder.stop();
+    recorder.release(); // 熄掉瀏覽器的錄音指示燈
     try { speechSynthesis.cancel(); } catch { /* 無合成器 */ }
     clearMsg();
   });
@@ -789,7 +799,7 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
       pendingParsed = null;
       regretAbort?.();
       pauseLoop("已暫停");
-      if (recorder.isRecording) recorder.stop();
+      recorder.release(); // 關面板＝真正關麥克風
       try { speechSynthesis.cancel(); } catch { /* 無合成器 */ }
       clearMsg();
     };
