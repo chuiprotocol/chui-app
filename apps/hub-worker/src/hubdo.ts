@@ -14,9 +14,9 @@ import {
   sttChain, transcribe, SttUnavailableError, type Env,
 } from "./external.js";
 import { getMerchant, MERCHANTS, type BuiltinMerchant } from "./merchants.js";
-import { quoteItems, readbackText, type QuoteLine } from "./menu.js";
+import { quoteItems, readbackText, validateMenu, type QuoteLine } from "./menu.js";
 import { ensurePinyin } from "./phonetics.js";
-import { RerankEngine, type ParseResult } from "./rerank.js";
+import { RerankEngine, type Menu, type ParseResult } from "./rerank.js";
 import { explorerTxUrl, suiNetwork, verifySettlement } from "./verify.js";
 import panelHtml from "./panel.html";
 
@@ -94,6 +94,16 @@ export class ChuiHubDO implements DurableObject {
       merchant_id TEXT PRIMARY KEY,
       date TEXT NOT NULL,
       seq INTEGER NOT NULL
+    )`);
+    // 自助入駐的店家（Slush 簽名證明收款地址所有權後寫入；
+    // 內建兩家 demo 店在 merchants.ts，查詢時合併）
+    this.sql.exec(`CREATE TABLE IF NOT EXISTS merchants(
+      merchant_id TEXT PRIMARY KEY,
+      payout_address TEXT UNIQUE NOT NULL,
+      name TEXT NOT NULL,
+      ticket_prefix TEXT NOT NULL,
+      menu TEXT NOT NULL,
+      created_at INTEGER NOT NULL
     )`);
   }
 
@@ -188,7 +198,33 @@ export class ChuiHubDO implements DurableObject {
     });
   }
 
-  // ---- 重排序引擎（菜單內建、記憶體快取） ----
+  // ---- 商家 registry（內建 demo 店＋自助入駐店，合併查詢） ----
+
+  private rowToMerchant(row: Record<string, unknown>): BuiltinMerchant {
+    return {
+      merchant_id: String(row.merchant_id),
+      name: String(row.name),
+      integration: "native",
+      payout_address: String(row.payout_address),
+      web_url: `https://chuiprotocol.com/?m=${String(row.merchant_id)}`,
+      ticket_prefix: String(row.ticket_prefix),
+      menu: JSON.parse(String(row.menu)),
+    };
+  }
+
+  private allMerchants(): BuiltinMerchant[] {
+    const rows = this.sql.exec("SELECT * FROM merchants ORDER BY created_at").toArray();
+    return [...MERCHANTS, ...rows.map((r) => this.rowToMerchant(r))];
+  }
+
+  private merchantById(id: string): BuiltinMerchant | undefined {
+    const builtin = getMerchant(id);
+    if (builtin) return builtin;
+    const row = this.sql.exec("SELECT * FROM merchants WHERE merchant_id = ?", id).toArray()[0];
+    return row ? this.rowToMerchant(row) : undefined;
+  }
+
+  // ---- 重排序引擎（記憶體快取；商家菜單更新時失效） ----
 
   private engineFor(merchant: BuiltinMerchant): RerankEngine {
     let engine = this.engines.get(merchant.merchant_id);
@@ -213,6 +249,9 @@ export class ChuiHubDO implements DurableObject {
       }
       if (path === "/v1/events") return this.sseResponse();
       if (path === "/v1/merchants" && method === "GET") return this.listMerchants();
+      if (path === "/v1/merchants/register" && method === "POST") {
+        return await this.registerMerchant(request);
+      }
 
       let m = path.match(/^\/v1\/merchants\/([^/]+)\/menu$/);
       if (m && method === "GET") return this.merchantMenu(m[1]);
@@ -269,13 +308,77 @@ export class ChuiHubDO implements DurableObject {
       order_store: "durable-object-sqlite",
       stt_chain: sttChain(this.env),
       llm_assist: assistEnabled(this.env) ? assistProvider(this.env) : "off",
-      merchants: MERCHANTS.map((m) => m.merchant_id),
+      merchants: this.allMerchants().map((m) => m.merchant_id),
+    });
+  }
+
+  /** 店家自助入駐：Slush 簽個人訊息證明「收款地址是我的」才能開店。
+   * 平台自此不持有店家私鑰——錢包即店家身分（同地址重複註冊＝更新自己的店）。 */
+  private async registerMerchant(request: Request): Promise<Response> {
+    const body = (await request.json().catch(() => ({}))) as {
+      name?: string; ticket_prefix?: string; payout_address?: string;
+      menu?: Menu; signature?: string;
+    };
+    const name = String(body.name ?? "").trim();
+    const prefix = String(body.ticket_prefix ?? "").trim().toUpperCase();
+    const address = String(body.payout_address ?? "").trim().toLowerCase();
+    if (!name || [...name].length > 20) {
+      throw new HttpError("VALIDATION_FAILED", "店名必填、最長 20 字", 422);
+    }
+    if (!/^[A-Z]{2,4}$/.test(prefix)) {
+      throw new HttpError("VALIDATION_FAILED", "取餐單號前綴需為 2–4 個大寫英文字母（例：TEA）", 422);
+    }
+    if (!/^0x[0-9a-f]{64}$/.test(address)) {
+      throw new HttpError("VALIDATION_FAILED", "收款地址格式不正確（需為 0x 開頭的 Sui 地址）", 422);
+    }
+    if (!body.menu || !Array.isArray(body.menu.items) || body.menu.items.length > 30) {
+      throw new HttpError("VALIDATION_FAILED", "菜單必填、品項最多 30 項", 422);
+    }
+    validateMenu(body.menu);
+    if (MERCHANTS.some((m) => m.payout_address.toLowerCase() === address)) {
+      throw new HttpError("VALIDATION_FAILED", "此地址已是內建 demo 店家的收款地址", 422);
+    }
+    if (!body.signature) throw new HttpError("VALIDATION_FAILED", "缺錢包簽名", 422);
+
+    // 驗簽：訊息綁地址＋店名，簽得出來＝私鑰在店家手上（平台零代管）
+    const message = new TextEncoder().encode(`chui-open-shop:v1:${address}:${name}`);
+    let signer: string;
+    try {
+      // 動態 import：@mysten/sui 依賴在模組頂層有 Workers 禁止的全域操作
+      const { verifyPersonalMessageSignature } = await import("@mysten/sui/verify");
+      const publicKey = await verifyPersonalMessageSignature(message, body.signature);
+      signer = publicKey.toSuiAddress().toLowerCase();
+    } catch (e) {
+      throw new HttpError("SIGNATURE_INVALID", `簽名驗證失敗：${(e as Error).message}`, 401);
+    }
+    if (signer !== address) {
+      throw new HttpError("SIGNATURE_INVALID",
+        "簽名者與收款地址不符——請用「收款地址那顆錢包」簽名", 401);
+    }
+
+    const merchantId = "m_" + address.slice(2, 12);
+    this.sql.exec(
+      `INSERT INTO merchants(merchant_id, payout_address, name, ticket_prefix, menu, created_at)
+       VALUES(?, ?, ?, ?, ?, ?)
+       ON CONFLICT(payout_address) DO UPDATE SET
+         name=excluded.name, ticket_prefix=excluded.ticket_prefix, menu=excluded.menu`,
+      merchantId, address, name, prefix, JSON.stringify(body.menu),
+      Math.floor(Date.now() / 1000),
+    );
+    this.engines.delete(merchantId); // 菜單可能更新——重排序引擎重建
+    this.emit(`merchant:${merchantId}`, "hub", "chui.merchant.registered",
+      `店家入駐：${name}（${merchantId}）`);
+    return json({
+      merchant_id: merchantId,
+      name,
+      web_url: `https://chuiprotocol.com/?m=${merchantId}`,
+      dashboard_hint: "用同一顆錢包到「店家後台」連線即可看接單看板",
     });
   }
 
   private listMerchants(): Response {
     return json({
-      merchants: MERCHANTS.map((m) => ({
+      merchants: this.allMerchants().map((m) => ({
         merchant_id: m.merchant_id, name: m.name, integration: m.integration,
         web_url: m.web_url,
         // 收款地址本來就是鏈上公開資訊；店家後台用它做「錢包即身分」
@@ -285,7 +388,7 @@ export class ChuiHubDO implements DurableObject {
   }
 
   private merchantMenu(merchantId: string): Response {
-    const merchant = getMerchant(merchantId);
+    const merchant = this.merchantById(merchantId);
     if (!merchant) throw new HttpError("NOT_FOUND", `registry 沒有商家 ${merchantId}`, 404);
     return json({ merchant_id: merchantId, name: merchant.name, menu: merchant.menu });
   }
@@ -314,8 +417,8 @@ export class ChuiHubDO implements DurableObject {
     }
 
     const targets = merchantId
-      ? [getMerchant(String(merchantId))].filter((m): m is BuiltinMerchant => Boolean(m))
-      : MERCHANTS;
+      ? [this.merchantById(String(merchantId))].filter((m): m is BuiltinMerchant => Boolean(m))
+      : this.allMerchants();
     if (merchantId && !targets.length) {
       throw new HttpError("NOT_FOUND", `registry 沒有商家 ${merchantId}`, 404);
     }
@@ -420,7 +523,7 @@ export class ChuiHubDO implements DurableObject {
     const body = (await request.json().catch(() => ({}))) as { order_id?: string };
     if (!body.order_id) throw new HttpError("VALIDATION_FAILED", "缺 order_id", 422);
     const order = this.getOrder(body.order_id);
-    const merchant = getMerchant(order.merchant_id)!;
+    const merchant = this.merchantById(order.merchant_id)!;
     if (!this.env.CHUI_PACKAGE_ID) {
       throw new HttpError("CHAIN_NOT_CONFIGURED",
         "CHUI_PACKAGE_ID 未設定：請在 Worker 的 Variables 填入已部署的合約 package id。", 503);
@@ -456,7 +559,7 @@ export class ChuiHubDO implements DurableObject {
   // ---- ⑤⑥⑦ 結算回報＋鏈上驗證＋出餐通知 ----
 
   private async verifyAndNotify(order: Order): Promise<void> {
-    const merchant = getMerchant(order.merchant_id)!;
+    const merchant = this.merchantById(order.merchant_id)!;
     this.emit("hub", "sui", "chain.verify",
       `驗證交易 ${order.tx_digest.slice(0, 12)}…（查 SettlementEvent）`);
     const outcome = await verifySettlement(
@@ -521,7 +624,7 @@ export class ChuiHubDO implements DurableObject {
   }
 
   private orderRow(order: Order): Record<string, unknown> {
-    const merchant = getMerchant(order.merchant_id);
+    const merchant = this.merchantById(order.merchant_id);
     const row: Record<string, unknown> = {
       order_id: order.order_id,
       merchant_id: order.merchant_id,
@@ -551,7 +654,7 @@ export class ChuiHubDO implements DurableObject {
   }
 
   private merchantOrders(merchantId: string): Response {
-    if (!getMerchant(merchantId)) {
+    if (!this.merchantById(merchantId)) {
       throw new HttpError("NOT_FOUND", `registry 沒有商家 ${merchantId}`, 404);
     }
     return json({ orders: this.listOrdersBy("merchant_id", merchantId).map((o) => this.orderRow(o)) });

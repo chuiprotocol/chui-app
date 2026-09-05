@@ -299,3 +299,11 @@ button.primary:active { background: var(--chui-primary-press); }
 .withdraw-btn { border: 1.5px solid var(--chui-primary); background: transparent; color: var(--chui-primary);
   border-radius: 8px; padding: 6px 10px; font-weight: 700; cursor: pointer; font-size: 0.85rem; }
 .withdraw-btn:active { background: var(--chui-primary); color: #fff; }
+/* 開店表單 */
+#open-form label { display: block; font-weight: 700; margin: 10px 0 4px; }
+#open-form input { width: 100%; box-sizing: border-box; padding: 9px 10px; border: 1.5px solid var(--chui-line); border-radius: 8px; font-size: 0.95rem; margin-top: 4px; }
+.menu-row { display: grid; grid-template-columns: 1.2fr 0.6fr 1.2fr auto; gap: 6px; margin: 6px 0; }
+.menu-row input { margin: 0; }
+.mi-del { border: 1px solid var(--chui-line); background: var(--chui-surface-card); border-radius: 8px; cursor: pointer; color: var(--chui-ink-muted); }
+#open-form .primary { width: 100%; margin-top: 12px; }
+#open-form #add-item { margin-top: 6px; }

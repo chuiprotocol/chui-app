@@ -36,6 +36,10 @@ async function boot() {
     await renderDash(hub);
     return;
   }
+  if (params.get("open")) {
+    renderOpenShop(hub);
+    return;
+  }
   const merchantId = params.get("m");
   if (!merchantId) {
     await renderList(hub);
@@ -227,6 +231,76 @@ async function enterDash(hub: HubClient, health: Record<string, unknown>,
   } catch { $("dash-live").textContent = "○ 此環境不支援即時串流"; }
 }
 
+// ---- 開店頁（?open=1）：店家用自己的 Slush 錢包自助入駐 ----
+
+function renderOpenShop(hub: HubClient) {
+  show("open-view");
+  const rows = $("menu-rows");
+  const addRow = (name = "", price = "", syn = "") => {
+    const div = document.createElement("div");
+    div.className = "menu-row";
+    div.innerHTML = `
+      <input class="mi-name" placeholder="品項名（例：豆花）" value="${name}" required />
+      <input class="mi-price" type="number" min="1" step="1" placeholder="價格(元)" value="${price}" required />
+      <input class="mi-syn" placeholder="同義詞，逗號分隔（選填）" value="${syn}" />
+      <button type="button" class="mi-del" aria-label="刪除品項">✕</button>`;
+    div.querySelector(".mi-del")!.addEventListener("click", () => div.remove());
+    rows.appendChild(div);
+  };
+  addRow();
+  $("add-item").addEventListener("click", () => addRow());
+
+  $("open-form").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const result = $("open-result");
+    try {
+      const name = ($("shop-name") as HTMLInputElement).value.trim();
+      const prefix = ($("shop-prefix") as HTMLInputElement).value.trim().toUpperCase();
+      const items = [...rows.querySelectorAll(".menu-row")].map((row, i) => {
+        const itemName = (row.querySelector(".mi-name") as HTMLInputElement).value.trim();
+        const price = parseInt((row.querySelector(".mi-price") as HTMLInputElement).value, 10);
+        const synonyms = (row.querySelector(".mi-syn") as HTMLInputElement).value
+          .split(/[,，]/).map((s) => s.trim()).filter(Boolean);
+        if (!itemName || !Number.isInteger(price) || price <= 0) {
+          throw new Error(`第 ${i + 1} 個品項的名稱或價格不完整`);
+        }
+        return { id: `item-${i + 1}`, name: itemName, base_price: price, synonyms };
+      });
+      if (!items.length) throw new Error("至少要有一個品項");
+
+      result.innerHTML = `<div class="info">請在 Slush 連線並簽署開店訊息（證明收款地址是你的）…</div>`;
+      const address = await connectWalletAddress();
+      // 簽名內容綁「地址＋店名」：簽得出來＝私鑰在店家手上，平台零代管
+      const message = new TextEncoder().encode(
+        `chui-open-shop:v1:${address.toLowerCase()}:${name}`);
+      const signature = await signPersonalMessageWithUserWallet(message);
+
+      const resp = await fetch(`${hub.baseUrl}/v1/merchants/register`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name, ticket_prefix: prefix, payout_address: address,
+          menu: { menu_version: "self-serve-1", currency: "TWD", items },
+          signature,
+        }),
+      });
+      const body = await resp.json();
+      if (!resp.ok) throw new Error(body?.detail?.message ?? `開店失敗（${resp.status}）`);
+      $("open-form-card").classList.add("hidden");
+      result.innerHTML = `
+        <div class="card center">
+          <div class="bigicon">🎉</div>
+          <h2>「${body.name}」開店成功！</h2>
+          <p class="bullet">🛍 你的店面：<a href="/?m=${body.merchant_id}">立刻試點一單 →</a></p>
+          <p class="bullet">🏪 接單看板：<a href="/?dash=1">用同一顆錢包進店家後台 →</a></p>
+          <p class="bullet">💰 收款直達 <code>${address.slice(0, 10)}…${address.slice(-6)}</code>，平台不經手</p>
+        </div>`;
+    } catch (err) {
+      result.innerHTML = `<div class="error">${(err as Error).message}</div>`;
+    }
+  });
+}
+
 const SHOP_EMOJI: Record<string, string> = { "happy-chicken": "🍗", goodtea: "🧋" };
 
 async function renderList(hub: HubClient) {
@@ -254,8 +328,9 @@ async function renderList(hub: HubClient) {
         <span class="go">前往官網 ↗</span></a>`;
     }).join("") + `
       <div class="card dashlinks">
-        <b>🏪 店家後台</b>（接單看板＋流水＋錢包解密）：
-        <a href="?dash=1">用店家錢包登入 →</a>
+        <b>🏪 店家專區</b>：
+        <a href="?dash=1">後台（錢包登入）→</a>
+        <a href="?open=1">我要開店 →</a>
       </div>`;
   } catch (e) {
     const raw = (e as Error).message;
