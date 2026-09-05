@@ -33,6 +33,35 @@
       <div class="section-title">接上協議的商家</div>
       <div id="merchant-cards" class="merchant-cards">載入中…</div>
       <p class="fineprint">標「公版店面」的店由嘴付代管網站；「自家官網」請前往其網址（同樣支援嘴付語音結帳）。</p>
+      <p class="fineprint">
+        <a href="?history=1">🧾 我的訂單（鏈上紀錄，用你的錢包解密）</a>
+      </p>
+    </main>
+  </section>
+
+  <!-- 用戶歷史（?history=1）：鏈上訂單＋Seal 解密（鑰匙只在用戶錢包） -->
+  <section id="history-view" class="hidden">
+    <main>
+      <div class="section-title">🧾 我的訂單 <small>owner 由鏈上 SettlementEvent 認定</small></div>
+      <div class="card center" id="history-connect">
+        <p class="bullet">用「當初付款的那個」Slush 錢包連線，列出屬於你的訂單；
+          每筆對話紀錄都要該錢包簽名向 Seal 取鑰才能解密——換一顆錢包就打不開。</p>
+        <button id="history-connect-btn" class="primary" type="button">連接 Slush 錢包查詢</button>
+      </div>
+      <div id="history-list" class="order-list"></div>
+      <p class="fineprint"><a href="./">← 回商家列表</a></p>
+    </main>
+  </section>
+
+  <!-- 店家後台（?dash=merchant_id）：即時接單看板＋歷史流水＋log 解密 -->
+  <section id="dash-view" class="hidden">
+    <main>
+      <div class="section-title">🏪 <span id="dash-title">店家後台</span>
+        <small id="dash-live" class="livechip">● 即時連線中</small></div>
+      <div class="card" id="dash-summary"></div>
+      <div id="dash-list" class="order-list">載入中…</div>
+      <p class="fineprint">訂單商業資料為店家可見之明文；對話紀錄需以「店家收款錢包」簽名解密（消費者與平台之外唯一的另一把鑰匙）。</p>
+      <p class="fineprint"><a href="./">← 回商家列表</a></p>
     </main>
   </section>
 

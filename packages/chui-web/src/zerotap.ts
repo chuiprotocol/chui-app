@@ -65,36 +65,81 @@ function speak(text: string): Promise<void> {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = "zh-TW";
       utterance.volume = 1;
+      utterance.rate = 1;
       const voices = speechSynthesis.getVoices();
       const zh = voices.find((v) => v.lang?.toLowerCase().startsWith("zh-tw"))
         ?? voices.find((v) => v.lang?.toLowerCase().startsWith("zh"));
       if (zh) utterance.voice = zh;
-      utterance.onend = () => resolve();
-      utterance.onerror = () => resolve();
+
+      // 「忽大忽小聲」的根因：舊版用估時保險提早 resolve，麥克風在
+      // Agent 還沒講完時就重新打開——iOS 一進錄音工作階段就把播放
+      // 壓低（ducking），聽起來就是講到一半突然變小聲。
+      // 改成輪詢 speaking 狀態「確定講完」，再留 250ms 讓音訊路由歸位
+      // 才放行開麥。
+      let settled = false;
+      let started = false;
+      let wasSpeaking = false;
+      let poll = 0;
+      let hardCap = 0;
+      const finish = () => {
+        if (settled) return;
+        settled = true;
+        clearInterval(poll);
+        clearTimeout(hardCap);
+        setTimeout(resolve, 250);
+      };
+      utterance.onend = finish;
+      utterance.onerror = finish;
       try { speechSynthesis.cancel(); } catch { /* 無合成器 */ }
+      // iOS：cancel 後同 tick 立刻 speak 會被無聲吞掉——隔一拍再講
       setTimeout(() => {
         try {
           speechSynthesis.speak(utterance);
           speechSynthesis.resume();
-        } catch { resolve(); }
+          started = true;
+        } catch { finish(); }
       }, 90);
-      setTimeout(resolve, Math.max(3500, text.length * 350)); // 合成器沒回呼時的保險
+      poll = window.setInterval(() => {
+        if (!started) return;
+        if (speechSynthesis.speaking) { wasSpeaking = true; return; }
+        if (wasSpeaking && !speechSynthesis.pending) finish(); // 真的講完了
+      }, 200);
+      hardCap = window.setTimeout(finish, Math.max(6000, text.length * 600));
     } catch {
       resolve();
     }
   });
 }
 
-const YES_WORDS = ["確認", "確定", "沒錯", "下單", "付款", "可以", "好的", "好啊", "對", "好", "是", "嗯", "ok", "OK", "Ok"];
-const NO_WORDS = ["取消", "不要", "不用", "算了", "不對", "錯了", "重來", "重新"];
+// 確認詞連同「STT 常見同音誤辨」一起收——短句（像「確認」兩個字）
+// 的辨識錯誤率遠高於整句點餐，所以同音容錯要夠寬
+const YES_WORDS = [
+  "確認", "確定", "確任", "雀認", "雀任", "缺人", "確人", "卻認", "全人",
+  "沒錯", "下單", "下彈", "付款", "可以", "好的", "好啊", "好喔", "行",
+  "對", "好", "是", "嗯", "恩", "ok", "OK", "Ok", "okay",
+];
+const NO_WORDS = ["取消", "娶消", "去消", "不要", "不用", "算了", "不對", "錯了", "重來", "重新"];
+const EXIT_WORDS = ["結束對話", "結束", "離開", "再見", "掰掰", "拜拜", "先這樣", "不點了", "關閉"];
+
+function normalize(raw: string): string {
+  return raw.replace(/[\s。，！？!?.,]/g, "");
+}
 
 /** 口頭確認判讀：明確肯定 / 明確否定 / 都不是（可能是新的點餐內容） */
 function confirmIntent(raw: string): "yes" | "no" | "other" {
-  const text = raw.replace(/[\s。，！？!?.,]/g, "");
+  const text = normalize(raw);
   if (!text) return "other";
   if (NO_WORDS.some((w) => text.includes(w))) return "no";
   if (YES_WORDS.some((w) => text.includes(w))) return "yes";
+  // 只要出現「確」字（確認/確定的任何殘片）就當肯定——否定詞已先擋掉
+  if (text.includes("確")) return "yes";
   return "other";
+}
+
+/** 想離開的語意（「結束對話」等） */
+function exitIntent(raw: string): boolean {
+  const text = normalize(raw);
+  return text.length > 0 && EXIT_WORDS.some((w) => text.includes(w));
 }
 
 export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
@@ -291,8 +336,24 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
     }
   }
 
+  // 說「結束對話」的道別流程：講完再關（overlay 版由下方覆寫成真正關面板）
+  let closePanelRef: () => void = () => pauseLoop("已結束對話——點一下麥克風重新開始");
+  async function farewell(said: string): Promise<void> {
+    pendingParsed = null;
+    looping = false;
+    bubble("user", said);
+    bubble("agent", "收到，關閉程式，您可以在未來隨時與我進行語音點餐 👋");
+    clearMsg();
+    await speak("收到，關閉程式，您可以在未來隨時與我進行語音點餐");
+    closePanelRef();
+  }
+
   /** 語音／文字輸入的統一入口：確認階段判讀 yes/no，其餘當成新的點餐。 */
   async function handleInput(input: { text: string } | { audio: Blob }): Promise<void> {
+    if ("text" in input && exitIntent(input.text)) {
+      await farewell(input.text);
+      return;
+    }
     if (pendingParsed) {
       let said = "";
       let reparsed: ParseResponse | null = null;
@@ -311,6 +372,10 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
             return;
           }
         }
+      }
+      if (exitIntent(said)) {
+        await farewell(said);
+        return;
       }
       const intent = confirmIntent(said);
       if (intent === "yes") {
@@ -343,8 +408,8 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
         return;
       }
       consecutiveMisses += 1;
-      bubble("agent", "🤔 沒聽清楚——說「確認」我就下單付款，說「取消」就放棄這筆。");
-      await speak("沒聽清楚，說確認我就下單付款，說取消就放棄");
+      bubble("agent", "🤔 沒聽清楚——請說「確認下單」我就付款，說「取消」就放棄這筆。");
+      await speak("沒聽清楚，請說確認下單，或取消");
       return;
     }
     await parseAndPropose(input);
@@ -360,6 +425,10 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
         : await hub.parseAudio(input.audio, merchantId);
     } catch (err) {
       if (err instanceof ClarificationNeeded) {
+        if (exitIntent(err.sttText)) {
+          await farewell(err.sttText);
+          return;
+        }
         consecutiveMisses += 1;
         clearMsg();
         if (err.sttText) bubble("user", err.sttText);
@@ -384,9 +453,10 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
     const routed = merchantId ? "" : `📍 ${parsed.merchant_name}｜`;
     const usdcNote = twdToUsdc(parsed.quote.total, parsed.fx?.units_per_twd);
     const question = parsed.readback.text.replace("，確認嗎？", "");
-    bubble("agent", `${routed}${question}${usdcNote ? `（${usdcNote}）` : ""}——確認就下單付款，取消就放棄 🎙️`);
+    bubble("agent", `${routed}${question}${usdcNote ? `（${usdcNote}）` : ""}——請說「確認下單」或「取消」🎙️`);
     pendingParsed = parsed;
-    await speak(`${question}，跟你確認一下，要幫你下單付款嗎？說確認或取消`);
+    // 請用戶說「確認下單」四個字：句子長一點，STT 對短句的誤辨率高很多
+    await speak(`${question}，要幫你下單付款嗎？請說確認下單，或取消`);
   }
 
   /**
@@ -443,13 +513,15 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
           <div class="step">✓ Agent 自動付款 ${(amountUnits / 1_000_000).toFixed(2)} USDC（口頭確認＋倒數後零按鍵）</div>
           <div class="step">${verified ? "✓ 鏈上驗證通過（digest／金額／店家相符）" : `⏳ 鏈上驗證中：${settlement.verify_reason ?? ""}`}</div>
           <a class="txlink" href="${settlement.explorer_url}" target="_blank" rel="noreferrer">🔗 在 Sui explorer 查看交易 ↗</a>`);
-        bubble("agent", `付款完成！取餐單號 <b>${merchantRef}</b>，總共 ${p.quote.total} 元（${twdToUsdc(p.quote.total, p.fx?.units_per_twd) || "USDC"}）。還要什麼跟我說～`);
+        bubble("agent", `付款完成！取餐單號 <b>${merchantRef}</b>，總共 ${p.quote.total} 元（${twdToUsdc(p.quote.total, p.fx?.units_per_twd) || "USDC"}）。請問還要再點餐嗎？想離開就說「結束對話」🎙️`);
         clearMsg();
         consecutiveErrors = 0;
         consecutiveMisses = 0;
         await refreshStatus().catch(() => undefined);
-        await speak(`付款完成，取餐單號 ${merchantRef.split("-").pop()}，總共 ${p.quote.total} 元`);
-        void sealAndUploadLog(merchantRef, checkout);
+        await speak(
+          `付款完成，取餐單號 ${merchantRef.split("-").pop()}，總共 ${p.quote.total} 元。` +
+          "請問還要再點餐嗎？想離開就說結束對話");
+        void sealAndUploadLog(p.order_id, merchantRef, checkout);
       },
       onError: async (err) => {
         consecutiveErrors += 1;
@@ -466,7 +538,7 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
   }
 
   /** 訂單完成後：整段對話在瀏覽器內 Seal 加密 → 上傳 Walrus → 顯示存證卡。 */
-  async function sealAndUploadLog(merchantRef: string, checkout: CheckoutParams): Promise<void> {
+  async function sealAndUploadLog(orderId: string, merchantRef: string, checkout: CheckoutParams): Promise<void> {
     if (!sealVault) return; // Hub 沒發 Seal 設定：不做存證（不影響點餐）
     const entries = convo;
     convo = []; // 下一筆訂單從新的 log 開始
@@ -475,7 +547,15 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
       const owner = await session.ownerAddress();
       const sealed = await sealVault.encryptAndUpload(entries, owner, checkout.merchant_address, {
         merchant_ref: merchantRef,
+        order_id: orderId,
       });
+      // 把密文位置回報 Hub（只有 blob id——Hub 拿到也解不開），
+      // 供「用戶／店家歷史頁」列出這筆 log；失敗不影響存證本身
+      void fetch(`${hub.baseUrl}/v1/orders/${orderId}/logref`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ blob_id: sealed.blobId }),
+      }).catch(() => undefined);
       card.innerHTML = `
         <div class="step">🔐 對話紀錄已端對端加密上傳 Walrus</div>
         <div class="step sealed-id">blob：<code>${sealed.blobId.slice(0, 14)}…</code>
@@ -563,7 +643,10 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
       granted = perm.state === "granted";
     } catch { /* 不支援查詢的瀏覽器：等使用者點一下 */ }
     if (granted && recorder.isSupported) {
-      void speak("請說你要點什麼。");
+      // 一定要「講完歡迎語」才開麥克風：同時進行會讓 iOS 把播放壓低
+      //（歡迎語忽大忽小甚至無聲），錄影也收不到開頭
+      setListening(false, "🤖 Agent 說話中⋯");
+      await speak("請說你要點什麼。");
       void loop();
     } else if (recorder.isSupported) {
       setListening(false, "點一下麥克風開始（只有第一次需要）");
@@ -587,6 +670,7 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
       try { speechSynthesis.cancel(); } catch { /* 無合成器 */ }
       clearMsg();
     };
+    closePanelRef = closePanel; // 語音說「結束對話」也走同一個關閉流程
     // foodpanda 式：首頁常駐菜單，按「嘴付下單」才開語音面板
     openBtn.addEventListener("click", () => {
       unlockTts();

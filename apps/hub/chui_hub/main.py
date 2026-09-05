@@ -366,6 +366,7 @@ async def _verify_and_notify(order: dict) -> dict:
     if outcome["verified"]:
         order["status"] = "settled_verified"
         order["verify_reason"] = outcome["reason"]
+        order["owner_address"] = str(outcome.get("owner", ""))  # 鏈上事實
         bus.emit("sui", "hub", "chain.verified", f"鏈上驗證通過：{outcome['reason']}")
         # ⑦ 通知商家出餐（通知失敗不影響已驗證的結算狀態，但要記錄在面板）
         try:
@@ -418,6 +419,62 @@ async def reverify(order_id: str):
     return {"order_id": order_id, "status": order["status"],
             "verify_reason": order["verify_reason"],
             "explorer_url": explorer_tx_url(order["tx_digest"])}
+
+
+# ---- 歷史查詢／店家看板 ----
+
+class LogRefRequest(BaseModel):
+    blob_id: str
+
+
+@app.post("/v1/orders/{order_id}/logref")
+async def attach_logref(order_id: str, req: LogRefRequest):
+    """前端存證完成後回報密文位置。Hub 只存 blob id——拿到也解不開
+    （解密權限在鏈上 log_policy：只放行消費者與店家錢包）。"""
+    order = _get_order(order_id)
+    order["log_blob_id"] = req.blob_id
+    store.save(order)
+    return {"ok": True}
+
+
+def _order_row(order: dict) -> dict:
+    merchant = registry.get(order.get("merchant_id", ""))
+    row = {
+        "order_id": order.get("order_id", ""),
+        "merchant_id": order.get("merchant_id", ""),
+        "merchant_name": merchant.name if merchant else order.get("merchant_id", ""),
+        "merchant_address": merchant.payout_address if merchant else "",
+        "merchant_ref": order.get("merchant_ref", ""),
+        "total": order.get("total", 0),
+        "amount_units": order.get("amount_units", 0),
+        "status": order.get("status", ""),
+        "tx_digest": order.get("tx_digest", ""),
+        "log_blob_id": order.get("log_blob_id", ""),
+        "owner_address": order.get("owner_address", ""),
+        "created_at": order.get("created_at", 0),
+    }
+    if row["tx_digest"]:
+        row["explorer_url"] = explorer_tx_url(row["tx_digest"])
+    return row
+
+
+@app.get("/v1/logs")
+async def user_orders(owner: str):
+    """用戶歷史：owner＝消費者錢包地址（由鏈上 SettlementEvent 回填，
+    非前端自報）。回傳的是訂單摘要＋密文 blob id——log 內容仍需
+    該錢包簽名向 Seal key server 取鑰才解得開。"""
+    rows = store.list_by("owner_address", owner)
+    return {"orders": [_order_row(o) for o in rows]}
+
+
+@app.get("/v1/merchants/{merchant_id}/orders")
+async def merchant_order_history(merchant_id: str):
+    """店家看板／流水：訂單商業資料（品項、金額、單號、鏈上交易）
+    本來就是店家該看到的明文；對話 log 仍需店家錢包解密。"""
+    if registry.get(merchant_id) is None:
+        raise NotFoundError(f"registry 沒有商家 {merchant_id}")
+    rows = store.list_by("merchant_id", merchant_id)
+    return {"orders": [_order_row(o) for o in rows]}
 
 
 @app.get("/v1/orders/{order_id}")

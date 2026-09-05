@@ -143,3 +143,18 @@ def test_oracle_usdc_usd_mode():
     assert oracle.units_per_twd_from_price(0.9998, "USDC_USD", 0.05, 31.5) == 1588
     with pytest.raises(ValueError):
         oracle.units_per_twd_from_price(0.9998, "USDC_USD", 1.0, 0)
+
+
+def test_order_store_list_by(monkeypatch):
+    monkeypatch.delenv("MONGODB_URI", raising=False)
+    from chui_hub.store import OrderStore
+
+    store = OrderStore()
+    store.save({"order_id": "a", "merchant_id": "m1", "owner_address": "0xu1", "created_at": 1})
+    store.save({"order_id": "b", "merchant_id": "m1", "owner_address": "0xu2", "created_at": 2})
+    store.save({"order_id": "c", "merchant_id": "m2", "owner_address": "0xu1", "created_at": 3})
+    m1 = store.list_by("merchant_id", "m1")
+    assert [o["order_id"] for o in m1] == ["b", "a"]  # 新到舊
+    u1 = store.list_by("owner_address", "0xu1")
+    assert [o["order_id"] for o in u1] == ["c", "a"]
+    assert store.list_by("merchant_id", "nope") == []

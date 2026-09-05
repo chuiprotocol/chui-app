@@ -53,6 +53,27 @@ export function buildLogIdHex(ownerAddr: string, merchantAddr: string): string {
   return toHex(id);
 }
 
+/** 從 Hub /healthz 回應組出 SealLogVault（設定不齊回 null）。 */
+export function sealogFromHealth(
+  suiClient: SuiGrpcClient,
+  health: Record<string, unknown>,
+): SealLogVault | null {
+  const asList = (plural: unknown, single: unknown): string[] => {
+    if (Array.isArray(plural) && plural.length) return plural.map(String);
+    return single ? [String(single)] : [];
+  };
+  try {
+    return new SealLogVault(suiClient, {
+      packageId: String(health.package_id ?? ""),
+      keyServerIds: (health.seal_key_servers as string[] | undefined) ?? [],
+      walrusPublishers: asList(health.walrus_publishers, health.walrus_publisher),
+      walrusAggregators: asList(health.walrus_aggregators, health.walrus_aggregator),
+    });
+  } catch {
+    return null;
+  }
+}
+
 export class SealLogVault {
   private sealClient: SealClient;
 

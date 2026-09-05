@@ -59,3 +59,15 @@ class OrderStore:
                 doc.pop("_id", None)
             return doc
         return self._mem.get(order_id)
+
+    def list_by(self, field: str, value: str, limit: int = 100) -> list[dict]:
+        """依欄位值列訂單（新到舊）——歷史頁／店家看板用。"""
+        if self._col is not None:
+            docs = list(self._col.find({field: value})
+                        .sort("created_at", -1).limit(limit))
+            for doc in docs:
+                doc.pop("_id", None)
+            return docs
+        rows = [o for o in self._mem.values() if o.get(field) == value]
+        rows.sort(key=lambda o: o.get("created_at", 0), reverse=True)
+        return rows[:limit]

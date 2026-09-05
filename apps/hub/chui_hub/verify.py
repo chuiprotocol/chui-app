@@ -89,5 +89,8 @@ async def verify_settlement(tx_digest: str, expected_digest_hex: str,
                     "reason": f"事件金額 {got_amount} ≠ 預期 {expected_amount_units}"}
         if got_merchant.lower() != expected_merchant.lower():
             return {"verified": False, "reason": "事件收款地址與店家不符"}
-        return {"verified": True, "reason": "digest／amount／merchant 三者皆符"}
+        # owner＝鏈上事件裡的 Vault 擁有者（消費者錢包）——歷史查詢頁靠它
+        # 對應「這筆訂單是誰的」，來源是鏈上事實而非前端自報
+        return {"verified": True, "reason": "digest／amount／merchant 三者皆符",
+                "owner": str(parsed.get("owner", ""))}
     return {"verified": False, "reason": "交易中沒有本協議的 SettlementEvent"}

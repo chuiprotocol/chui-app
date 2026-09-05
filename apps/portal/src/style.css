@@ -268,3 +268,19 @@ button.primary:active { background: var(--chui-primary-press); }
   font-size: 1.1rem; font-weight: 700; box-shadow: var(--shadow);
 }
 .overlay-close:active { opacity: 0.75; }
+
+/* ---- 歷史頁／店家看板 ---- */
+.order-list { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.order-row { padding: 14px 16px; }
+.order-head { display: flex; justify-content: space-between; align-items: baseline; }
+.order-ref { font-weight: 800; color: var(--chui-primary); }
+.order-meta { font-size: 0.78rem; color: var(--chui-ink-muted); margin: 4px 0 8px; }
+.order-links { display: flex; gap: 14px; flex-wrap: wrap; align-items: baseline; }
+.order-log { margin-top: 10px; border-top: 1px dashed var(--chui-line); padding-top: 8px; font-size: 0.82rem; }
+.order-log .logline { margin: 3px 0; }
+.order-log .error { color: var(--chui-fail); }
+.order-log .info { color: var(--chui-pending); }
+.order-log .ok { color: var(--chui-ok); font-weight: 700; }
+.livechip { color: var(--chui-ok); font-weight: 600; }
+.dashlinks { font-size: 0.85rem; }
+.dashlinks a { color: var(--chui-primary); font-weight: 700; }
