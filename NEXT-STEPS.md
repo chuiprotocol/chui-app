@@ -27,6 +27,11 @@
       （scripts/setup-tunnel.sh）降級為本機開發用。
       Fly.io 方案已依用戶指示移除（token 記得撤銷，見下）。
 
+## 已接上的贊助資源
+- [x] **GMI Cloud**：LLM 重述備援已上線（GLM-4.7-Flash，免費層；
+      healthz `llm_assist: gmi-cloud`）。
+- [x] **ElevenLabs**：STT 主力已上線（Scribe v2，stt_chain 第一位）。
+
 ## 等外部條件
 - [ ] **更正**：AMD 與 GMI 提供的是「LLM token API」不是 VM——
       定位改為 LLM 重述備援的供應商（與 EastRouter 同一插槽）。
