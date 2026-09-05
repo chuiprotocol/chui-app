@@ -1,0 +1,73 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 440" fill="none"
+     role="img" aria-labelledby="chui-banner-title">
+  <title id="chui-banner-title">Chui Protocol 嘴付協議 — 開口就買單，嘴付真簡單</title>
+  <!-- README 頁首橫幅 1280×440。
+       anthropic-art 三層式：滿版天藍底 → 不規則象牙白承載形 → 近黑手繪線。
+       滿版底色的用意是深色／淺色 GitHub 主題下看起來都一樣。
+       所有字樣帶 textLength，沒有 PingFang TC 的系統也不會撐破版面。 -->
+
+  <!-- ① 滿版底色 -->
+  <rect width="1280" height="440" fill="#6A9BCC"/>
+
+  <!-- ② 象牙白承載形（手繪不規則，佔左側約三分之二） -->
+  <path fill="#FAF9F5"
+    d="M96 30 Q48 36 44 92 L40 340 Q38 402 98 408 L760 410 Q828 412 830 352 L832 88 Q832 30 772 28 Z"/>
+
+  <!-- ③-1 lockup -->
+  <g transform="translate(86 52) scale(0.94)">
+    <g transform="translate(-1.05 16.825) scale(0.85)"
+       stroke="#101A2E" stroke-linecap="round" stroke-linejoin="round" fill="none">
+      <g transform="translate(-3 1.5)">
+        <path stroke-width="8"
+          d="M33 77 L24 99 L46 84 Q60 89 71 81 Q86 71 86 54 Q86 35 70 26 Q54 18 39 25 Q22 33 21 51 Q20 66 30 74 Z"/>
+        <path stroke-width="7"   d="M55 32 L54.6 68"/>
+        <path stroke-width="6.5" d="M44 43.5 L67 42.7"/>
+        <path stroke-width="6.5" d="M44.2 54 L67.2 53.2"/>
+        <path stroke-width="6.5" d="M93 38 Q100 52 93 66"/>
+        <path stroke-width="6"   d="M103 31 Q112 52 103 73"/>
+      </g>
+    </g>
+    <text x="118" y="70" textLength="292" lengthAdjust="spacingAndGlyphs"
+          font-family="'Avenir Next','Helvetica Neue',ui-rounded,system-ui,sans-serif"
+          font-size="46" font-weight="800" fill="#101A2E">Chui Protocol</text>
+    <text x="118" y="102" textLength="196" lengthAdjust="spacingAndGlyphs"
+          font-family="'PingFang TC','Noto Sans TC','Microsoft JhengHei',system-ui,sans-serif"
+          font-size="21" font-weight="600" fill="#5A6879">嘴付協議・語音即付款</text>
+  </g>
+
+  <!-- ③-2 標語 -->
+  <text x="92" y="268" textLength="528" lengthAdjust="spacingAndGlyphs"
+        font-family="'PingFang TC','Noto Sans TC','Microsoft JhengHei',system-ui,sans-serif"
+        font-size="50" font-weight="800" fill="#101A2E">開口就買單，嘴付真簡單</text>
+  <text x="94" y="306" textLength="470" lengthAdjust="spacingAndGlyphs"
+        font-family="'PingFang TC','Noto Sans TC','Microsoft JhengHei',system-ui,sans-serif"
+        font-size="21" font-weight="600" fill="#5A6879">agentic commerce 的支付授權層 · Sui Testnet · USDC</text>
+
+  <!-- ③-3 三個數字 chip -->
+  <g font-family="'PingFang TC','Noto Sans TC','Microsoft JhengHei',system-ui,sans-serif"
+     font-size="18" font-weight="700">
+    <rect x="92"  y="336" width="270" height="46" rx="23" fill="#FFFFFF" stroke="#E3E7EC" stroke-width="1.5"/>
+    <text x="112" y="365" textLength="230" lengthAdjust="spacingAndGlyphs" fill="#2340E6">語音辨識 34.6% → 100%</text>
+    <rect x="382" y="336" width="195" height="46" rx="23" fill="#FFFFFF" stroke="#E3E7EC" stroke-width="1.5"/>
+    <text x="402" y="365" textLength="155" lengthAdjust="spacingAndGlyphs" fill="#101A2E">兩句話 · 20 秒結帳</text>
+    <rect x="597" y="336" width="215" height="46" rx="23" fill="#FFFFFF" stroke="#E3E7EC" stroke-width="1.5"/>
+    <text x="617" y="365" textLength="175" lengthAdjust="spacingAndGlyphs" fill="#101A2E">零後端 · 5 分鐘開店</text>
+  </g>
+
+  <!-- ④ 右側手繪插畫（沿用 portal hero 的語彙）：說出口的話 → 落地變成硬幣 -->
+  <g transform="translate(667.5 96.25)"
+     stroke="#101A2E" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <path stroke-width="9"
+      d="M236 66 Q214 70 212 96 L212 130 Q212 152 236 154 L262 156 L252 182 L292 158 L368 156 Q392 154 394 130 L394 96 Q394 70 370 68 Z"/>
+    <path stroke-width="8" d="M256 100 Q262 111 256 124"/>
+    <path stroke-width="8" d="M282 92 Q292 111 282 132"/>
+    <path stroke-width="8" d="M310 86 Q324 111 310 138"/>
+    <path stroke-width="8" d="M414 118 Q446 112 468 118 M456 104 L470 118 L454 130"/>
+    <circle cx="520" cy="122" r="38" stroke-width="9" stroke-dasharray="224 15" stroke-dashoffset="75"/>
+    <path stroke-width="8" d="M520 100 L519 144"/>
+    <path stroke-width="7" d="M504 113 L537 112"/>
+    <path stroke-width="7" d="M504.4 128 L537.4 127"/>
+    <circle cx="352" cy="112" r="6.5" fill="#101A2E" stroke="none"/>
+    <circle cx="470" cy="80"  r="5"   fill="#101A2E" stroke="none"/>
+  </g>
+</svg>
