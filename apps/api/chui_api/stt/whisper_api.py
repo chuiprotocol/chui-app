@@ -19,7 +19,9 @@ async def transcribe_via_api(audio_bytes: bytes, filename: str) -> list[str]:
                 "model": config.STT_API_MODEL,
                 "language": "zh",
                 # 提示模型輸出繁體中文（Whisper 對 initial prompt 敏感）
-                "prompt": "以下是台灣的早餐店點餐內容，使用繁體中文。",
+                "prompt": "以下是台灣小吃店的語音點餐對話，使用繁體中文。"
+                          "內容可能是餐點名稱與規格，也可能是指令："
+                          "確認下單、取消、結束對話。",
             },
         )
         resp.raise_for_status()

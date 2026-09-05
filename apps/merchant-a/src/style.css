@@ -268,3 +268,9 @@ button.primary:active { background: var(--chui-primary-press); }
   font-size: 1.1rem; font-weight: 700; box-shadow: var(--shadow);
 }
 .overlay-close:active { opacity: 0.75; }
+/* Vault 餘額列＋一鍵領回（用戶隨時可撤回所有資金） */
+.balance-row { display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  margin: 8px 0; padding: 8px 12px; background: var(--chui-primary-soft); border-radius: 10px; font-weight: 700; }
+.withdraw-btn { border: 1.5px solid var(--chui-primary); background: transparent; color: var(--chui-primary);
+  border-radius: 8px; padding: 6px 10px; font-weight: 700; cursor: pointer; font-size: 0.85rem; }
+.withdraw-btn:active { background: var(--chui-primary); color: #fff; }

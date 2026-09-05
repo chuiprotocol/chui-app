@@ -18,6 +18,14 @@ export interface Env {
   STT_API_KEY?: string;
   STT_API_BASE?: string;
   STT_API_MODEL?: string;
+  STT_PROVIDERS?: string;
+  ELEVENLABS_API_KEY?: string;
+  GMI_API_KEY?: string;
+  GMI_STT_BASE_URL?: string;
+  GMI_STT_MODEL?: string;
+  AMD_API_KEY?: string;
+  AMD_STT_BASE_URL?: string;
+  AMD_STT_MODEL?: string;
   SEAL_KEY_SERVERS?: string;
   WALRUS_PUBLISHERS?: string;
   WALRUS_AGGREGATORS?: string;
@@ -36,42 +44,123 @@ export interface Env {
   EASTROUTER_MODEL?: string;
 }
 
-// ---- STT ----
+// ---- STT：多供應商鏈 ----
+// 可用的供應商依「模型能力」排序逐一嘗試，前一家失敗自動遞補下一家；
+// 全部失敗才明確報錯（絕不假裝聽到）。預設排序理由（DECISIONS D30）：
+//   1. elevenlabs（Scribe v1）——公開多語 benchmark 的中文 WER 領先
+//   2. openai（whisper/gpt-4o-transcribe）——本專案實戰驗證過的主力
+//   3. gmi、4. amd——開源 whisper-large-v3 託管（OpenAI 相容端點）
+// 沒填 key 的供應商自動跳過；順序可用 STT_PROVIDERS 覆寫。
+
+// Whisper 對 initial prompt 敏感：把「指令詞」也寫進去，
+// 「確認下單／取消／結束對話」才不會被聽成菜名
+const STT_PROMPT =
+  "以下是台灣小吃店的語音點餐對話，使用繁體中文。" +
+  "內容可能是餐點名稱與規格，也可能是指令：確認下單、取消、結束對話。";
 
 export class SttUnavailableError extends Error {
   code = "STT_UNAVAILABLE";
   status = 503;
 }
 
-/** 語音 → STT 候選文字列表（n-best；至少一個）。失敗明確報錯，絕不假裝聽到。 */
-export async function transcribe(env: Env, audio: File): Promise<string[]> {
-  if (!env.STT_API_KEY) {
-    throw new SttUnavailableError("未設定 STT_API_KEY（雲端 Worker 版沒有本地模型備援）。請改用文字輸入。");
-  }
-  const base = (env.STT_API_BASE ?? "https://api.openai.com/v1").replace(/\/$/, "");
+async function readText(resp: Response): Promise<string> {
+  return String(((await resp.json()) as { text?: string }).text ?? "").trim();
+}
+
+/** OpenAI 相容的 /audio/transcriptions（openai／gmi／amd 共用）。 */
+async function sttOpenAiCompatible(
+  base: string, key: string, model: string, audio: File,
+): Promise<string> {
   const form = new FormData();
   form.set("file", audio, audio.name || "audio.webm");
-  form.set("model", env.STT_API_MODEL ?? "whisper-1");
+  form.set("model", model);
   form.set("language", "zh");
-  // 提示模型輸出繁體中文（Whisper 對 initial prompt 敏感）
-  form.set("prompt", "以下是台灣的早餐店點餐內容，使用繁體中文。");
-  let resp: Response;
-  try {
-    resp = await fetch(`${base}/audio/transcriptions`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${env.STT_API_KEY}` },
-      body: form,
-      signal: AbortSignal.timeout(30_000),
-    });
-  } catch (e) {
-    throw new SttUnavailableError(`雲端 STT 連線失敗：${(e as Error).message}。請改用文字輸入。`);
+  form.set("prompt", STT_PROMPT);
+  const resp = await fetch(`${base.replace(/\/$/, "")}/audio/transcriptions`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}` },
+    body: form,
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  return readText(resp);
+}
+
+/** ElevenLabs Scribe（獨立 API 形狀：xi-api-key＋model_id）。 */
+async function sttElevenLabs(key: string, audio: File): Promise<string> {
+  const form = new FormData();
+  form.set("file", audio, audio.name || "audio.webm");
+  form.set("model_id", "scribe_v1");
+  form.set("language_code", "zho");
+  const resp = await fetch("https://api.elevenlabs.io/v1/speech-to-text", {
+    method: "POST",
+    headers: { "xi-api-key": key },
+    body: form,
+    signal: AbortSignal.timeout(30_000),
+  });
+  if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+  return readText(resp);
+}
+
+interface SttProvider {
+  name: string;
+  configured: boolean;
+  run: (audio: File) => Promise<string>;
+}
+
+function sttProviders(env: Env): SttProvider[] {
+  const all: Record<string, SttProvider> = {
+    elevenlabs: {
+      name: "elevenlabs(scribe_v1)",
+      configured: Boolean(env.ELEVENLABS_API_KEY),
+      run: (a) => sttElevenLabs(env.ELEVENLABS_API_KEY!, a),
+    },
+    openai: {
+      name: `openai(${env.STT_API_MODEL ?? "whisper-1"})`,
+      configured: Boolean(env.STT_API_KEY),
+      run: (a) => sttOpenAiCompatible(
+        env.STT_API_BASE ?? "https://api.openai.com/v1",
+        env.STT_API_KEY!, env.STT_API_MODEL ?? "whisper-1", a),
+    },
+    // GMI／AMD：不猜端點——base url＋key＋model 三項齊全才啟用（同 assist 慣例）
+    gmi: {
+      name: `gmi(${env.GMI_STT_MODEL ?? "?"})`,
+      configured: Boolean(env.GMI_API_KEY && env.GMI_STT_BASE_URL && env.GMI_STT_MODEL),
+      run: (a) => sttOpenAiCompatible(env.GMI_STT_BASE_URL!, env.GMI_API_KEY!, env.GMI_STT_MODEL!, a),
+    },
+    amd: {
+      name: `amd(${env.AMD_STT_MODEL ?? "?"})`,
+      configured: Boolean(env.AMD_API_KEY && env.AMD_STT_BASE_URL && env.AMD_STT_MODEL),
+      run: (a) => sttOpenAiCompatible(env.AMD_STT_BASE_URL!, env.AMD_API_KEY!, env.AMD_STT_MODEL!, a),
+    },
+  };
+  const order = (env.STT_PROVIDERS ?? "elevenlabs,openai,gmi,amd")
+    .split(",").map((s) => s.trim()).filter((s) => s in all);
+  return order.map((name) => all[name]);
+}
+
+/** healthz 用：目前啟用的 STT 供應商鏈（依序）。 */
+export function sttChain(env: Env): string[] {
+  return sttProviders(env).filter((p) => p.configured).map((p) => p.name);
+}
+
+/** 語音 → STT 候選文字列表（n-best；至少一個）。失敗明確報錯，絕不假裝聽到。 */
+export async function transcribe(env: Env, audio: File): Promise<string[]> {
+  const chain = sttProviders(env).filter((p) => p.configured);
+  if (!chain.length) {
+    throw new SttUnavailableError("未設定任何 STT 供應商金鑰。請改用文字輸入。");
   }
-  if (!resp.ok) {
-    throw new SttUnavailableError(`雲端 STT 回 ${resp.status}。請改用文字輸入。`);
+  const errors: string[] = [];
+  for (const provider of chain) {
+    try {
+      const text = await provider.run(audio);
+      if (text) return [text];
+      errors.push(`${provider.name}: 回傳空白`);
+    } catch (e) {
+      errors.push(`${provider.name}: ${(e as Error).message}`);
+    }
   }
-  const text = String(((await resp.json()) as { text?: string }).text ?? "").trim();
-  if (!text) throw new SttUnavailableError("STT 回傳空白結果。請改用文字輸入。");
-  return [text];
+  throw new SttUnavailableError(`所有 STT 供應商都失敗（${errors.join("；")}）。請改用文字輸入。`);
 }
 
 // ---- Atlas Oracle 即時匯率 ----

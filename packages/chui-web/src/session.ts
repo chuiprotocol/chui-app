@@ -317,6 +317,24 @@ export class ChuiAgentSession {
     return tx;
   }
 
+  /** 一鍵離場交易（由用戶的 Slush 簽）：撤銷所有授權＋領回全部 USDC，
+   * 同一筆交易完成——按下去的瞬間 Agent 就再也動不了任何一毛錢。 */
+  buildExitTransaction(moduleName: string, usdcCoinType: string): Transaction {
+    if (!this.binding) throw new Error("尚未授權，沒有可領回的 Vault");
+    const tx = new Transaction();
+    tx.moveCall({
+      target: `${this.binding.packageId}::${moduleName}::revoke_caps`,
+      typeArguments: [usdcCoinType],
+      arguments: [tx.object(this.binding.vaultId)],
+    });
+    tx.moveCall({
+      target: `${this.binding.packageId}::${moduleName}::withdraw`,
+      typeArguments: [usdcCoinType],
+      arguments: [tx.object(this.binding.vaultId)],
+    });
+    return tx;
+  }
+
   /** 領回剩餘資金交易（由用戶的 Slush 簽）。 */
   buildWithdrawTransaction(moduleName: string, usdcCoinType: string): Transaction {
     if (!this.binding) throw new Error("尚未授權，無可領回");

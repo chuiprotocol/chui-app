@@ -22,6 +22,7 @@ import { TapToTalkRecorder } from "./autovoice.js";
 import { runAutoOrder } from "./autoflow.js";
 import { signAndExecuteWithUserWallet, signPersonalMessageWithUserWallet } from "./pay.js";
 import { SealLogVault, type LogEntry } from "./sealog.js";
+import { confirmIntent, exitIntent } from "./intents.js";
 
 const USDC = 1_000_000n;
 // 單筆上限（內部測試放寬到 50 USDC；實際可花上限永遠＝Vault 餘額本身）。
@@ -59,8 +60,62 @@ function unlockTts(): void {
   } catch { /* 無合成器 */ }
 }
 
-function speak(text: string): Promise<void> {
+/** 插話（barge-in）監聽器：TTS 播放中同步開麥，偵測到「持續的人聲」
+ * 就允許打斷。只監測音量、不錄音；門檻遠高於 VAD（0.05 vs 0.015）
+ * 且需連續 300ms，避免 TTS 從揚聲器洩漏回麥克風造成自我打斷——
+ * 開麥時要求 echoCancellation（AEC），把自己的聲音先消掉。
+ * ⚠️ iOS 開麥會讓系統壓低播放音量（ducking）：整段等音量一致地變小，
+ * 換來「隨時可以插話」；歡迎語等不開放插話的句子不受影響。 */
+class BargeInMonitor {
+  private stream: MediaStream | null = null;
+  private ctx: AudioContext | null = null;
+  private timer = 0;
+
+  async start(onBarge: () => void): Promise<void> {
+    this.stream = await navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true },
+    });
+    this.ctx = new AudioContext();
+    const analyser = this.ctx.createAnalyser();
+    analyser.fftSize = 2048;
+    this.ctx.createMediaStreamSource(this.stream).connect(analyser);
+    const buf = new Float32Array(analyser.fftSize);
+    let hotSince = 0;
+    const tick = () => {
+      analyser.getFloatTimeDomainData(buf);
+      let sum = 0;
+      for (let i = 0; i < buf.length; i++) sum += buf[i] * buf[i];
+      const rms = Math.sqrt(sum / buf.length);
+      const now = Date.now();
+      if (rms > 0.05) {
+        if (!hotSince) hotSince = now;
+        if (now - hotSince >= 300) { onBarge(); return; } // 連續人聲＝真插話
+      } else {
+        hotSince = 0;
+      }
+      this.timer = window.setTimeout(tick, 100);
+    };
+    tick();
+  }
+
+  stop(): void {
+    clearTimeout(this.timer);
+    this.stream?.getTracks().forEach((t) => t.stop());
+    this.ctx?.close().catch(() => undefined);
+    this.stream = null;
+    this.ctx = null;
+  }
+}
+
+interface SpeakOptions {
+  /** 允許用戶開口打斷（barge-in）；打斷時立刻停止 TTS 並回傳 interrupted */
+  interruptible?: boolean;
+}
+
+function speak(text: string, options: SpeakOptions = {}): Promise<{ interrupted: boolean }> {
   return new Promise((resolve) => {
+    let interrupted = false;
+    const monitor = options.interruptible ? new BargeInMonitor() : null;
     try {
       const utterance = new SpeechSynthesisUtterance(text);
       utterance.lang = "zh-TW";
@@ -86,7 +141,9 @@ function speak(text: string): Promise<void> {
         settled = true;
         clearInterval(poll);
         clearTimeout(hardCap);
-        setTimeout(resolve, 250);
+        monitor?.stop();
+        // 被插話時不留緩衝：立刻放行主循環開麥收「用戶正在講的話」
+        setTimeout(() => resolve({ interrupted }), interrupted ? 0 : 250);
       };
       utterance.onend = finish;
       utterance.onerror = finish;
@@ -105,41 +162,17 @@ function speak(text: string): Promise<void> {
         if (wasSpeaking && !speechSynthesis.pending) finish(); // 真的講完了
       }, 200);
       hardCap = window.setTimeout(finish, Math.max(6000, text.length * 600));
+      // 插話監聽與 TTS 並行；開麥失敗（未授權等）就靜默退回不可打斷
+      monitor?.start(() => {
+        interrupted = true;
+        try { speechSynthesis.cancel(); } catch { /* 無合成器 */ }
+        finish();
+      }).catch(() => monitor.stop());
     } catch {
-      resolve();
+      monitor?.stop();
+      resolve({ interrupted });
     }
   });
-}
-
-// 確認詞連同「STT 常見同音誤辨」一起收——短句（像「確認」兩個字）
-// 的辨識錯誤率遠高於整句點餐，所以同音容錯要夠寬
-const YES_WORDS = [
-  "確認", "確定", "確任", "雀認", "雀任", "缺人", "確人", "卻認", "全人",
-  "沒錯", "下單", "下彈", "付款", "可以", "好的", "好啊", "好喔", "行",
-  "對", "好", "是", "嗯", "恩", "ok", "OK", "Ok", "okay",
-];
-const NO_WORDS = ["取消", "娶消", "去消", "不要", "不用", "算了", "不對", "錯了", "重來", "重新"];
-const EXIT_WORDS = ["結束對話", "結束", "離開", "再見", "掰掰", "拜拜", "先這樣", "不點了", "關閉"];
-
-function normalize(raw: string): string {
-  return raw.replace(/[\s。，！？!?.,]/g, "");
-}
-
-/** 口頭確認判讀：明確肯定 / 明確否定 / 都不是（可能是新的點餐內容） */
-function confirmIntent(raw: string): "yes" | "no" | "other" {
-  const text = normalize(raw);
-  if (!text) return "other";
-  if (NO_WORDS.some((w) => text.includes(w))) return "no";
-  if (YES_WORDS.some((w) => text.includes(w))) return "yes";
-  // 只要出現「確」字（確認/確定的任何殘片）就當肯定——否定詞已先擋掉
-  if (text.includes("確")) return "yes";
-  return "other";
-}
-
-/** 想離開的語意（「結束對話」等） */
-function exitIntent(raw: string): boolean {
-  const text = normalize(raw);
-  return text.length > 0 && EXIT_WORDS.some((w) => text.includes(w));
 }
 
 export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
@@ -216,10 +249,17 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
     try {
       const status = await session.status();
       if (status.authorized && status.capActive && status.remainingUnits > 0n) {
-        need("quota-chip").textContent =
-          `🤖 額度 ${(Number(status.remainingUnits) / Number(USDC)).toFixed(2)} USDC`;
+        const bal = (Number(status.remainingUnits) / Number(USDC)).toFixed(2);
+        need("quota-chip").textContent = `🤖 額度 ${bal} USDC`;
+        // 餘額列＋一鍵領回（顯示在語音面板裡，餘額旁隨時可按）
+        const balEl = $("balance-amount");
+        if (balEl) {
+          balEl.textContent = `💰 Vault 餘額 ${bal} USDC`;
+          $("balance-row")?.classList.remove("hidden");
+        }
         return "ready";
       }
+      $("balance-row")?.classList.add("hidden");
       const reason = !status.authorized ? ""
         : !status.capActive ? "（先前的授權已撤銷）"
         : "（額度已用完）";
@@ -409,7 +449,7 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
       }
       consecutiveMisses += 1;
       bubble("agent", "🤔 沒聽清楚——請說「確認下單」我就付款，說「取消」就放棄這筆。");
-      await speak("沒聽清楚，請說確認下單，或取消");
+      await speak("沒聽清楚，請說確認下單，或取消", { interruptible: true });
       return;
     }
     await parseAndPropose(input);
@@ -429,16 +469,40 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
           await farewell(err.sttText);
           return;
         }
+        // 指令詞優先於菜單猜測：「取消（下單）」進了澄清也不該被
+        // 反問「您是要點○○嗎」——直接當取消處理
+        if (confirmIntent(err.sttText) === "no") {
+          bubble("user", err.sttText);
+          bubble("agent", "好的，不下單。想點什麼再跟我說～");
+          clearMsg();
+          await speak("好的。想點什麼再跟我說。");
+          return;
+        }
         consecutiveMisses += 1;
         clearMsg();
         if (err.sttText) bubble("user", err.sttText);
         bubble("agent", `🤔 ${err.question}`);
-        await speak(err.question);
+        await speak(err.question, { interruptible: true });
       } else {
         consecutiveErrors += 1;
         msg("error", (err as Error).message);
         await speak("這筆沒有成功，詳細原因顯示在畫面上");
       }
+      return;
+    }
+    // 關鍵防線：指令詞永遠優先於菜單比對。
+    // 「取消下單」曾被封閉詞彙引擎硬配成「地瓜薯條」高信心成功——
+    // 引擎只認識菜單，所以前端必須先看 STT 原文是不是指令再接受報價。
+    const saidRaw = parsed.intent.stt_text || "";
+    if (exitIntent(saidRaw)) {
+      await farewell(saidRaw);
+      return;
+    }
+    if (confirmIntent(saidRaw) === "no") {
+      bubble("user", saidRaw);
+      bubble("agent", "好的，不下單。想點什麼再跟我說～");
+      clearMsg();
+      await speak("好的。想點什麼再跟我說。");
       return;
     }
     await propose(parsed);
@@ -456,7 +520,7 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
     bubble("agent", `${routed}${question}${usdcNote ? `（${usdcNote}）` : ""}——請說「確認下單」或「取消」🎙️`);
     pendingParsed = parsed;
     // 請用戶說「確認下單」四個字：句子長一點，STT 對短句的誤辨率高很多
-    await speak(`${question}，要幫你下單付款嗎？請說確認下單，或取消`);
+    await speak(`${question}，要幫你下單付款嗎？請說確認下單，或取消`, { interruptible: true });
   }
 
   /**
@@ -520,7 +584,7 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
         await refreshStatus().catch(() => undefined);
         await speak(
           `付款完成，取餐單號 ${merchantRef.split("-").pop()}，總共 ${p.quote.total} 元。` +
-          "請問還要再點餐嗎？想離開就說結束對話");
+          "請問還要再點餐嗎？想離開就說結束對話", { interruptible: true });
         void sealAndUploadLog(p.order_id, merchantRef, checkout);
       },
       onError: async (err) => {
@@ -610,6 +674,27 @@ export async function wireVoiceLoop(config: VoiceLoopConfig): Promise<void> {
     consecutiveMisses = 0;
     await handleInput({ text: input.value.trim() });
     input.value = "";
+  });
+
+  // ⏏ 一鍵領回全部：撤銷授權＋領回全部 USDC「同一筆交易」完成——
+  // 按下去的瞬間 Agent 就再也動不了任何一毛錢（餘額旁隨時可按）
+  $("withdraw-all")?.addEventListener("click", async () => {
+    unlockTts();
+    try {
+      msg("info", "請在 Slush 確認「撤銷授權＋領回全部 USDC」交易…");
+      const tx = session.buildExitTransaction(moduleName, usdcCoinType);
+      await signAndExecuteWithUserWallet(tx, network);
+      msg("ok", "✅ 已撤銷授權，全部 USDC 已回到你的錢包（Slush 可立即查看）");
+      looping = false;
+      pendingParsed = null;
+      regretAbort?.();
+      $("balance-row")?.classList.add("hidden");
+      need("quota-chip").textContent = "";
+      showAuthorize();
+      await refreshStatus();
+    } catch (err) {
+      msg("error", `領回沒有完成：${(err as Error).message}`);
+    }
   });
 
   // 撤銷（選配連結；由用戶 Slush 簽，單一交易生效）

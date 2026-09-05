@@ -404,3 +404,26 @@
   （setTimeout／隨機值）→ 一律改 handler 內動態 import。
 - **代價**：Python 版與 TS 版引擎需雙軌維護（CI 兩邊測試都跑）；
   fly.toml／deploy-fly.sh 已刪。
+
+## D30. 語音三修：指令詞優先、barge-in 插話、四家 STT 供應商鏈
+- **根因確認**：「結束對話」被封閉詞彙引擎以 0.625 信心誤配成
+  「地瓜薯條」（音節 DP 亂對）、「取消下單」被反問成點餐——引擎只認
+  識菜單，指令詞不歸它管。**修法＝指令詞永遠優先於菜單比對**：前端
+  拿到 STT 原文（成功報價與澄清兩條路徑都一樣）先過 intents 判讀
+  （抽成 packages/chui-web/src/intents.ts，26 個回歸案例），是
+  取消／離場就直接執行，不接受引擎報價；STT prompt 也把「確認下單、
+  取消、結束對話」寫進去引導 Whisper 輸出正確指令詞。
+- **barge-in**：TTS 播放中以 BargeInMonitor 同步開麥（AEC＋噪音抑制、
+  RMS 門檻 0.05 且需連續 300ms 防自我打斷），偵測到人聲即 cancel TTS
+  立刻放行收音。只開在覆誦確認句／澄清問句／付款完成句；歡迎語與
+  道別不開（iOS 開麥會 duck 播放音量，保護開場錄影）。⚠️ AEC 對
+  speechSynthesis 的消音效果需真機驗證，門檻可再調。
+- **STT 供應商鏈**（Worker 版）：elevenlabs(Scribe v1) → openai →
+  gmi → amd 依序遞補，排序依公開多語 benchmark 中文 WER（Scribe 領
+  先）＋本專案實戰紀錄；沒 key 自動跳過、全敗才明確報錯。GMI/AMD
+  沿用「不猜端點」原則：base url＋key＋model 三項齊全才啟用
+  （OpenAI 相容 /audio/transcriptions）。順序可用 STT_PROVIDERS 覆寫；
+  healthz 揭露 stt_chain。Python 本機版僅同步 prompt（鏈為雲端版功能）。
+- **一鍵領回**：session.buildExitTransaction＝revoke_caps＋withdraw
+  同一筆交易（合約皆 owner-only、withdraw 領全部回 owner）；語音面板
+  餘額列旁常駐「⏏ 一鍵領回全部」。

@@ -11,7 +11,7 @@
 import { newSalt, orderDigest } from "./crypto.js";
 import {
   assistEnabled, assistProvider, effectiveUnitsPerTwd, rephraseOrder,
-  transcribe, SttUnavailableError, type Env,
+  sttChain, transcribe, SttUnavailableError, type Env,
 } from "./external.js";
 import { getMerchant, MERCHANTS, type BuiltinMerchant } from "./merchants.js";
 import { quoteItems, readbackText, type QuoteLine } from "./menu.js";
@@ -267,6 +267,7 @@ export class ChuiHubDO implements DurableObject {
       walrus_publishers: splitList(this.env.WALRUS_PUBLISHERS ?? WALRUS_PUBLISHERS_DEFAULT),
       walrus_aggregators: splitList(this.env.WALRUS_AGGREGATORS ?? WALRUS_AGGREGATORS_DEFAULT),
       order_store: "durable-object-sqlite",
+      stt_chain: sttChain(this.env),
       llm_assist: assistEnabled(this.env) ? assistProvider(this.env) : "off",
       merchants: MERCHANTS.map((m) => m.merchant_id),
     });
