@@ -26,15 +26,15 @@
 
 ## 🎬 兩分鐘看懂嘴付
 
-<!-- 錄好影片後把下面的 VIDEO_ID 換掉即可（GitHub README 不能內嵌播放器，
-     主流做法＝可點擊的 YouTube 縮圖）：
 <p align="center">
-  <a href="https://youtu.be/VIDEO_ID">
-    <img src="https://img.youtube.com/vi/VIDEO_ID/maxresdefault.jpg" width="640" alt="嘴付 2 分鐘 Demo" />
+  <a href="https://youtu.be/G8o4Wx5MeNM">
+    <img src="https://img.youtube.com/vi/G8o4Wx5MeNM/maxresdefault.jpg" width="640" alt="嘴付 2 分鐘 Demo 影片" />
   </a>
+  <br/>
+  <sub>▶️ 點縮圖看 2 分鐘 Demo（YouTube）</sub>
 </p>
--->
-> 🚧 影片錄製中——先看 Live Demo：
+
+自己動手玩：
 
 | 網址 | 內容 |
 |---|---|
