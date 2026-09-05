@@ -14,8 +14,11 @@
       見 DECISIONS D26 與 commit 7ea0b17）。
 
 ## 等外部條件
-- [ ] GMI／AMD 額度發放後：`./scripts/deploy-gmi.sh <IP> ubuntu <key>`
-      上雲拿固定網址（手機 ?hub= 從此不變）。
-- [ ] EastRouter 金鑰發放後：.env 填 EASTROUTER_BASE_URL／API_KEY／
-      MODEL 三項，healthz `llm_assist: eastrouter`。
+- [x] ~~上雲拿固定網址~~ → **已用 Cloudflare Named Tunnel 解決**
+      （hub.chuiprotocol.com 永久固定、0 元；scripts/setup-tunnel.sh）。
+- [ ] **更正**：AMD 與 GMI 提供的是「LLM token API」不是 VM——
+      定位改為 LLM 重述備援的供應商（與 EastRouter 同一插槽）。
+      哪家先發 key 就在 .env 填通用三項：LLM_BASE_URL／LLM_API_KEY／
+      LLM_MODEL（＋LLM_PROVIDER 標名），healthz `llm_assist` 顯示之。
+      scripts/deploy-gmi.sh 保留為「任何 Ubuntu VM」通用部署腳本備用。
 - [ ] demo 結束後：撤銷對話中出現過的金鑰（OpenAI key、Fly token）。

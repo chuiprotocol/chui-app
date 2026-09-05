@@ -15,9 +15,15 @@ import os
 
 import httpx
 
-EASTROUTER_BASE_URL = os.environ.get("EASTROUTER_BASE_URL", "").rstrip("/")
-EASTROUTER_API_KEY = os.environ.get("EASTROUTER_API_KEY", "")
-EASTROUTER_MODEL = os.environ.get("EASTROUTER_MODEL", "")
+# 通用 OpenAI 相容供應商：EastRouter／GMI Cloud／AMD 的 LLM API 都可插。
+# 先讀通用 LLM_*，沒有再退回舊名 EASTROUTER_*（相容既有設定）。
+EASTROUTER_BASE_URL = (os.environ.get("LLM_BASE_URL")
+                       or os.environ.get("EASTROUTER_BASE_URL", "")).rstrip("/")
+EASTROUTER_API_KEY = (os.environ.get("LLM_API_KEY")
+                      or os.environ.get("EASTROUTER_API_KEY", ""))
+EASTROUTER_MODEL = (os.environ.get("LLM_MODEL")
+                    or os.environ.get("EASTROUTER_MODEL", ""))
+LLM_PROVIDER = os.environ.get("LLM_PROVIDER", "eastrouter")
 
 
 def enabled() -> bool:

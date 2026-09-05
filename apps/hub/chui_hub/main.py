@@ -117,7 +117,7 @@ async def healthz():
         "walrus_publishers": WALRUS_PUBLISHERS,
         "walrus_aggregators": WALRUS_AGGREGATORS,
         "order_store": store.backend,
-        "llm_assist": "eastrouter" if assist.enabled() else "off",
+        "llm_assist": assist.LLM_PROVIDER if assist.enabled() else "off",
         "merchants": [m.merchant_id for m in registry.all()],
     }
 
