@@ -32,4 +32,6 @@
       哪家先發 key 就在 .env 填通用三項：LLM_BASE_URL／LLM_API_KEY／
       LLM_MODEL（＋LLM_PROVIDER 標名），healthz `llm_assist` 顯示之。
       scripts/deploy-gmi.sh 保留為「任何 Ubuntu VM」通用部署腳本備用。
-- [ ] demo 結束後：撤銷對話中出現過的金鑰（OpenAI key、Fly token）。
+- [ ] demo 結束後：撤銷對話中出現過的金鑰（OpenAI key、Fly token、
+      Cloudflare API token cfut_kvWW…——Worker 部署完成後即可撤，
+      日常更新走 git push／重建新 token）。
