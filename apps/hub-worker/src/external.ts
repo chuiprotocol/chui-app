@@ -115,14 +115,14 @@ function sttProviders(env: Env): SttProvider[] {
       configured: Boolean(env.ELEVENLABS_API_KEY),
       run: (a) => sttElevenLabs(env.ELEVENLABS_API_KEY!, a),
     },
-    // 同一把 OpenAI key 排兩節點：4o-mini-transcribe 更快更準（中文），
-    // 帳號不支援該模型時自動遞補到 whisper-1
+    // 同一把 OpenAI key 排兩節點：gpt-4o-transcribe（全尺寸，OpenAI 家
+    // 最準的聽寫模型）優先，帳號不支援時自動遞補到 whisper-1
     openai4o: {
-      name: "openai(gpt-4o-mini-transcribe)",
+      name: "openai(gpt-4o-transcribe)",
       configured: Boolean(env.STT_API_KEY),
       run: (a) => sttOpenAiCompatible(
         env.STT_API_BASE ?? "https://api.openai.com/v1",
-        env.STT_API_KEY!, "gpt-4o-mini-transcribe", a),
+        env.STT_API_KEY!, "gpt-4o-transcribe", a),
     },
     openai: {
       name: `openai(${env.STT_API_MODEL ?? "whisper-1"})`,
