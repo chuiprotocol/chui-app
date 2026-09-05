@@ -127,7 +127,9 @@ async def list_merchants():
     return {
         "merchants": [
             {"merchant_id": m.merchant_id, "name": m.name,
-             "integration": m.integration, "web_url": m.web_url}
+             "integration": m.integration, "web_url": m.web_url,
+             # 收款地址本來就是鏈上公開資訊；店家後台用它做「錢包即身分」
+             "payout_address": m.payout_address}
             for m in registry.all()
         ]
     }

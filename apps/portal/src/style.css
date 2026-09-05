@@ -291,3 +291,5 @@ button.primary:active { background: var(--chui-primary-press); }
 .order-items .item-spec { color: var(--chui-ink-muted); font-size: 0.8rem; }
 .order-items .item-qty { font-weight: 700; }
 .order-items .item-sub { margin-left: auto; color: var(--chui-primary); font-weight: 700; }
+/* 店家後台：未註冊錢包訊息裡的完整地址（長字串安全換行） */
+.addr-full { word-break: break-all; font-size: 0.78rem; }

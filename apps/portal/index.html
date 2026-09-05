@@ -53,13 +53,18 @@
     </main>
   </section>
 
-  <!-- 店家後台（?dash=merchant_id）：即時接單看板＋歷史流水＋log 解密 -->
+  <!-- 店家後台（?dash=1）：錢包即身分——連錢包自動進自家看板 -->
   <section id="dash-view" class="hidden">
     <main>
       <div class="section-title">🏪 <span id="dash-title">店家後台</span>
-        <small id="dash-live" class="livechip">● 即時連線中</small></div>
-      <div class="card" id="dash-summary"></div>
-      <div id="dash-list" class="order-list">載入中…</div>
+        <small id="dash-live" class="livechip"></small></div>
+      <div class="card center" id="dash-connect">
+        <p class="bullet">用「店家收款錢包」連線——嘴付以錢包地址辨識店家身分，
+          自動進入你自己的接單看板（看不到別家的）。</p>
+        <button id="dash-connect-btn" class="primary" type="button">連接店家錢包進入後台</button>
+      </div>
+      <div class="card hidden" id="dash-summary"></div>
+      <div id="dash-list" class="order-list"></div>
       <p class="fineprint">訂單商業資料為店家可見之明文；對話紀錄需以「店家收款錢包」簽名解密（消費者與平台之外唯一的另一把鑰匙）。</p>
       <p class="fineprint"><a href="./">← 回商家列表</a></p>
     </main>

@@ -20,6 +20,7 @@ interface MerchantRow {
   name: string;
   integration: string;
   web_url: string;
+  payout_address?: string;
 }
 
 async function boot() {
@@ -31,9 +32,8 @@ async function boot() {
     await renderHistory(hub);
     return;
   }
-  const dashId = params.get("dash");
-  if (dashId) {
-    await renderDash(hub, dashId);
+  if (params.get("dash")) {
+    await renderDash(hub);
     return;
   }
   const merchantId = params.get("m");
@@ -144,37 +144,63 @@ async function renderHistory(hub: HubClient) {
   });
 }
 
-// ---- 店家後台（?dash=merchant_id）：即時接單＋歷史流水 ----
+// ---- 店家後台（?dash=1）：錢包即身分 ----
+// 不列店家清單——連上錢包後用「收款地址」辨識是哪家店，直接進自家看板；
+// 非任何店家的錢包則顯示未註冊訊息（開通請聯繫 k66）。
 
-async function renderDash(hub: HubClient, merchantId: string) {
+async function renderDash(hub: HubClient) {
   show("dash-view");
   const health = await (await fetch(`${hub.baseUrl}/healthz`)).json().catch(() => null);
   if (!health) { $("msg").innerHTML = `<div class="error">${hubDownMessage(hub.baseUrl)}</div>`; return; }
 
-  let merchantAddr = "";
+  $("dash-connect-btn").addEventListener("click", async () => {
+    let addr = "";
+    try {
+      addr = await connectWalletAddress();
+      const resp = await fetch(`${hub.baseUrl}/v1/merchants`);
+      const merchants = ((await resp.json()).merchants ?? []) as MerchantRow[];
+      const mine = merchants.find(
+        (m) => (m.payout_address ?? "").toLowerCase() === addr.toLowerCase());
+      if (!mine) {
+        $("dash-connect").innerHTML = `
+          <div class="bigicon">🚫</div>
+          <p class="bullet">此錢包 <code class="addr-full">${addr}</code> 非註冊的店家。</p>
+          <p class="bullet">若您為嘴付平台店家，請使用正確錢包；<br/>
+             若您還沒註冊，請私訊聯繫 <b>k66</b> 為您開通店家權限。</p>`;
+        return;
+      }
+      $("dash-connect").classList.add("hidden");
+      $("dash-summary").classList.remove("hidden");
+      await enterDash(hub, health, mine, addr);
+    } catch (e) {
+      $("msg").innerHTML = `<div class="error">${(e as Error).message}</div>`;
+    }
+  });
+}
+
+async function enterDash(hub: HubClient, health: Record<string, unknown>,
+                         merchant: MerchantRow, walletAddr: string) {
+  const merchantId = merchant.merchant_id;
+  $("dash-title").textContent = `${merchant.name}・接單看板`;
+  $("dash-live").textContent = "● 即時連線中";
   async function refresh() {
     const resp = await fetch(`${hub.baseUrl}/v1/merchants/${merchantId}/orders`);
     const body = await resp.json();
     if (!resp.ok) throw new Error(body?.detail?.message ?? `讀取失敗（${resp.status}）`);
     const orders = (body.orders ?? []) as OrderRow[];
-    merchantAddr = orders[0]?.merchant_address ?? merchantAddr;
     const paid = orders.filter((o) => o.status === "settled_verified");
     const usdc = paid.reduce((sum, o) => sum + o.amount_units, 0) / 1_000_000;
     $("dash-summary").innerHTML =
       `<b>${orders.length}</b> 筆訂單｜已收 <b>${usdc.toFixed(2)} USDC</b>（鏈上已驗證 ${paid.length} 筆）` +
-      (merchantAddr ? `<div class="usdc-note">收款地址 <code>${merchantAddr.slice(0, 12)}…${merchantAddr.slice(-6)}</code></div>` : "");
+      `<div class="usdc-note">👛 已用店家錢包登入 <code>${walletAddr.slice(0, 12)}…${walletAddr.slice(-6)}</code></div>`;
     const list = $("dash-list");
     list.innerHTML = orders.length ? orders.map(orderCard).join("") : `<div class="card center">還沒有訂單——用手機下一單試試！</div>`;
     const session = await ChuiAgentSession.load(String(health.network));
-    // 店家解密：requester＝店家收款錢包（在 Slush 匯入店家錢包後點解密）
-    wireDecryptLinks(list, sealogFromHealth(session.grpcClient, health),
-      merchantAddr || (await connectWalletAddress().catch(() => "")));
+    // 店家解密：requester＝剛登入的店家收款錢包（另一把鑰匙在消費者手上）
+    wireDecryptLinks(list, sealogFromHealth(session.grpcClient, health), walletAddr);
   }
 
   try {
-    const nameResp = await fetch(`${hub.baseUrl}/v1/merchants`);
-    const merchants = (await nameResp.json()).merchants as { merchant_id: string; name: string }[];
-    $("dash-title").textContent = `${merchants.find((m) => m.merchant_id === merchantId)?.name ?? merchantId}・接單看板`;
     await refresh();
   } catch (e) {
     $("dash-list").innerHTML = `<div class="error">${(e as Error).message}</div>`;
@@ -229,8 +255,7 @@ async function renderList(hub: HubClient) {
     }).join("") + `
       <div class="card dashlinks">
         <b>🏪 店家後台</b>（接單看板＋流水＋錢包解密）：
-        ${(merchants as MerchantRow[]).map((m) =>
-          `<a href="?dash=${m.merchant_id}">${m.name}</a>`).join("　")}
+        <a href="?dash=1">用店家錢包登入 →</a>
       </div>`;
   } catch (e) {
     const raw = (e as Error).message;
