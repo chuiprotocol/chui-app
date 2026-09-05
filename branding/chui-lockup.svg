@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 440 136" fill="none"
      role="img" aria-labelledby="chui-lockup-title">
-  <title id="chui-lockup-title">Chui Protocol 嘴付協議 — 說了就算，付了就走</title>
+  <title id="chui-lockup-title">Chui Protocol 嘴付協議 — 開口就買單，嘴付真簡單</title>
   <!-- 橫式 lockup（README 頂端、簡報封面、投影片頁首用）。
        字樣一律帶 textLength / lengthAdjust：換到沒有 PingFang TC 的系統
        （GitHub 的 Linux 算繪、Windows 檢視者）也不會撐破版面。 -->
@@ -19,7 +19,7 @@
   <text x="118" y="70" textLength="292" lengthAdjust="spacingAndGlyphs"
         font-family="'Avenir Next','Helvetica Neue',ui-rounded,system-ui,sans-serif"
         font-size="46" font-weight="800" fill="#101A2E">Chui Protocol</text>
-  <text x="118" y="102" textLength="300" lengthAdjust="spacingAndGlyphs"
+  <text x="118" y="102" textLength="270" lengthAdjust="spacingAndGlyphs"
         font-family="'PingFang TC','Noto Sans TC','Microsoft JhengHei',system-ui,sans-serif"
-        font-size="19" font-weight="600" fill="#5A6879">嘴付協議 · 說了就算，付了就走</text>
+        font-size="19" font-weight="600" fill="#5A6879">開口就買單，嘴付真簡單</text>
 </svg>

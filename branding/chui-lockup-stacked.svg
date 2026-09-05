@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none"
      role="img" aria-labelledby="chui-stacked-title">
-  <title id="chui-stacked-title">Chui Protocol 嘴付協議 — 說了就算，付了就走</title>
+  <title id="chui-stacked-title">Chui Protocol 嘴付協議 — 開口就買單，嘴付真簡單</title>
   <!-- 直式 lockup：影片片尾卡、正方形頭像、海報中央用。 -->
   <g transform="translate(124.75 6.6) scale(1.25)"
      stroke="#101A2E" stroke-linecap="round" stroke-linejoin="round" fill="none">
@@ -20,7 +20,7 @@
   <text x="200" y="234" text-anchor="middle" textLength="136" lengthAdjust="spacingAndGlyphs"
         font-family="'PingFang TC','Noto Sans TC','Microsoft JhengHei',system-ui,sans-serif"
         font-size="26" font-weight="700" fill="#101A2E">嘴付協議</text>
-  <text x="200" y="268" text-anchor="middle" textLength="190" lengthAdjust="spacingAndGlyphs"
+  <text x="200" y="268" text-anchor="middle" textLength="230" lengthAdjust="spacingAndGlyphs"
         font-family="'PingFang TC','Noto Sans TC','Microsoft JhengHei',system-ui,sans-serif"
-        font-size="19" font-weight="600" fill="#5A6879">說了就算，付了就走</text>
+        font-size="19" font-weight="600" fill="#5A6879">開口就買單，嘴付真簡單</text>
 </svg>

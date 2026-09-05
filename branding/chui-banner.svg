@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 440" fill="none"
      role="img" aria-labelledby="chui-banner-title">
-  <title id="chui-banner-title">Chui Protocol 嘴付協議 — 說了就算，付了就走</title>
+  <title id="chui-banner-title">Chui Protocol 嘴付協議 — 開口就買單，嘴付真簡單</title>
   <!-- README 頁首橫幅 1280×440。
        anthropic-art 三層式：滿版天藍底 → 不規則象牙白承載形 → 近黑手繪線。
        滿版底色的用意是深色／淺色 GitHub 主題下看起來都一樣。
@@ -36,9 +36,9 @@
   </g>
 
   <!-- ③-2 標語 -->
-  <text x="92" y="268" textLength="424" lengthAdjust="spacingAndGlyphs"
+  <text x="92" y="268" textLength="528" lengthAdjust="spacingAndGlyphs"
         font-family="'PingFang TC','Noto Sans TC','Microsoft JhengHei',system-ui,sans-serif"
-        font-size="50" font-weight="800" fill="#101A2E">說了就算，付了就走</text>
+        font-size="50" font-weight="800" fill="#101A2E">開口就買單，嘴付真簡單</text>
   <text x="94" y="306" textLength="470" lengthAdjust="spacingAndGlyphs"
         font-family="'PingFang TC','Noto Sans TC','Microsoft JhengHei',system-ui,sans-serif"
         font-size="21" font-weight="600" fill="#5A6879">agentic commerce 的支付授權層 · Sui Testnet · USDC</text>

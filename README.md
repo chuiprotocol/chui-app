@@ -1,6 +1,6 @@
-<p align="center"><img src="branding/chui-banner.svg" alt="Chui Protocol 嘴付協議 — 說了就算，付了就走" width="880" /></p>
+<p align="center"><img src="branding/chui-banner.svg" alt="Chui Protocol 嘴付協議 — 開口就買單，嘴付真簡單" width="880" /></p>
 
-<h3 align="center">說了就算，付了就走——語音點餐的鏈上支付授權層</h3>
+<h3 align="center">開口就買單，嘴付真簡單——語音點餐的鏈上支付授權層</h3>
 
 <p align="center">
   <a href="https://github.com/chuiprotocol/chui-app/actions"><img src="https://img.shields.io/github/actions/workflow/status/chuiprotocol/chui-app/ci.yml?label=CI" alt="CI" /></a>
