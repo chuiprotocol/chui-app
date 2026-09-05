@@ -13,9 +13,19 @@
       模式（加密腿即時、台幣腿 ATLAS_TWD_PER_USD 設定值，預設 31.5；
       見 DECISIONS D26 與 commit 7ea0b17）。
 
+## 上雲（用戶指示：不要再 localhost）
+- [ ] **跑一次 `./scripts/deploy-fly.sh`**（在 Mac 上、專案根目錄）：
+      後端整包上 Fly.io，之後 Mac 可關機。前提＝`FLY_API_TOKEN`
+      放環境變數或 .env（token 絕不進 git）。
+- [ ] **Cloudflare DNS 一次性切換**：hub 那筆 CNAME 從隧道
+      （…cfargotunnel.com）改指 `chui-protocol-hub.fly.dev`、
+      Proxy 切「DNS only」（灰雲）；驗證
+      `curl https://hub.chuiprotocol.com/healthz`。切完前端零改動。
+- 備援路徑：任何 Ubuntu VM 一樣能上（`./scripts/deploy-gmi.sh <IP>`，
+      Hetzner/DO 最小機約 US$4–6/月）；Named Tunnel
+      （scripts/setup-tunnel.sh）降級為本機開發用。
+
 ## 等外部條件
-- [x] ~~上雲拿固定網址~~ → **已用 Cloudflare Named Tunnel 解決**
-      （hub.chuiprotocol.com 永久固定、0 元；scripts/setup-tunnel.sh）。
 - [ ] **更正**：AMD 與 GMI 提供的是「LLM token API」不是 VM——
       定位改為 LLM 重述備援的供應商（與 EastRouter 同一插槽）。
       哪家先發 key 就在 .env 填通用三項：LLM_BASE_URL／LLM_API_KEY／

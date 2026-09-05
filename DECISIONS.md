@@ -362,3 +362,22 @@
   （只存 blob id，平台拿到也解不開）。
 - **代價**：歷史歸戶依賴鏈上驗證成功（pending 的單不出現在用戶史）；
   店家看板以 URL 直達（demo 未做店家登入）。
+
+## D28. 上雲定案：Fly.io 跑後端整包（不再 localhost，Mac 可關機）
+- **背景**：用戶明示「不要再 localhost 請部署至雲」。贊助商資源盤點
+  後無一可host後端（AMD／GMI＝LLM token API、Atlas＝資料庫/預言機、
+  EastRouter＝LLM 路由），而用戶手上已有 Fly.io token——它是唯一
+  「現在就能動」的雲。Named Tunnel 仍需 Mac 開機，不符合新要求。
+- **決策**：fly.toml＋scripts/deploy-fly.sh 一鍵部署（單機
+  shared-cpu-1x/1GB、常駐不休眠保 SSE 與語音低延遲）；`fly secrets
+  import` 注入 .env，新增 .dockerignore 確保 .env 與金鑰絕不烤進
+  映像檔、token 只走環境變數不落 git（先前被拒絕的正是「token 進
+  git」，本作法迴避之）。網域 hub.chuiprotocol.com 由用戶在
+  Cloudflare 把 CNAME 從隧道改指 <app>.fly.dev（DNS only）——前端
+  PUBLIC_HUB_URL 不變，零改動。
+- **備援**：deploy-gmi.sh 通用 Ubuntu VM 路徑保留；setup-tunnel.sh
+  降級為本機開發。**代價**：Fly 最小機約 US$5–7/月（用戶自付）；
+  沙箱無外網，deploy-fly.sh 首跑由用戶在 Mac 執行驗證。
+- **記憶體單快取警告**：訂單若未接 MongoDB Atlas，雲端重啟＝訂單
+  記憶消失（單號流水已持久化於商家端不受影響）——上雲後應盡快完成
+  NEXT-STEPS 的 Atlas 接線。

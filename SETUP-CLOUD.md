@@ -105,8 +105,19 @@ HUB_URL=https://xxxx.trycloudflare.com ./scripts/deploy-pages.sh
 | 付款失敗訊息含 abort | 看 explorer：`2`=授權已撤銷、`3`=超過單筆上限、`4`=額度不足（chui::vault abort codes） |
 | 現場想換 Hub 網址不重部署 | 網址加 `?hub=https://新網址` 即可覆寫 |
 
-## 6. 之後要搬到正式伺服器時
+## 6. 後端上雲（正式版：不再 localhost，Mac 可關機）
 
-後端整包（Hub＋A backend＋adapter＋B server）就是 `demo-up.sh` 裡那五個行程，
-搬到任何一台 VM／容器平台照跑即可；前端不用動（只要 HUB_URL 不變或重跑 §3）。
-（等你開口再做，我不主動。）
+```bash
+export FLY_API_TOKEN=你的token   # 或寫一行進 .env（.env 已 gitignore）
+cd ~/chui-app && git pull && ./scripts/deploy-fly.sh
+```
+
+腳本會自動：裝 flyctl（缺才裝）→ 建 App → 把 `.env` 上傳為 Fly
+secrets（金鑰不烤進映像檔）→ 建置部署 → 綁 `hub.chuiprotocol.com`
+→ 印出最後一步（到 Cloudflare 把 hub 的 CNAME 從隧道改指
+`chui-protocol-hub.fly.dev`、Proxy 切 DNS only）。切完 DNS 後前端
+零改動，兩支手機直接開 pages.dev 網址即可。
+
+- 之後改完程式重新上雲：重跑同一支腳本（同網址原地更新）。
+- 備援：任何 Ubuntu VM 也能上——`./scripts/deploy-gmi.sh <IP>`。
+- 本機隧道（§2／setup-tunnel.sh）降級為開發用。

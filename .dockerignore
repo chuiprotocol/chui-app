@@ -1,0 +1,13 @@
+# 映像檔絕不夾帶祕密與雜物：.env 由平台注入（fly secrets／compose env_file）
+.env
+.env.*
+.git
+.claude
+.demo-logs
+node_modules
+**/node_modules
+dist
+**/dist
+*.png
+demo-urls.txt
+.cloudflared-chui.yml
