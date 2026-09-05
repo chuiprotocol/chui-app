@@ -1,4 +1,4 @@
-<p align="center"><img src="branding/chui-lockup.svg" alt="Chui Protocol 嘴付協議" width="430" /></p>
+<p align="center"><img src="branding/chui-banner.svg" alt="Chui Protocol 嘴付協議 — 說了就算，付了就走" width="880" /></p>
 
 # Chui Protocol（嘴付協議）—— 應用層
 

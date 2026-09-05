@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 300" fill="none"
+     role="img" aria-labelledby="chui-stacked-title">
+  <title id="chui-stacked-title">Chui Protocol 嘴付協議 — 說了就算，付了就走</title>
+  <!-- 直式 lockup：影片片尾卡、正方形頭像、海報中央用。 -->
+  <g transform="translate(124.75 6.6) scale(1.25)"
+     stroke="#101A2E" stroke-linecap="round" stroke-linejoin="round" fill="none">
+    <g transform="translate(-3 1.5)">
+      <path stroke-width="8"
+        d="M33 77 L24 99 L46 84 Q60 89 71 81 Q86 71 86 54 Q86 35 70 26 Q54 18 39 25 Q22 33 21 51 Q20 66 30 74 Z"/>
+      <path stroke-width="7"   d="M55 32 L54.6 68"/>
+      <path stroke-width="6.5" d="M44 43.5 L67 42.7"/>
+      <path stroke-width="6.5" d="M44.2 54 L67.2 53.2"/>
+      <path stroke-width="6.5" d="M93 38 Q100 52 93 66"/>
+      <path stroke-width="6"   d="M103 31 Q112 52 103 73"/>
+    </g>
+  </g>
+  <text x="200" y="196" text-anchor="middle" textLength="264" lengthAdjust="spacingAndGlyphs"
+        font-family="'Avenir Next','Helvetica Neue',ui-rounded,system-ui,sans-serif"
+        font-size="44" font-weight="800" fill="#101A2E">Chui Protocol</text>
+  <text x="200" y="234" text-anchor="middle" textLength="136" lengthAdjust="spacingAndGlyphs"
+        font-family="'PingFang TC','Noto Sans TC','Microsoft JhengHei',system-ui,sans-serif"
+        font-size="26" font-weight="700" fill="#101A2E">嘴付協議</text>
+  <text x="200" y="268" text-anchor="middle" textLength="190" lengthAdjust="spacingAndGlyphs"
+        font-family="'PingFang TC','Noto Sans TC','Microsoft JhengHei',system-ui,sans-serif"
+        font-size="19" font-weight="600" fill="#5A6879">說了就算，付了就走</text>
+</svg>
