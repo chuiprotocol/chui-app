@@ -38,6 +38,8 @@
 | `png/chui-lockup@2x.png` | 1320×408（去背） |
 | `png/chui-lockup-stacked@2x.png` | 1200×900（去背） |
 | `png/chui-app-icon-512.png` | 512×512 |
+| `png/chui-mark-1024.png` | 1024×933，只有 mark、去背、邊界貼齊圖形 |
+| `png/chui-mark-square-1024.png` | 1024×1024，只有 mark、去背、置中留白，給頭像／社群 |
 | `png/chui-endcard-1920x1080.png` | 1920×1080，片尾卡 |
 
 ## 片尾卡與 QR code
