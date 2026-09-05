@@ -346,9 +346,21 @@ export class ChuiHubDO implements DurableObject {
     const message = new TextEncoder().encode(`chui-open-shop:v1:${address}:${name}`);
     let signer: string;
     try {
-      // 動態 import：@mysten/sui 依賴在模組頂層有 Workers 禁止的全域操作
-      const { verifyPersonalMessageSignature } = await import("@mysten/sui/verify");
-      const publicKey = await verifyPersonalMessageSignature(message, body.signature);
+      // 動態 import：@mysten/sui 依賴在模組頂層有 Workers 禁止的全域操作。
+      // zkLogin 帳戶（Google 登入型 Slush）的簽名要連鏈上驗證——必須帶
+      // client 與 address，否則會炸「A Sui Client is required to verify
+      // zkLogin signatures」（真機踩過）
+      const [{ verifyPersonalMessageSignature }, { SuiGrpcClient }] = await Promise.all([
+        import("@mysten/sui/verify"),
+        import("@mysten/sui/grpc"),
+      ]);
+      const network = suiNetwork(this.env);
+      const client = new SuiGrpcClient({
+        network: network as "testnet",
+        baseUrl: this.env.SUI_FULLNODE_URL || `https://fullnode.${network}.sui.io:443`,
+      });
+      const publicKey = await verifyPersonalMessageSignature(
+        message, body.signature, { client, address });
       signer = publicKey.toSuiAddress().toLowerCase();
     } catch (e) {
       throw new HttpError("SIGNATURE_INVALID", `簽名驗證失敗：${(e as Error).message}`, 401);
