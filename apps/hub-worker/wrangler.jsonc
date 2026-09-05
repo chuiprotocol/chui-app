@@ -11,6 +11,9 @@
   "observability": { "enabled": true },
   // 封包面板頁以文字打包進 Worker
   "rules": [{ "type": "Text", "globs": ["**/*.html"], "fallthrough": true }],
+  // 固定網址：部署時自動綁 custom domain（域名在同一個 Cloudflare 帳號）。
+  // 前提＝DNS 裡 hub 的舊隧道 CNAME 已移除（scripts/setup-worker.sh 會代勞）
+  "routes": [{ "pattern": "hub.chuiprotocol.com", "custom_domain": true }],
   // 訂單／取餐單號流水／SSE 匯流排都在這顆 Durable Object（SQLite 持久化，
   // 免費層可用）——取餐單號跨重啟不歸零，「永不重複」約束在雲上仍成立
   "durable_objects": {

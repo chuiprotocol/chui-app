@@ -13,14 +13,14 @@
       模式（加密腿即時、台幣腿 ATLAS_TWD_PER_USD 設定值，預設 31.5；
       見 DECISIONS D26 與 commit 7ea0b17）。
 
-## 上雲（用戶指示：Cloudflare 免費 Worker，不用 Fly.io）
-- [ ] **儀表板建第三個 app `chui-hub`**（與兩個前端同模式的 Git 整合，
-      Deploy command：`npx wrangler deploy --config
-      apps/hub-worker/wrangler.jsonc`）——詳細步驟見 SETUP-CLOUD §6。
-- [ ] **填 Variables**：CHUI_PACKAGE_ID（Text）＋STT_API_KEY（Secret）。
-- [ ] **綁網域**：先刪 DNS 裡 hub 的舊隧道 CNAME，再到 Worker 的
-      Domains & Routes 加 custom domain `hub.chuiprotocol.com`；
-      驗證 healthz 回 `runtime: cloudflare-worker`。前端零改動。
+## 上雲（用戶指示：Cloudflare 免費 Worker，不用 Fly.io；已授權代設定）
+- [ ] **用戶建一把 API token**（Edit Cloudflare Workers 模板＋
+      Zone/DNS/Edit，見 SETUP-CLOUD §6）→ 在 Mac 跑
+      `export CLOUDFLARE_API_TOKEN=…` ＋ `./scripts/setup-worker.sh`
+      ——部署／Secrets／清舊 DNS／綁 hub.chuiprotocol.com 全自動；
+      驗證標準＝healthz 回 `runtime: cloudflare-worker`。前端零改動。
+      （沙箱連不到 Cloudflare API，故由腳本在用戶機器代跑；token
+      只走環境變數，用完可撤銷。）
 - 備援路徑：任何 Ubuntu VM 一樣能上整包 Python 版
       （`./scripts/deploy-gmi.sh <IP>`）；Named Tunnel
       （scripts/setup-tunnel.sh）降級為本機開發用。

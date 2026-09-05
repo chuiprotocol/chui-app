@@ -109,8 +109,25 @@ HUB_URL=https://xxxx.trycloudflare.com ./scripts/deploy-pages.sh
 
 後端整包已移植成 **Cloudflare Worker**（`apps/hub-worker/`，免費層即可）：
 重排序引擎、報價、接單單號、鏈上驗證、SSE 看板全在 Worker＋Durable
-Object（SQLite 持久化——單號跨重啟不歸零、訂單不消失）。部署方式與
-兩個前端相同：**儀表板點幾下 Git 整合，之後每次 push 自動部署**。
+Object（SQLite 持久化——單號跨重啟不歸零、訂單不消失）。
+
+### ⚡ 最快路徑：一鍵腳本（部署＋Secrets＋DNS＋綁網域全自動）
+
+一次性建一把 API token（1 分鐘）：
+dash.cloudflare.com/profile/api-tokens → Create Token →
+「Edit Cloudflare Workers」模板 → Zone Resources 選 chuiprotocol.com →
+再手動加一列權限 **Zone / DNS / Edit** → Create → 複製。然後：
+
+```bash
+export CLOUDFLARE_API_TOKEN=貼上token
+cd ~/chui-app && git pull && ./scripts/setup-worker.sh
+```
+
+腳本會自動：驗 token → 清掉 hub 的舊隧道 CNAME → 部署 Worker
+`chui-hub`（wrangler.jsonc 已內建 custom domain `hub.chuiprotocol.com`，
+部署即綁）→ 從 `.env` 填 Secrets（CHUI_PACKAGE_ID／STT_API_KEY…，
+值不落終端）→ 驗證 healthz。完成＝手機零設定直接用、Mac 可關機。
+以下 6a–6c 是同一件事的儀表板手動版（想走 push 自動部署再看）。
 
 ### 6a. 建 Worker（一次性，約 3 分鐘）
 
