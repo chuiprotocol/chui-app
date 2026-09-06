@@ -6,6 +6,7 @@
   <a href="https://github.com/chuiprotocol/chui-app/actions"><img src="https://img.shields.io/github/actions/workflow/status/chuiprotocol/chui-app/ci.yml?label=CI" alt="CI" /></a>
   <img src="https://img.shields.io/badge/chain-Sui%20Testnet-4DA2FF" alt="Sui Testnet" />
   <img src="https://img.shields.io/badge/runtime-Cloudflare%20Workers-F38020" alt="Cloudflare Workers" />
+  <a href="https://github.com/chuiprotocol/chui-app/releases"><img src="https://img.shields.io/github/v/release/chuiprotocol/chui-app?label=release&color=6f42c1" alt="Release" /></a>
   <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT" />
 </p>
 
