@@ -15,6 +15,10 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          # 若 release 已存在（例如從網頁手動建立）就跳過，不視為失敗
+          if gh release view "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "release 已存在，跳過"; exit 0
+          fi
           gh release create "$GITHUB_REF_NAME" \
             --verify-tag \
             --title "嘴付協議 $GITHUB_REF_NAME" \
