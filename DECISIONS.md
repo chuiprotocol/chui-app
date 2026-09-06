@@ -285,8 +285,8 @@
      嚴格用 --chui-ok/-pending/-fail（聆聽中＝pending 黃、倒數棄單
      ＝fail 紅、鏈上驗證卡＝ok 綠）；扁平化（去掉漸層，符合手繪
      語彙的 flat 原則）；依系統偏好自動深色（data-theme 腳本）。
-  3. anthropic-art skill 安裝於 .claude/skills/anthropic-art（供
-     之後的 Claude session 使用）。本環境無點陣圖生成工具，改以
+  3. 視覺規範採 anthropic-art 手繪語彙（開發期工具素材，不隨
+     repo 發布）。本環境無點陣圖生成工具，改以
      「SVG 手寫」實作其三層式規範（滿版 accent 底、55–80% 不規則
      象牙白承載形、#141413 圓頭粗線）：三張 hero 插畫（portal＝
      sky 手遞話語成硬幣、鹽酥雞＝clay 紙袋熱氣、奶茶＝oat 珍奶
@@ -380,7 +380,7 @@
   沙箱無外網，deploy-fly.sh 首跑由用戶在 Mac 執行驗證。
 - **記憶體單快取警告**：訂單若未接 MongoDB Atlas，雲端重啟＝訂單
   記憶消失（單號流水已持久化於商家端不受影響）——上雲後應盡快完成
-  NEXT-STEPS 的 Atlas 接線。
+  Atlas 接線（後續於 D26 完成持久化）。
 
 ## D29. 上雲改定案：Cloudflare 免費 Worker（用戶指示，取代 D28 的 Fly.io）
 - **背景**：用戶明示「用 cloudflare（後端上雲）免費 worker，不要用
