@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>API 文件｜嘴付協議開發者中心</title>
+<link rel="icon" href="/favicon.svg" />
+<style>
+  :root{
+    --ink:#101A2E; --muted:#5A6879; --sky:#7EB8F7; --accent:#2340E6;
+    --ivory:#FAF6EF; --line:#E5DFD2; --code-bg:#101A2E; --code-fg:#E8EDF5;
+    --ok:#1B7F4B; --warn:#B4231F;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ivory);color:var(--ink);
+       font:16px/1.75 "PingFang TC","Noto Sans TC",system-ui,sans-serif}
+  header{background:var(--ink);color:#fff;padding:14px 20px;
+         display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  header img{width:34px;height:34px}
+  header .t{font-weight:800;font-size:18px}
+  header nav{margin-left:auto;display:flex;gap:16px;flex-wrap:wrap}
+  header a{color:#CFE2FB;text-decoration:none;font-size:14px}
+  header a:hover{text-decoration:underline}
+  main{max-width:880px;margin:0 auto;padding:28px 20px 80px}
+  h1{font-size:28px;margin:.4em 0}
+  h2{font-size:21px;margin:2em 0 .5em;border-bottom:2px solid var(--line);padding-bottom:6px}
+  h3{font-size:17px;margin:1.6em 0 .4em}
+  p{margin:.5em 0}
+  .lead{color:var(--muted)}
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:12px 0}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media(max-width:640px){.grid{grid-template-columns:1fr}}
+  code{background:#EFE9DC;border-radius:5px;padding:1px 6px;font-size:.92em;
+       font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  pre{background:var(--code-bg);color:var(--code-fg);border-radius:10px;
+      padding:14px 16px;overflow-x:auto;font-size:13.5px;line-height:1.6}
+  pre code{background:none;color:inherit;padding:0}
+  table{border-collapse:collapse;width:100%;margin:.6em 0;font-size:14.5px}
+  th,td{border:1px solid var(--line);padding:7px 10px;text-align:left;vertical-align:top;background:#fff}
+  th{background:#F2ECDF}
+  .m{display:inline-block;font-weight:700;font-size:12.5px;border-radius:5px;
+     padding:1px 7px;color:#fff;font-family:ui-monospace,monospace}
+  .get{background:var(--ok)} .post{background:var(--accent)}
+  .warn{border-left:4px solid var(--warn);background:#FDF1F0;padding:10px 14px;border-radius:0 8px 8px 0}
+  .tip{border-left:4px solid var(--sky);background:#EFF6FE;padding:10px 14px;border-radius:0 8px 8px 0}
+  a{color:var(--accent)}
+  footer{color:var(--muted);text-align:center;font-size:13px;padding:24px}
+</style>
+</head>
+<body>
+<header>
+  <a href="/"><img src="/logo.svg" alt="嘴付" /></a>
+  <span class="t">嘴付協議・開發者中心</span>
+  <nav>
+    <a href="/developers/">API 文件</a>
+    <a href="/developers/agent.html">AI Agent 串接導引</a>
+    <a href="https://github.com/chuiprotocol/chui-app">GitHub</a>
+    <a href="https://hub.chuiprotocol.com/healthz">服務狀態</a>
+  </nav>
+</header>
+<main>
+
+<h1>店家 API 文件</h1>
+<p class="lead">把「開口就買單」接進你自己的品牌。本頁是 Chui Hub 公開 API 的完整參考——
+與 <a href="https://github.com/chuiprotocol/chui-app/blob/main/PROTOCOL.md">協議規格 PROTOCOL.md</a> 同步。</p>
+
+<div class="warn"><b>⚠️ Sui Testnet only。</b>本協議現階段只在測試網運作，全部使用測試用
+USDC（<a href="https://faucet.circle.com">Circle Faucet</a> 免費領）；請勿投入真實資金。</div>
+
+<h2 id="quickstart">兩條接入路徑</h2>
+<div class="grid">
+  <div class="card">
+    <h3 style="margin-top:0">A. 沒有自己的網站 → 公版開店（零程式碼）</h3>
+    <p>到 <a href="/?open=1">chuiprotocol.com「我要開店」</a>：填店名、菜單、客製化選項，
+    用 Slush 錢包簽一個名就上線。收款直達你的錢包，平台不代管任何私鑰。</p>
+  </div>
+  <div class="card">
+    <h3 style="margin-top:0">B. 已有自己的品牌網站 → 串 Hub API</h3>
+    <p>先走 A 完成開店拿到 <code>merchant_id</code>，再讓你的網站直接呼叫本頁 API
+    （語音解析、下單、結帳）。建議直接用
+    <a href="/developers/agent.html">AI Agent 串接導引</a>——把現成 prompt 貼給
+    Claude Code／Codex，5 分鐘產出串接程式碼。</p>
+  </div>
+</div>
+
+<h2 id="conventions">通用約定</h2>
+<ul>
+  <li><b>Base URL</b>：<code>https://hub.chuiprotocol.com</code>（免金鑰；瀏覽器可直接呼叫，CORS 全開）</li>
+  <li><b>金額一律整數</b>：菜單價格單位＝新台幣元；鏈上金額單位＝USDC 最小單位（6 位小數）。</li>
+  <li><b>錯誤格式</b>：<code>{"detail": {"code", "message"}}</code>，搭配對應的 HTTP 狀態碼。</li>
+  <li><b>誠實失敗</b>：語音信心不足回 <code>422 CLARIFICATION_NEEDED</code>（必須反問，絕不猜）；
+      鏈上查不到就是 <code>pending</code>，不偽造成功。</li>
+  <li><b>隱私</b>：鏈上只出現 <code>order_digest = SHA-256(canonical_json(明細) ‖ 32B salt)</code>，
+      看不到品項明細。</li>
+</ul>
+
+<h2 id="endpoints">Hub API 端點</h2>
+
+<h3><span class="m post">POST</span> /v1/merchants/register — 開店／更新菜單</h3>
+<p>用錢包簽名證明收款地址所有權。同一錢包＋同一店名重複註冊＝更新菜單；換店名＝開第二家店。</p>
+<pre><code>{
+  "name": "豆花大王",                  // 必填，最長 20 字
+  "ticket_prefix": "TF",               // 必填，2 個大寫英文字母（取餐叫號用）
+  "payout_address": "0x…",             // 必填，Sui 收款地址（64 hex）
+  "menu": { "items": [ … ] },          // 必填，最多 30 品項（格式見下方「菜單格式」）
+  "signature": "…"                      // 必填，錢包對訊息
+                                        // "chui-open-shop:v1:{address}:{name}" 的簽名
+}</code></pre>
+<p>成功 <code>200</code> 回 <code>{"merchant_id": "m_xxxxxxxxxx", …}</code>；
+簽名者與收款地址不符回 <code>401 SIGNATURE_INVALID</code>。</p>
+
+<h3><span class="m get">GET</span> /v1/merchants — 商家列表</h3>
+<pre><code>{"merchants": [{"merchant_id", "name", "integration": "native|adapter", "web_url"}]}</code></pre>
+
+<h3><span class="m get">GET</span> /v1/merchants/{merchant_id}/menu — 商家菜單</h3>
+<p>回協議菜單格式（見下方「菜單格式」）。</p>
+
+<h3><span class="m get">GET</span> /v1/merchants/{merchant_id}/orders — 店家看板資料</h3>
+<p>該店訂單流（新到舊；已排除未確認的報價單）。店家後台輪詢或搭配 SSE 用。</p>
+
+<h3><span class="m post">POST</span> /v1/orders/parse — 語音／文字解析＋報價</h3>
+<p><code>multipart/form-data</code>：<code>text</code>（或 <code>audio</code> 音檔）＋
+<code>merchant_id</code>（省略時 Hub 對所有商家解析、取信心最高者路由）。</p>
+<pre><code>// 200 成功
+{
+  "order_id": "ord_xxx",
+  "merchant_id": "happy-chicken", "merchant_name": "快樂鹽酥雞",
+  "intent": {"items": […], "confidence": 0.93, "stt_text": "我要一份鹽酥雞加辣"},
+  "quote":  {"lines": […], "total": 65, "currency": "TWD"},
+  "readback": {"text": "加辣鹽酥雞，總共 65 元，確認嗎？"}
+}
+
+// 422 信心不足（協議規定：不確定就必須問，絕不猜）
+{"detail": {"code": "CLARIFICATION_NEEDED", "question": "…", "candidates": […]}}</code></pre>
+
+<h3><span class="m post">POST</span> /v1/orders/confirm — 確認下單＋取結帳參數</h3>
+<p>Body：<code>{"order_id": "ord_xxx"}</code>。Hub 把訂單交給商家後回鏈上結帳參數：</p>
+<pre><code>{
+  "order_id": "ord_xxx", "merchant_ref": "TF-0906-0003",
+  "checkout": {
+    "network": "testnet",
+    "package_id": "0x…", "module": "pay", "function": "settle",
+    "coin_type": "0x…::usdc::USDC",
+    "amount_units": 2080000,          // USDC 最小單位（此例＝2.08 USDC）
+    "merchant_address": "0x…",
+    "order_digest_hex": "…64 hex…"
+  }
+}</code></pre>
+<p>錢包端組 PTB：<code>settle&lt;coin_type&gt;(coinWithBalance(amount_units),
+merchant_address, digest_bytes)</code>——coin 面額即金額，合約不信任額外參數。</p>
+
+<h3><span class="m post">POST</span> /v1/orders/{order_id}/settlement — 回報鏈上交易</h3>
+<p>Body：<code>{"tx_digest": "…"}</code>。Hub 向 fullnode 驗證
+<code>SettlementEvent</code>（digest／金額／店家三者皆符才標記已付款）。</p>
+
+<h3><span class="m post">POST</span> /v1/orders/{order_id}/verify — 重新驗證</h3>
+<p>fullnode 暫時查不到時（狀態 <code>pending</code>）可重試驗證。</p>
+
+<h3><span class="m get">GET</span> /v1/orders/{order_id} — 查單一訂單</h3>
+
+<h3><span class="m get">GET</span> /v1/logs?owner=0x… — 用戶訂單史</h3>
+<p>依付款錢包地址（鏈上 <code>SettlementEvent.owner</code>）歸戶。
+<b>已知限制（誠實揭露）</b>：demo 版無存取控制，任何人知道地址即可查詢；
+內容僅含訂單摘要，對話明細另以 Seal 端對端加密（平台無鑰）。</p>
+
+<h3><span class="m get">GET</span> /v1/events — SSE 即時事件流</h3>
+<p>Server-Sent Events：訂單建立、付款驗證、封包流向即時推播。
+店家看板、<a href="https://hub.chuiprotocol.com/panel">封包面板</a>都吃這條。</p>
+
+<h3><span class="m get">GET</span> /healthz — 服務狀態</h3>
+<p>回運行環境、STT 供應商鏈、LLM 備援、匯率來源——所有外部依賴的即時真實狀態。</p>
+
+<h2 id="menu">菜單格式</h2>
+<pre><code>{
+  "menu_version": "2026-09-06",
+  "currency": "TWD",
+  "items": [{
+    "id": "boba-tea", "name": "珍珠奶茶", "base_price": 65,
+    "synonyms": ["珍奶", "波霸奶茶"],          // 口語同義詞：辨識救回的關鍵
+    "options": [{
+      "id": "sugar", "name": "糖度", "required": false, "default": "FULL",
+      "choices": [
+        {"id": "NONE", "name": "無糖", "synonyms": ["不要糖"], "price_delta": 0},
+        {"id": "HALF", "name": "半糖", "synonyms": [], "price_delta": 0},
+        {"id": "FULL", "name": "正常糖", "synonyms": [], "price_delta": 0}
+      ]
+    }]
+  }]
+}</code></pre>
+<div class="tip">💡 <b>同義詞寫得越口語，辨識越準。</b>嘴付的核心是「封閉詞彙重排序」——
+語音辨識結果會被鎖進你菜單的詞彙空間比對，縮寫（「珍奶」）、台語詞都靠
+<code>synonyms</code> 救回。</div>
+
+<h2 id="merchant-side">商家端介面（進階：adapter 模式）</h2>
+<p>已有 POS／訂單系統的店家可以反向操作——不改舊系統一行程式碼，寫一個 adapter
+實作三個端點，Hub 會主動呼叫你：</p>
+<table>
+  <tr><th>端點</th><th>時機</th><th>格式</th></tr>
+  <tr><td><span class="m get">GET</span> <code>/chui/menu</code></td><td>Hub 快取你的菜單</td><td>上方菜單格式</td></tr>
+  <tr><td><span class="m post">POST</span> <code>/chui/orders</code></td><td>用戶確認後收單</td><td>回 <code>{"accepted": true, "merchant_ref": "你的單號"}</code></td></tr>
+  <tr><td><span class="m post">POST</span> <code>/chui/orders/{id}/paid</code></td><td>鏈上驗證通過，通知出餐</td><td>回 <code>{"ok": true}</code></td></tr>
+</table>
+<p>完整示範：<a href="https://github.com/chuiprotocol/chui-app/tree/main/apps/merchant-a">快樂鹽酥雞
+adapter 原始碼</a>（legacy 系統原樣不動）。</p>
+
+<h2 id="flow">端到端流程</h2>
+<pre><code>用戶說「珍奶無糖少冰」
+  → POST /v1/orders/parse            （封閉詞彙重排序＋報價）
+  → 覆誦、口頭確認、5 秒防呆倒數
+  → POST /v1/orders/confirm          （取鏈上結帳參數）
+  → 錢包簽 settle()／Vault 自動扣款   （USDC 直達店家地址）
+  → POST /v1/orders/{id}/settlement  （Hub 鏈上驗證三符）
+  → 店家看板即時跳單（SSE），取餐單號叫號</code></pre>
+
+</main>
+<footer>嘴付協議 · MIT 開源 · <a href="https://github.com/chuiprotocol/chui-app">chui-app</a> ·
+<a href="https://github.com/chuiprotocol/chui-contracts">chui-contracts</a></footer>
+</body>
+</html>

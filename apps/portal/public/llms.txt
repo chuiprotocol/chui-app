@@ -1,0 +1,40 @@
+# Chui Protocol（嘴付協議）
+
+> 語音點餐＋鏈上支付協議。顧客開口點餐，AI Agent 解析並以 Sui Testnet USDC
+> 直接付款給店家；平台非託管、不代管私鑰。Testnet only，勿用真實資金。
+
+## 給 AI 開發工具的整合重點
+
+- Hub Base URL: https://hub.chuiprotocol.com （免金鑰、CORS 全開、JSON）
+- 錯誤格式: {"detail": {"code", "message"}}；422 CLARIFICATION_NEEDED = 必須反問顧客，絕不猜
+- 金額一律整數：菜單=新台幣元；鏈上=USDC 最小單位（6 位小數），以 API 回傳的 amount_units 為準
+- 鏈上只出現 order_digest（SHA-256(明細‖salt)），無品項明細
+
+## 端點
+
+- GET  /v1/merchants                       商家列表
+- POST /v1/merchants/register              開店（錢包簽名 "chui-open-shop:v1:{address}:{name}"）
+- GET  /v1/merchants/{id}/menu             菜單（items[].synonyms 供口語辨識）
+- GET  /v1/merchants/{id}/orders           店家看板資料
+- POST /v1/orders/parse                    multipart: text|audio + merchant_id → 報價與覆誦
+- POST /v1/orders/confirm                  {"order_id"} → checkout 參數（package_id/module/function/coin_type/amount_units/merchant_address/order_digest_hex）
+- POST /v1/orders/{id}/settlement          {"tx_digest"} → Hub 鏈上驗證（digest/金額/店家三符）
+- POST /v1/orders/{id}/verify              pending 時重新驗證
+- GET  /v1/orders/{id}                     查單
+- GET  /v1/logs?owner=0x…                  用戶訂單史（demo 版無存取控制，僅摘要）
+- GET  /v1/events                          SSE 即時事件流
+- GET  /healthz                            服務與外部依賴真實狀態
+
+## 錢包結帳（前端）
+
+confirm 取得 checkout 後，用 @mysten/dapp-kit 組 PTB：
+{package_id}::{module}::{function}<coin_type>(coinWithBalance(amount_units), merchant_address, bytes(order_digest_hex))
+network 必須是 "testnet"，否則中止。
+
+## 文件
+
+- 人類版 API 文件: https://chuiprotocol.com/developers/
+- AI Agent 串接導引: https://chuiprotocol.com/developers/agent.html
+- 協議規格: https://github.com/chuiprotocol/chui-app/blob/main/PROTOCOL.md
+- 參考實作: https://github.com/chuiprotocol/chui-app （apps/merchant-a＝品牌官網串接範例）
+- 合約: https://github.com/chuiprotocol/chui-contracts

@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>AI Agent 串接導引｜嘴付協議開發者中心</title>
+<link rel="icon" href="/favicon.svg" />
+<style>
+  :root{
+    --ink:#101A2E; --muted:#5A6879; --sky:#7EB8F7; --accent:#2340E6;
+    --ivory:#FAF6EF; --line:#E5DFD2; --code-bg:#101A2E; --code-fg:#E8EDF5;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--ivory);color:var(--ink);
+       font:16px/1.75 "PingFang TC","Noto Sans TC",system-ui,sans-serif}
+  header{background:var(--ink);color:#fff;padding:14px 20px;
+         display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+  header img{width:34px;height:34px}
+  header .t{font-weight:800;font-size:18px}
+  header nav{margin-left:auto;display:flex;gap:16px;flex-wrap:wrap}
+  header a{color:#CFE2FB;text-decoration:none;font-size:14px}
+  main{max-width:880px;margin:0 auto;padding:28px 20px 80px}
+  h1{font-size:28px;margin:.4em 0}
+  h2{font-size:21px;margin:1.8em 0 .5em;border-bottom:2px solid var(--line);padding-bottom:6px}
+  ol.steps li{margin:.5em 0}
+  code{background:#EFE9DC;border-radius:5px;padding:1px 6px;font-size:.92em;
+       font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+  .promptbox{position:relative;margin:14px 0}
+  .promptbox pre{background:var(--code-bg);color:var(--code-fg);border-radius:10px;
+      padding:18px 16px;overflow-x:auto;font-size:13px;line-height:1.65;
+      white-space:pre-wrap;word-break:break-word;margin:0}
+  .copy{position:absolute;top:10px;right:10px;background:var(--accent);color:#fff;
+        border:0;border-radius:7px;padding:7px 14px;font-size:13.5px;cursor:pointer;font-weight:700}
+  .copy:active{transform:scale(.97)}
+  .tip{border-left:4px solid var(--sky);background:#EFF6FE;padding:10px 14px;border-radius:0 8px 8px 0}
+  .card{background:#fff;border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:12px 0}
+  a{color:var(--accent)}
+  footer{color:var(--muted);text-align:center;font-size:13px;padding:24px}
+  ul.check{list-style:none;padding-left:0}
+  ul.check li::before{content:"✅ ";}
+</style>
+</head>
+<body>
+<header>
+  <a href="/"><img src="/logo.svg" alt="嘴付" /></a>
+  <span class="t">嘴付協議・開發者中心</span>
+  <nav>
+    <a href="/developers/">API 文件</a>
+    <a href="/developers/agent.html">AI Agent 串接導引</a>
+    <a href="https://github.com/chuiprotocol/chui-app">GitHub</a>
+  </nav>
+</header>
+<main>
+
+<h1>已有品牌網站？讓 AI 替你串接</h1>
+<p>如果你的店已經有自己的官網或 App，不需要換掉它——把下面這段 prompt 貼給
+<b>Claude Code、Codex、Cursor</b> 等 AI 開發工具，讓它直接在你的程式碼裡加上
+「🎙 嘴付下單」。我們也提供
+<a href="/llms.txt">llms.txt</a> 給 AI 工具自動讀取協議摘要。</p>
+
+<h2>事前準備（2 分鐘）</h2>
+<ol class="steps">
+  <li>到 <a href="/?open=1">chuiprotocol.com「我要開店」</a>完成開店（Slush 錢包簽名），
+      記下你的 <code>merchant_id</code>（也可事後從
+      <a href="https://hub.chuiprotocol.com/v1/merchants">GET /v1/merchants</a> 查到）。</li>
+  <li>在你的品牌網站 repo 裡開啟 AI 開發工具（如 <code>claude</code> 或 <code>codex</code>）。</li>
+  <li>複製下方 prompt、把第一行的 <code>merchant_id</code> 換成你的，貼上送出。</li>
+</ol>
+
+<h2>複製這段 prompt</h2>
+<div class="promptbox">
+<button class="copy" onclick="copyPrompt(this)">📋 複製</button>
+<pre id="prompt">我的 merchant_id 是：__在此填入你的 merchant_id__（嘴付開店後取得）
+
+請在我這個網站專案裡加入「嘴付（Chui Protocol）語音點餐」整合，讓顧客在我的
+品牌網站上就能語音下單、以 Sui Testnet USDC 付款給我。要求如下：
+
+## 背景
+- 嘴付協議是「語音點餐＋鏈上支付」協議。API 文件：
+  https://chuiprotocol.com/developers/ （機器可讀摘要：https://chuiprotocol.com/llms.txt）
+- Hub Base URL：https://hub.chuiprotocol.com（免金鑰、CORS 全開、全部 JSON）
+- 參考實作（真實店家串接範例，MIT 開源）：
+  https://github.com/chuiprotocol/chui-app 的 apps/merchant-a（品牌官網串 Hub API）
+  與 packages/chui-web（語音循環／錢包結帳的可重用核心）
+
+## 要做的事
+1. 在網站顯眼處加一顆「🎙 嘴付下單」按鈕與簡單的對話面板。
+2. 點餐流程（全部呼叫 Hub API，不需要自建後端）：
+   a. GET /v1/merchants/{merchant_id}/menu 取得菜單（顯示品項與價格）。
+   b. 顧客輸入或語音說出餐點後，POST /v1/orders/parse
+      （multipart/form-data：text=顧客的話、merchant_id=我的 id；
+       若做語音就錄音後改傳 audio 欄位）。
+      - 200：顯示 readback.text（覆誦）與 quote.total，請顧客確認。
+      - 422 CLARIFICATION_NEEDED：把 question 顯示給顧客重新回答，絕不擅自猜測。
+   c. 顧客確認後 POST /v1/orders/confirm（body: {"order_id": ...}），
+      拿到 checkout 參數（package_id/module/function/coin_type/
+      amount_units/merchant_address/order_digest_hex）。
+   d. 用 @mysten/dapp-kit（或 @mysten/sui + Slush 錢包）組交易：
+      呼叫 Move 函式 {package_id}::{module}::{function}，型別參數＝coin_type，
+      引數＝[coinWithBalance(amount_units), merchant_address,
+            bytes(order_digest_hex)]，請顧客的錢包簽名送出。
+   e. 送出後 POST /v1/orders/{order_id}/settlement（body: {"tx_digest": ...}）
+      讓 Hub 做鏈上驗證；輪詢 GET /v1/orders/{order_id} 直到 status=paid，
+      顯示取餐單號（merchant_ref）。
+3. 錯誤處理採「誠實失敗」：任何 API 錯誤都把 detail.message 誠實顯示給顧客，
+   不偽造成功、不無聲重試超過 1 次。
+
+## 限制與紀律
+- 只用 Sui **Testnet**（checkout.network 會是 "testnet"；若不是，中止並警告）。
+- 金額一律用 API 回傳的整數 amount_units，不自行計算或四捨五入。
+- 不要引入後端伺服器；純前端即可完成（Hub CORS 全開）。
+- 不要動我網站既有功能與樣式系統；新增程式碼放獨立模組／元件。
+- 完成後給我一份測試步驟：如何用測試 USDC（https://faucet.circle.com 領）
+  在本機跑通「說一句話 → 錢包簽名 → 顯示取餐單號」全流程。</pre>
+</div>
+
+<h2>AI 做完後，怎麼驗收</h2>
+<ul class="check">
+  <li>網站能列出你的菜單（來自 <code>GET /v1/merchants/{id}/menu</code>）。</li>
+  <li>輸入「珍奶無糖少冰」能得到覆誦與總價；輸入模糊句子會被反問而不是亂猜。</li>
+  <li>確認後跳出 Slush 錢包簽名，金額與報價一致（Testnet USDC）。</li>
+  <li>付款後顯示取餐單號，且你的 <a href="/">嘴付店家後台</a>同步跳出這筆訂單。</li>
+  <li>關掉網路或亂填資料時，畫面顯示的是誠實的錯誤訊息，不是假成功。</li>
+</ul>
+
+<div class="tip">💡 <b>有舊 POS 系統？</b>另一條路是 adapter 模式——舊系統一行不改，
+由 adapter 翻譯協議訊息。把
+<a href="https://github.com/chuiprotocol/chui-app/tree/main/apps/merchant-a">快樂鹽酥雞
+adapter 範例</a>丟給你的 AI 工具照抄即可，詳見
+<a href="/developers/#merchant-side">API 文件的 adapter 章節</a>。</div>
+
+</main>
+<footer>嘴付協議 · MIT 開源 · <a href="https://github.com/chuiprotocol/chui-app">chui-app</a></footer>
+<script>
+function copyPrompt(btn){
+  const text = document.getElementById("prompt").innerText;
+  navigator.clipboard.writeText(text).then(()=>{
+    btn.textContent = "✅ 已複製";
+    setTimeout(()=>{ btn.textContent = "📋 複製"; }, 1800);
+  }).catch(()=>{ btn.textContent = "⚠️ 請手動全選複製"; });
+}
+</script>
+</body>
+</html>
