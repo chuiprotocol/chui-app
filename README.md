@@ -46,7 +46,7 @@ MIT 開源附 2 分鐘 Demo 影片。
 | **[hub.chuiprotocol.com/healthz](https://hub.chuiprotocol.com/healthz)** | 協議中樞（Cloudflare Worker）即時狀態 |
 | **[hub.chuiprotocol.com/panel](https://hub.chuiprotocol.com/panel)** | 協議封包即時面板（demo 投影用） |
 
-> 需要 [Slush 錢包](https://slush.app)（Sui Testnet）＋測試用 USDC（[Circle Faucet](https://faucet.circle.com) 免費領）。
+> 需要 [Slush 錢包](https://slush.app)（[Chrome 擴充功能](https://chromewebstore.google.com/detail/slush-%E2%80%94-a-sui-wallet/opcgpfmipidbgpenhmajoajpbobppdil)／[iOS App](https://apps.apple.com/us/app/slush-a-sui-wallet/id6476572140)，選 Sui Testnet）＋測試用 USDC（[Circle Faucet](https://faucet.circle.com) 免費領）。
 
 ## 問題陳述
 

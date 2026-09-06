@@ -373,6 +373,7 @@ function renderOpenShop(hub: HubClient) {
           <p class="bullet">🛍 你的店面：<a href="/?m=${body.merchant_id}">立刻試點一單 →</a></p>
           <p class="bullet">🏪 接單看板：<a href="/?dash=1">用同一顆錢包進店家後台 →</a></p>
           <p class="bullet">💰 收款直達 <code>${address.slice(0, 10)}…${address.slice(-6)}</code>，平台不經手</p>
+          <p class="bullet">🤖 已有自己的品牌網站？<a href="/developers/agent.html">用 AI 五分鐘把嘴付串進你的官網 →</a></p>
         </div>`;
     } catch (err) {
       result.innerHTML = `<div class="error">${(err as Error).message}</div>`;
