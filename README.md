@@ -12,6 +12,7 @@
 <p align="center">
   <a href="https://chuiprotocol.com"><b>🌐 Live Demo</b></a> ·
   <a href="#-兩分鐘看懂嘴付">🎬 影片</a> ·
+  <a href="https://chuiprotocol.com/developers/">🔌 API 文件</a> ·
   <a href="PROTOCOL.md">📜 協議規格</a> ·
   <a href="DECISIONS.md">🧭 決策紀錄</a> ·
   <a href="https://github.com/chuiprotocol/chui-contracts">⛓ Move 合約</a>
@@ -45,6 +46,8 @@ MIT 開源附 2 分鐘 Demo 影片。
 | **[happy-chicken.chuiprotocol.com](https://happy-chicken.chuiprotocol.com)** | 快樂鹽酥雞「自家官網」——只串嘴付協議 API 的整合示範 |
 | **[hub.chuiprotocol.com/healthz](https://hub.chuiprotocol.com/healthz)** | 協議中樞（Cloudflare Worker）即時狀態 |
 | **[hub.chuiprotocol.com/panel](https://hub.chuiprotocol.com/panel)** | 協議封包即時面板（demo 投影用） |
+| **[chuiprotocol.com/developers](https://chuiprotocol.com/developers/)** | 店家 API 文件：兩條接入路徑、全端點參考、adapter 模式 |
+| **[chuiprotocol.com/developers/agent](https://chuiprotocol.com/developers/agent)** | AI Agent 串接導引：自有品牌店家複製一段 prompt 給 Claude Code／Codex 即完成串接（另供 [llms.txt](https://chuiprotocol.com/llms.txt) 給 AI 工具自動讀取） |
 
 > 需要 [Slush 錢包](https://slush.app)（[Chrome 擴充功能](https://chromewebstore.google.com/detail/slush-%E2%80%94-a-sui-wallet/opcgpfmipidbgpenhmajoajpbobppdil)／[iOS App](https://apps.apple.com/us/app/slush-a-sui-wallet/id6476572140)，選 Sui Testnet）＋測試用 USDC（[Circle Faucet](https://faucet.circle.com) 免費領）。
 
