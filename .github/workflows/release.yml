@@ -1,0 +1,21 @@
+# 打上 v* 標籤即自動建立 GitHub Release；
+# 發佈說明取自「附註標籤的訊息」（git tag -a 時寫的內容）
+name: Release
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: 建立 Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" \
+            --verify-tag \
+            --title "嘴付協議 $GITHUB_REF_NAME" \
+            --notes-from-tag
